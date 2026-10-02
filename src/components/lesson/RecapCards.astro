@@ -1,11 +1,9 @@
 ---
-const points = [
-  "Gallery blog ada dua sisi: public untuk visitor, admin untuk kau.",
-  "Flow visitor: buka → pilih folder → klik gambar → like & komen.",
-  "Flow admin: login → upload gambar → terus live kat public page.",
-  "Stack kita: React (UI) + Express (API) + Neon (database) + R2 (fail gambar).",
-  "Satu repo, banyak app — tu yang orang panggil monorepo.",
-];
+interface Props {
+  points: string[];
+}
+
+const { points } = Astro.props;
 ---
 
 <div class="not-prose my-8 grid gap-3 sm:grid-cols-2">
@@ -14,7 +12,7 @@ const points = [
       <div
         class:list={[
           "border-line flex items-start gap-3 rounded-2xl border-2 bg-white p-4",
-          i === points.length - 1 && "sm:col-span-2",
+          i === points.length - 1 && points.length % 2 === 1 && "sm:col-span-2",
         ]}
       >
         <span class="bg-mint/25 text-mint-deep grid size-7 shrink-0 place-items-center rounded-full">

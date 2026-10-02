@@ -7,7 +7,8 @@ const lessons = defineCollection({
   schema: z.object({
     title: z.string(),
     slug: z.string(),
-    lesson: z.number(),
+    project: z.string(),
+    order: z.number(),
     summary: z.string(),
     duration: z.string(),
     tags: z.array(z.string()).default([]),

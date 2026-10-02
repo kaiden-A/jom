@@ -1,0 +1,62 @@
+---
+interface Props {
+  src?: string;
+  url?: string;
+  title?: string;
+}
+
+const {
+  src = "/mockup/gallery.html",
+  url = "mockup-galeri/index.html",
+  title = "Contoh mockup gallery blog",
+} = Astro.props;
+---
+
+<div class="not-prose my-8">
+  <div class="clay overflow-hidden">
+    <div class="bg-ink flex items-center gap-3 px-3 py-3 sm:px-4">
+      <div class="flex shrink-0 gap-1.5" aria-hidden="true">
+        <span class="bg-rose size-3 rounded-full"></span>
+        <span class="bg-sun size-3 rounded-full"></span>
+        <span class="bg-mint size-3 rounded-full"></span>
+      </div>
+      <p
+        class="hidden min-w-0 flex-1 truncate rounded-full bg-white/10 px-4 py-1.5 text-center font-mono text-xs text-white/70 sm:block"
+      >
+        {url}
+      </p>
+      <a
+        href={src}
+        target="_blank"
+        rel="noreferrer"
+        class="text-brand-soft hover:text-white ml-auto inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-xs font-bold transition-colors hover:bg-white/15 sm:ml-0"
+      >
+        <svg
+          class="size-3.5"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M11 4h5v5M16 4l-7 7M14 11v4a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h4"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        Buka tab baru
+      </a>
+    </div>
+    <iframe
+      src={src}
+      title={title}
+      loading="lazy"
+      class="h-[560px] w-full bg-white sm:h-[660px]"></iframe>
+  </div>
+  <p class="text-ink-soft mt-3 text-sm leading-relaxed font-bold">
+    Ni fail sebenar, bukan screenshot — satu
+    <code class="font-mono text-xs">index.html</code> je. Cuba klik folder, buka
+    gambar, like dan komen. Tekan butang <strong>Admin</strong> kat kanan atas
+    dalam tu untuk upload gambar.
+  </p>
+</div>

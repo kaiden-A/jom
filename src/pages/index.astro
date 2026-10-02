@@ -1,17 +1,30 @@
 ---
-import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PolaroidStack from "../components/site/PolaroidStack.astro";
-import { roadmap } from "../data/roadmap";
+import { projects } from "../data/projects";
+import {
+  getPublishedLessons,
+  lessonUrl,
+  lessonsOf,
+} from "../utils/lessons";
 
-const lessons = (await getCollection("lessons", ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.lesson - b.data.lesson,
+const lessons = await getPublishedLessons();
+const groups = projects.map((project) => ({
+  project,
+  published: lessonsOf(lessons, project.slug),
+}));
+const availableGroups = groups.filter(
+  (g) => g.project.status === "available" && g.published.length > 0,
 );
+const firstLesson = lessons[0];
+const firstLessonHref = firstLesson
+  ? lessonUrl(firstLesson)
+  : "/projek/gallery-blog/gambaran-besar";
 
 const features = [
   {
     title: "Faham dulu, kod kemudian",
-    body: "Setiap lesson start dengan kenapa dan flow dia. Baru kita masuk kod. Sebab kod tu cuma alat.",
+    body: "Setiap sub-lesson start dengan kenapa dan flow dia. Baru kita masuk kod. Sebab kod tu cuma alat.",
     icon: "bulb",
   },
   {
@@ -42,7 +55,7 @@ const features = [
               class="bg-mint absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
             ></span>
           </span>
-          Lesson 1 dah keluar
+          {lessons.length} sub-lesson dah keluar
         </span>
         <h1
           class="font-display mt-6 text-4xl leading-[1.08] font-semibold sm:text-6xl"
@@ -50,12 +63,12 @@ const features = [
           Belajar build website, <span class="hl">satu-satu</span>.
         </h1>
         <p class="text-ink-soft mt-6 max-w-xl text-lg leading-relaxed">
-          Tutorial santai dalam BM. Aku terangkan bentuk dan flow dulu, lepas
-          tu baru kita kod sama-sama. Takde jargon berbelit, janji.
+          Tutorial santai dalam BM. Setiap projek dipecah jadi sub-lesson kecil —
+          faham flow dulu, lepas tu baru kita kod sama-sama.
         </p>
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a href="/lessons/gallery-blog" class="btn btn-primary">
-            Mula Lesson 1
+          <a href={firstLessonHref} class="btn btn-primary">
+            Mula belajar
             <svg
               class="size-4"
               viewBox="0 0 20 20"
@@ -70,7 +83,7 @@ const features = [
                 stroke-linejoin="round"></path>
             </svg>
           </a>
-          <a href="#lessons" class="btn btn-ghost">Tengok semua lesson</a>
+          <a href="#projek" class="btn btn-ghost">Tengok semua projek</a>
         </div>
         <p class="text-ink-soft mt-7 text-sm font-bold">
           Projek pertama: gallery blog —
@@ -131,68 +144,119 @@ const features = [
     </div>
   </section>
 
-  <!-- Lessons -->
-  <section id="lessons" class="mx-auto mt-20 w-full max-w-6xl scroll-mt-24 px-4 sm:px-6">
+  <!-- Projek -->
+  <section id="projek" class="mx-auto mt-20 w-full max-w-6xl scroll-mt-24 px-4 sm:px-6">
     <div class="flex items-end justify-between gap-4">
       <div>
         <p class="font-display text-brand-deep text-xs font-semibold tracking-widest uppercase">
-          Lessons
+          Projek
         </p>
         <h2 class="font-display mt-2 text-2xl font-semibold sm:text-3xl">
-          Mula dari sini
+          Setiap projek, satu-satu sub-lesson
         </h2>
       </div>
-      <p class="text-ink-soft hidden text-sm font-bold sm:block">
-        {lessons.length} lesson dah keluar · {roadmap.length} dalam queue
-      </p>
     </div>
 
-    <div class="mt-8">
+    <div class="mt-8 space-y-5">
       {
-        lessons.map((lesson) => (
-          <a
-            href={`/lessons/${lesson.data.slug}`}
-            class="clay group hover:shadow-clay grid gap-6 p-6 transition-transform duration-200 hover:-translate-y-1 sm:p-8 lg:grid-cols-[auto_1fr_auto] lg:items-center"
-          >
-            <span class="font-display bg-brand-soft text-brand-deep grid size-16 place-items-center rounded-2xl text-2xl font-semibold">
-              {String(lesson.data.lesson).padStart(2, "0")}
-            </span>
-            <span>
-              <span class="flex flex-wrap items-center gap-2">
-                <span class="font-display text-xl font-semibold sm:text-2xl">
-                  {lesson.data.title}
+        availableGroups.map(({ project, published }, i) => {
+          const total = published.length + project.upcoming.length;
+          return (
+            <div class="clay p-6 sm:p-8">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="flex items-start gap-4">
+                  <span class="font-display bg-brand-soft text-brand-deep grid size-14 shrink-0 place-items-center rounded-2xl text-xl font-semibold">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p class="font-display text-2xl font-semibold">
+                      {project.title}
+                    </p>
+                    <p class="text-ink-soft mt-1 max-w-xl text-sm leading-relaxed">
+                      {project.tagline}
+                    </p>
+                    <p class="text-ink-soft/80 mt-2 text-xs font-bold">
+                      {project.stack.join(" · ")}
+                    </p>
+                  </div>
+                </div>
+                <span class="bg-mint/25 text-mint-deep rounded-full px-3 py-1 text-xs font-bold">
+                  {published.length}/{total} sub-lesson siap
                 </span>
-                <span class="bg-mint/25 text-mint-deep rounded-full px-2.5 py-0.5 text-xs font-bold">
-                  Boleh mula sekarang
-                </span>
-              </span>
-              <span class="text-ink-soft mt-2 block max-w-2xl text-sm leading-relaxed sm:text-base">
-                {lesson.data.summary}
-              </span>
-              <span class="text-ink-soft/80 mt-3 block text-xs font-bold">
-                {lesson.data.duration} · {lesson.data.tags.join(" · ")}
-              </span>
-            </span>
-            <span class="btn btn-primary hidden lg:inline-flex">
-              Baca
-              <svg
-                class="size-4"
-                viewBox="0 0 20 20"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 10h11M11 5l5 5-5 5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-          </a>
-        ))
+              </div>
+
+              <ol class="mt-6 space-y-2">
+                {published.map((lesson) => (
+                  <li>
+                    <a
+                      href={lessonUrl(lesson)}
+                      class="group border-line hover:border-brand/50 hover:bg-brand-soft/40 flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3 transition-colors"
+                    >
+                      <span class="font-display bg-brand-soft text-brand-deep grid size-9 shrink-0 place-items-center rounded-xl text-sm font-semibold">
+                        {String(lesson.data.order).padStart(2, "0")}
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="font-display block truncate text-sm font-semibold sm:text-base">
+                          {lesson.data.title}
+                        </span>
+                        <span class="text-ink-soft/80 block text-xs font-bold">
+                          {lesson.data.duration} · {lesson.data.tags.join(" · ")}
+                        </span>
+                      </span>
+                      <svg
+                        class="text-ink-soft group-hover:text-brand size-4 shrink-0 transition-colors"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M4 10h11M11 5l5 5-5 5"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </a>
+                  </li>
+                ))}
+                {project.upcoming.length > 0 && (
+                  <li class="border-line text-ink-soft/70 flex items-center gap-3 rounded-2xl border-2 border-dashed px-4 py-3 text-sm font-bold">
+                    <svg
+                      class="size-4 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M6 11V8a6 6 0 1112 0v3M5 11h14v9H5v-9z"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    {project.upcoming.length} sub-lesson lagi dalam queue —{" "}
+                    <a href="#roadmap" class="text-brand underline underline-offset-2">
+                      tengok roadmap
+                    </a>
+                  </li>
+                )}
+              </ol>
+            </div>
+          );
+        })
       }
+
+      <div class="border-line grid place-items-center rounded-3xl border-2 border-dashed bg-white/50 px-6 py-10 text-center">
+        <p class="font-display text-lg font-semibold">
+          Projek seterusnya — akan datang
+        </p>
+        <p class="text-ink-soft mt-1 max-w-md text-sm leading-relaxed font-bold">
+          Setiap projek baru akan ada sub-lesson sendiri. Habiskan Gallery Blog
+          dulu, lepas tu kita pilih projek baru pula.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -205,30 +269,37 @@ const features = [
       Apa yang akan datang
     </h2>
     <p class="text-ink-soft mt-3 max-w-2xl text-sm leading-relaxed sm:text-base">
-      Selepas Lesson 1, kita akan bina projek tu betul-betul — satu step pada
-      satu masa.
+      Sub-lesson yang tengah disiapkan, ikut turutan. Kita buat satu-satu,
+      jangan skip.
     </p>
 
-    <ol class="border-line mt-8 space-y-4 border-l-2 border-dashed pl-6 sm:pl-8">
-      {
-        roadmap.map((item) => (
-          <li class="relative">
-            <span class="border-line text-ink-soft font-display absolute -left-[35px] grid size-6 place-items-center rounded-full border-2 bg-white text-[10px] font-semibold sm:-left-[43px]">
-              {item.n}
-            </span>
-            <div class="clay flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p class="font-display text-base font-semibold">{item.title}</p>
-                <p class="text-ink-soft mt-0.5 text-sm">{item.blurb}</p>
-              </div>
-              <span class="text-ink-soft/70 mt-2 shrink-0 rounded-full bg-paper px-3 py-1 text-xs font-bold sm:mt-0">
-                Akan datang
-              </span>
-            </div>
-          </li>
-        ))
-      }
-    </ol>
+    {
+      availableGroups.map(({ project }) => (
+        <div class="mt-10">
+          <p class="font-display text-sm font-semibold">{project.title}</p>
+          <ol class="border-line mt-4 space-y-4 border-l-2 border-dashed pl-6 sm:pl-8">
+            {project.upcoming.map((item) => (
+              <li class="relative">
+                <span class="border-line text-ink-soft font-display absolute -left-[35px] grid size-6 place-items-center rounded-full border-2 bg-white text-[10px] font-semibold sm:-left-[43px]">
+                  {item.order}
+                </span>
+                <div class="clay flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p class="font-display text-base font-semibold">
+                      {item.title}
+                    </p>
+                    <p class="text-ink-soft mt-0.5 text-sm">{item.blurb}</p>
+                  </div>
+                  <span class="text-ink-soft/70 bg-paper mt-2 shrink-0 rounded-full px-3 py-1 text-xs font-bold sm:mt-0">
+                    Akan datang
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))
+    }
   </section>
 
   <!-- CTA -->
@@ -244,11 +315,11 @@ const features = [
           Jom mula. Jangan tunggu rasa "cukup ilmu".
         </h2>
         <p class="text-brand-soft/90 mx-auto mt-4 max-w-xl text-sm leading-relaxed sm:text-base">
-          Lesson 1 ambik masa dalam 5 minit je. Habiskan, dan kau akan tau
-          exactly apa yang kita nak bina.
+          Sub-lesson pertama ambik masa dalam 5 minit je. Habiskan, dan kau akan
+          tau exactly apa yang kita nak bina.
         </p>
-        <a href="/lessons/gallery-blog" class="btn btn-primary mt-8">
-          Baca Lesson 1
+        <a href={firstLessonHref} class="btn btn-primary mt-8">
+          Baca sub-lesson 1
         </a>
       </div>
     </div>

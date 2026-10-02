@@ -1,7 +1,8 @@
 ---
-title: "Gallery Blog: dari idea sampai flow"
-slug: "gallery-blog"
-lesson: 1
+title: "Gambaran besar: apa kita nak buat"
+slug: "gambaran-besar"
+project: "gallery-blog"
+order: 1
 summary: "Kita try paham dulu apa benda yang kita nak buat, macam mana orang guna dia, dan tech stack apa yang kita pakai. Kod nanti — faham dulu."
 duration: "5 minit baca"
 tags: ["Explanation", "no code"]
@@ -14,7 +15,6 @@ import TwoSides from "../../components/lesson/TwoSides.astro";
 import TechStackCards from "../../components/lesson/TechStackCards.astro";
 import RepoTree from "../../components/lesson/RepoTree.astro";
 import RecapCards from "../../components/lesson/RecapCards.astro";
-import NextLesson from "../../components/lesson/NextLesson.astro";
 import Checklist from "../../components/react/Checklist.tsx";
 import NamePicker from "../../components/react/NamePicker.tsx";
 import FlowSteps from "../../components/react/FlowSteps.tsx";
@@ -133,10 +133,14 @@ Semua yang kau baru buat tu — itulah projek kita. Bezanya nanti, data tu duduk
 
 ## Recap: apa kita dah tau harini
 
-<RecapCards />
+<RecapCards
+  points={[
+    "Gallery blog ada dua sisi: public untuk visitor, admin untuk kau.",
+    "Flow visitor: buka → pilih folder → klik gambar → like & komen.",
+    "Flow admin: login → upload gambar → terus live kat public page.",
+    "Stack kita: React (UI) + Express (API) + Neon (database) + R2 (fail gambar).",
+    "Satu repo, banyak app — tu yang orang panggil monorepo.",
+  ]}
+/>
 
-## Lesson seterusnya
-
-<NextLesson />
-
-That's it untuk Lesson 1. Kalau kau baca sampai habis — tahniah, kau dah faham bentuk projek kita sebelum tulis walau satu line kod pun.
+That's it untuk sub-lesson pertama ni. Kalau kau baca sampai habis — tahniah, kau dah faham bentuk projek kita sebelum tulis walau satu line kod pun.

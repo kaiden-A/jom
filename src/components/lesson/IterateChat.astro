@@ -1,0 +1,83 @@
+---
+interface Message {
+  role: "user" | "ai";
+  tag?: string;
+  text: string;
+}
+
+const messages: Message[] = [
+  {
+    role: "user",
+    tag: "Prompt 1",
+    text: "Buat mockup gallery blog guna HTML + Tailwind + Font Awesome + JavaScript. Dalam satu fail index.html. Ada grid gambar, filter folder, dan lightbox. Warna krim #FAF7F2 dengan aksen indigo #4F46E5. Design clean, banyak ruang kosong.",
+  },
+  {
+    role: "ai",
+    text: "Dah siap — index.html ada grid gambar, filter folder dan lightbox. Buka dalam browser dan cuba klik.",
+  },
+  {
+    role: "user",
+    tag: "Follow-up",
+    text: "Hampir ok, tapi background terlalu terang dan grid nampak sesak. Tukar background ke #F5F1E8, tambah spacing antara kad. Kekalkan semua yang lain.",
+  },
+  {
+    role: "ai",
+    text: "Done — background dah tukar, spacing dah lega. Yang lain semua kekal sama.",
+  },
+  {
+    role: "user",
+    tag: "Follow-up",
+    text: "Ok cantik. Sekarang tambah butang 'Admin' kat kanan atas — bila tekan, keluar form upload gambar. Mockup je.",
+  },
+  {
+    role: "ai",
+    text: "Dah siap. Tekan Admin untuk form upload, tekan Visitor untuk balik ke galeri.",
+  },
+];
+---
+
+<div class="not-prose my-8">
+  <div class="clay overflow-hidden">
+    <div
+      class="border-line bg-paper/70 flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-5"
+    >
+      <p class="font-display text-sm font-semibold">Contoh sesi iterate</p>
+      <span class="text-ink-soft text-xs font-bold">
+        prompt pertama jarang sempurna — dan tu normal
+      </span>
+    </div>
+
+    <div class="space-y-5 p-4 sm:p-6">
+      {
+        messages.map((message) =>
+          message.role === "user" ? (
+            <div class="flex flex-col items-end gap-1.5">
+              {message.tag && (
+                <span class="bg-brand-soft text-brand-deep rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
+                  {message.tag}
+                </span>
+              )}
+              <div class="bg-brand max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-sm leading-relaxed font-bold text-white">
+                {message.text}
+              </div>
+            </div>
+          ) : (
+            <div class="flex items-start gap-2.5">
+              <span class="bg-ink text-sun font-display grid size-8 shrink-0 place-items-center rounded-full text-[10px] font-semibold">
+                oc
+              </span>
+              <div class="max-w-[85%]">
+                <p class="text-ink-soft/70 mb-1 text-[10px] font-bold tracking-wide uppercase">
+                  opencode
+                </p>
+                <div class="border-line text-ink-soft rounded-2xl rounded-bl-md border-2 bg-white px-4 py-3 text-sm leading-relaxed font-bold">
+                  {message.text}
+                </div>
+              </div>
+            </div>
+          ),
+        )
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,213 @@
+---
+title: "Mockup with opencode"
+slug: "mockup"
+project: "gallery-blog"
+order: 2
+summary: "Sebelum kita buat bende yg complex pakai React dan database, kita vibe code dulu. Guna opencode, kita buat mockup guna HTML je, sng boleh tgk semua terus"
+duration: "8 minit baca"
+tags: ["Design", "opencode"]
+updated: "Oktober 2026"
+draft: false
+---
+
+import Callout from "../../components/lesson/Callout.astro";
+import RecapCards from "../../components/lesson/RecapCards.astro";
+import StepList from "../../components/lesson/StepList.astro";
+import IterateChat from "../../components/lesson/IterateChat.astro";
+import MockupEmbed from "../../components/lesson/MockupEmbed.astro";
+import Checklist from "../../components/react/Checklist.tsx";
+import PromptBuilder from "../../components/react/PromptBuilder.tsx";
+
+Okay, after kita dah paham basic understanding of the system architechture usually we want to build it directly but sabar dulu. Kita **Vibe Code sat**.
+
+Vibe code apa? **Mockup**. Mockup ni actually ada mcm2 cara lah kalau dlm SAD kita belajar untuk pakai figma tapi personally aku rasa mcm better pakai AI je untuk mockup **mudah** and **cepat**.
+
+## Kenapa mockup dulu, bukan terus kod?
+
+<div class="not-prose my-8 grid gap-4 sm:grid-cols-3">
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Mudah nak tukar</p>
+    <p class="text-ink-soft mt-2 text-sm leading-relaxed font-bold">Nak warna lain? Prompt je. Dalam kod sebenar nanti, tukar warna boleh sentuh banyak fail.</p>
+  </div>
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">design focus</p>
+    <p class="text-ink-soft mt-2 text-sm leading-relaxed font-bold">masa mockup biasanya kita focus kan dekat design and flow sibijik mcm SAD</p>
+  </div>
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Jadi Rujukan</p>
+    <p class="text-ink-soft mt-2 text-sm leading-relaxed font-bold">Nanti bila dah nak start develop senang sbb kita dah ada design yang kita puas hati</p>
+  </div>
+</div>
+
+## Tool untuk mockup: 4 benda je
+
+Usually for mockup this is what i find the best after building for an unhealthy amount:
+
+<div class="not-prose my-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="border-line rounded-2xl border-2 bg-white p-4 text-center">
+    <span class="font-display bg-[#E34F26]/15 text-[#E34F26] mx-auto grid size-11 place-items-center rounded-2xl text-sm font-semibold">HT</span>
+    <p class="font-display mt-3 text-sm font-semibold">HTML</p>
+    <p class="text-ink-soft text-xs font-bold">rangka page</p>
+  </div>
+  <div class="border-line rounded-2xl border-2 bg-white p-4 text-center">
+    <span class="font-display bg-[#38BDF8]/20 text-[#0284C7] mx-auto grid size-11 place-items-center rounded-2xl text-sm font-semibold">Tw</span>
+    <p class="font-display mt-3 text-sm font-semibold">Tailwind</p>
+    <p class="text-ink-soft text-xs font-bold">warna & susunan</p>
+  </div>
+  <div class="border-line rounded-2xl border-2 bg-white p-4 text-center">
+    <span class="font-display bg-[#528DD7]/15 text-[#528DD7] mx-auto grid size-11 place-items-center rounded-2xl text-sm font-semibold">FA</span>
+    <p class="font-display mt-3 text-sm font-semibold">Font Awesome</p>
+    <p class="text-ink-soft text-xs font-bold">icon</p>
+  </div>
+  <div class="border-line rounded-2xl border-2 bg-white p-4 text-center">
+    <span class="font-display bg-sun/40 text-ink mx-auto grid size-11 place-items-center rounded-2xl text-sm font-semibold">JS</span>
+    <p class="font-display mt-3 text-sm font-semibold">JavaScript</p>
+    <p class="text-ink-soft text-xs font-bold">interaksi</p>
+  </div>
+</div>
+
+Kenapa tak pakai React je terus? Sebab mockup ni **sekejap je**, sebab ingat Mockup ni mmg kita just focus untuk mcm nak tgk design and tgk flow
+
+<Callout variant="warn" title="Jangan tersalah guna">
+Tailwind CDN ni untuk **prototyping je**, bukan untuk production. Website sebenar kena build Tailwind dengan betul — kita buat tu dalam sub-lesson setup nanti. Jangan pulak lepas ni kau live-kan website client guna CDN ni.
+</Callout>
+
+## Prompts
+
+Part paling penting: **macam mana kau suruh opencode buat kerja tu**. Ni template asas — macam yang aku selalu guna:
+
+```text
+build a mockup using html tailwind font awesome and javascript for [PROJEK]
+with this feature [FEATURES]
+i want to use this color [WARNA]
+the design i want it to be [DESIGN]
+```
+
+Simple kan? Tapi realitinya, the more detail prompt you give the better the output.
+
+```text
+Create a mockup in a single index.html file using HTML + Tailwind CSS (CDN) + Font Awesome + vanilla JavaScript.
+
+Project: Gallery Blog — a photo gallery website where users can view, like, and comment on pictures.
+
+Features:
+
+Image grid layout
+
+Folder / category filter
+
+Lightbox modal when clicking on an image
+
+Like and comment functionality
+
+Admin: image upload form
+
+Color Palette:
+
+Background: #FAF7F2
+
+Accent: #4F46E5
+
+Highlight: #F97316
+
+Design: Clean & minimal — plenty of white space and rounded corners.
+
+Ensure it is responsive and uses placeholder images.
+```
+
+ini mcm nak mudahkanlah untuk belajar tapi lagi bagus kalau mcm kau belajar mcm mana nak prompt
+
+<PromptBuilder client:visible />
+
+## Guna opencode
+
+Okay sekarang kita jalankan dia. Kalau kau belum ada opencode, ni step ringkasnya:
+
+<StepList
+  steps={[
+    {
+      title: "Install opencode",
+      body: "Guna npm — cara paling senang dan jalan dalam Windows juga.",
+      code: "npm install -g opencode-ai",
+      note: "Ada juga install script (curl -fsSL https://opencode.ai/install | bash) untuk Mac/Linux. Dalam Windows, WSL bagi pengalaman paling penuh.",
+    },
+    {
+      title: "Sambung model",
+      body: "Run opencode, lepas tu taip /connect untuk pilih provider dan model. Kalau tak sure nak guna model apa, OpenCode Zen ada senarai yang dah diuji.",
+      code: "opencode\n/connect",
+    },
+    {
+      title: "Sediakan folder kosong",
+      body: "Buat folder baru khas untuk mockup — jangan campur dengan projek kod kau.",
+      code: "mkdir mockup-galeri\ncd mockup-galeri\nopencode",
+    },
+    {
+      title: "Paste prompt",
+      body: "Copy prompt dari Prompt Builder tadi, paste dalam opencode dan tekan enter. Biar dia buat kerja — dia akan create fail index.html.",
+    },
+    {
+      title: "Buka dalam browser",
+      body: "Tengok hasilnya. Dalam Windows, run command dalam folder tu. Mac: guna open index.html.",
+      code: "start index.html",
+      note: "Atau double-click je fail index.html tu.",
+    },
+    {
+      title: "Tak kena? Jangan edit sendiri",
+      body: "Cakap je kat opencode apa yang tak kena: \"warna terlalu gelap, tukar ke krim\". Kalau dia tersasar jauh, taip /undo dan prompt balik.",
+    },
+  ]}
+/>
+
+<Callout variant="tip" title="Kau tak payah paham kod tu lagi">
+Ni mockup — kita fokus pada **rupa dan flow**. Kau tak perlu faham setiap line HTML yang opencode hasilkan. Faham bila masuk sub-lesson build nanti.
+</Callout>
+
+## Iterate tu normal
+
+Kebanyakan orang expect prompt pertama terus perfect. Realitinya tak — dan takpe. Ni contoh sesi sebenar, perhatikan cara dia cakap:
+
+<IterateChat />
+
+<Callout variant="note" title="Rule of thumb">
+Kalau kau rasa nak taip 5 perubahan dalam satu mesej, pecahkan jadi satu-satu. Opencode — dan mana-mana AI — lebih tepat bila arahan kecil dan spesifik.
+</Callout>
+
+## Hasil sebenar
+
+Ni contoh mockup yang aku hasilkan guna prompt default dalam builder tadi. Betul-betul output, takde edit tangan:
+
+<MockupEmbed />
+
+Perasan tak? Dia nampak macam website betul, tapi takde apa di belakang. Refresh pun data balik asal. Tu mockup — dan tu memang tujuannya.
+
+## Bila mockup dah cukup
+
+Jangan over-polish. Mockup ada titik **cukup** — lepas tu kita move on. Checklist:
+
+<Checklist
+  storageKey="jom-mula-mockup-checklist"
+  items={[
+    "Semua page ada (visitor + admin)",
+    "Flow utama boleh klik — filter, buka gambar, upload",
+    "Warna konsisten, takde warna random",
+    "Nampak ok dalam phone",
+    "Aku faham setiap bahagian buat apa",
+  ]}
+  client:visible
+/>
+
+Kalau semua dah tick — kau dah ready untuk sub-lesson seterusnya.
+
+## Recap
+
+<RecapCards
+  points={[
+    "Mockup = blueprint. Bukan website sebenar, takde data.",
+    "Tool: HTML + Tailwind CDN + Font Awesome + JavaScript.",
+    "Resepi prompt: tool, projek, features, warna, design.",
+    "Guna opencode: paste prompt, tengok hasil, iterate.",
+    "Prompt pertama jarang sempurna — refine sikit-sikit.",
+  ]}
+/>
+
+Dalam sub-lesson seterusnya, kita mula bina benda sebenar: setup monorepo, React dan Express. Kod, akhirnya.

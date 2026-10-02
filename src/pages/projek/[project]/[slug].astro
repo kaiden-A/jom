@@ -1,11 +1,11 @@
 ---
 import { getCollection, render } from "astro:content";
-import LessonLayout from "../../layouts/LessonLayout.astro";
+import LessonLayout from "../../../layouts/LessonLayout.astro";
 
 export async function getStaticPaths() {
   const lessons = await getCollection("lessons", ({ data }) => !data.draft);
   return lessons.map((entry) => ({
-    params: { slug: entry.data.slug },
+    params: { project: entry.data.project, slug: entry.data.slug },
     props: { entry },
   }));
 }

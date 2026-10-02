@@ -2,28 +2,43 @@
 import type { CollectionEntry } from "astro:content";
 import BaseLayout from "./BaseLayout.astro";
 import Sidebar from "../components/site/Sidebar.astro";
+import NextLesson from "../components/lesson/NextLesson.astro";
+import { getProject } from "../data/projects";
+import { getPublishedLessons, lessonsOf, projectUrl } from "../utils/lessons";
 
 interface Props {
   entry: CollectionEntry<"lessons">;
 }
 
 const { entry } = Astro.props;
-const { title, slug, lesson, summary, duration, tags, updated } = entry.data;
-const lessonNumber = String(lesson).padStart(2, "0");
+const { title, slug, project, order, summary, duration, tags, updated } =
+  entry.data;
+const projectMeta = getProject(project);
+const projectTitle = projectMeta?.title ?? project;
+const lessonNumber = String(order).padStart(2, "0");
+
+const all = await getPublishedLessons();
+const siblings = lessonsOf(all, project);
+const index = siblings.findIndex((l) => l.data.slug === slug);
+const prev = index > 0 ? siblings[index - 1] : undefined;
+const next = index < siblings.length - 1 ? siblings[index + 1] : undefined;
+const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
 ---
 
-<BaseLayout title={`${title} · Jom Mula`} description={summary}>
+<BaseLayout title={`${title} · ${projectTitle} · Jom Mula`} description={summary}>
   <section class="border-line bg-brand-soft/60 border-b">
     <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
       <nav class="text-ink-soft text-sm font-bold" aria-label="Breadcrumb">
         <a href="/" class="hover:text-brand transition-colors">Utama</a>
         <span class="mx-1.5" aria-hidden="true">›</span>
-        <span class="text-ink">Lesson {lessonNumber}</span>
+        <a href="/#projek" class="hover:text-brand transition-colors">{projectTitle}</a>
+        <span class="mx-1.5" aria-hidden="true">›</span>
+        <span class="text-ink">Sub-lesson {lessonNumber}</span>
       </nav>
       <p
         class="font-display text-brand-deep mt-5 text-xs font-semibold tracking-widest uppercase"
       >
-        Lesson {lessonNumber} · Gambaran besar
+        {projectTitle} · Sub-lesson {lessonNumber}
       </p>
       <h1
         class="font-display mt-2 max-w-3xl text-3xl leading-tight font-semibold sm:text-5xl"
@@ -72,9 +87,52 @@ const lessonNumber = String(lesson).padStart(2, "0");
   <div
     class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-14"
   >
-    <Sidebar currentSlug={slug} />
+    <Sidebar currentProject={project} currentSlug={slug} />
     <article class="lesson-prose min-w-0">
       <slot />
+
+      <div class="not-prose border-line mt-14 space-y-5 border-t-2 border-dashed pt-8">
+        {
+          prev && (
+            <a
+              href={projectUrl(project, prev.data.slug)}
+              class="text-ink-soft hover:text-brand inline-flex items-center gap-2 text-sm font-bold transition-colors"
+            >
+              <svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M16 10H5M9 5l-5 5 5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              Sebelum: {prev.data.title}
+            </a>
+          )
+        }
+
+        {
+          next ? (
+            <NextLesson
+              number={next.data.order}
+              title={next.data.title}
+              blurb={next.data.summary}
+              href={projectUrl(project, next.data.slug)}
+            />
+          ) : upcomingNext ? (
+            <NextLesson
+              number={upcomingNext.order}
+              title={upcomingNext.title}
+              blurb={upcomingNext.blurb}
+            />
+          ) : (
+            <p class="text-ink-soft text-sm font-bold">
+              Ni sub-lesson terakhir buat masa ni. Yang seterusnya tengah dimasak.
+            </p>
+          )
+        }
+      </div>
     </article>
   </div>
 </BaseLayout>

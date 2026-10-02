@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="ms">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Galeri Kita — Mockup</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style type="text/tailwindcss">
+      @theme {
+        --color-paper: #faf7f2;
+        --color-ink: #221c46;
+        --color-brand: #4f46e5;
+        --color-accent: #f97316;
+        --color-line: #e8e3f0;
+        --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-paper text-ink font-sans antialiased">
+    <!-- NAV -->
+    <header
+      class="border-line/70 bg-paper/90 sticky top-0 z-40 border-b backdrop-blur-md"
+    >
+      <div
+        class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4"
+      >
+        <a href="#" class="flex items-center gap-2.5">
+          <span
+            class="bg-brand grid size-9 place-items-center rounded-xl text-white"
+          >
+            <i class="fa-solid fa-camera-retro text-sm"></i>
+          </span>
+          <span class="text-lg font-extrabold tracking-tight">
+            Galeri<span class="text-brand">Kita</span>
+          </span>
+        </a>
+        <div class="flex items-center gap-2">
+          <span
+            id="modeLabel"
+            class="text-ink-soft/60 hidden text-xs font-bold sm:inline"
+            >Visitor</span
+          >
+          <button
+            id="adminToggle"
+            class="border-line hover:border-brand hover:text-brand inline-flex min-h-10 items-center gap-2 rounded-full border-2 bg-white px-4 text-sm font-bold transition-colors"
+          >
+            <i class="fa-solid fa-user-shield"></i>
+            <span id="adminToggleText">Admin</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- VISITOR -->
+    <main id="visitorView">
+      <section class="mx-auto max-w-6xl px-4 pt-12 pb-8 text-center sm:pt-16">
+        <span
+          id="heroCount"
+          class="border-line inline-flex items-center gap-2 rounded-full border bg-white px-3.5 py-1.5 text-xs font-bold"
+        >
+          <span class="size-2 rounded-full bg-emerald-400"></span>
+          9 gambar · 4 folder
+        </span>
+        <h1
+          class="mx-auto mt-5 max-w-2xl text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl"
+        >
+          Gambar-gambar <span class="text-brand">aku</span>, dalam satu tempat.
+        </h1>
+        <p class="text-ink-soft/70 mx-auto mt-4 max-w-xl text-sm sm:text-base">
+          Tengok, like dan komen. Semua orang boleh masuk — takde login.
+        </p>
+      </section>
+
+      <section class="mx-auto max-w-6xl px-4 pb-16">
+        <div id="folderBar" class="flex gap-2 overflow-x-auto pb-1"></div>
+        <div
+          id="grid"
+          class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+        ></div>
+      </section>
+    </main>
+
+    <!-- ADMIN -->
+    <main id="adminView" class="hidden">
+      <section class="mx-auto max-w-6xl px-4 py-10">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p
+              class="text-brand text-xs font-extrabold tracking-widest uppercase"
+            >
+              Admin panel
+            </p>
+            <h1 class="mt-1 text-2xl font-extrabold sm:text-3xl">
+              Urus gambar
+            </h1>
+          </div>
+          <button
+            id="backVisitor"
+            class="border-line hover:border-brand hover:text-brand inline-flex min-h-10 items-center gap-2 rounded-full border-2 bg-white px-4 text-sm font-bold transition-colors"
+          >
+            <i class="fa-solid fa-eye"></i>
+            Tengok public page
+          </button>
+        </div>
+
+        <div class="mt-6 grid grid-cols-3 gap-3">
+          <div class="border-line rounded-2xl border-2 bg-white p-4">
+            <span
+              class="bg-brand/10 text-brand grid size-9 place-items-center rounded-xl"
+            >
+              <i class="fa-solid fa-images text-sm"></i>
+            </span>
+            <p id="statPhotos" class="mt-3 text-2xl font-extrabold">0</p>
+            <p class="text-ink-soft/60 text-xs font-bold">Gambar</p>
+          </div>
+          <div class="border-line rounded-2xl border-2 bg-white p-4">
+            <span
+              class="bg-rose-100 text-rose-500 grid size-9 place-items-center rounded-xl"
+            >
+              <i class="fa-solid fa-heart text-sm"></i>
+            </span>
+            <p id="statLikes" class="mt-3 text-2xl font-extrabold">0</p>
+            <p class="text-ink-soft/60 text-xs font-bold">Like</p>
+          </div>
+          <div class="border-line rounded-2xl border-2 bg-white p-4">
+            <span
+              class="bg-emerald-100 text-emerald-600 grid size-9 place-items-center rounded-xl"
+            >
+              <i class="fa-solid fa-comment text-sm"></i>
+            </span>
+            <p id="statComments" class="mt-3 text-2xl font-extrabold">0</p>
+            <p class="text-ink-soft/60 text-xs font-bold">Komen</p>
+          </div>
+        </div>
+
+        <form
+          id="uploadForm"
+          class="border-line mt-6 rounded-2xl border-2 bg-white p-5 sm:p-6"
+        >
+          <p class="font-extrabold">Upload gambar baru</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label for="titleInput" class="text-xs font-bold uppercase"
+                >Title</label
+              >
+              <input
+                id="titleInput"
+                type="text"
+                placeholder="Contoh: Sunset kat jeti"
+                class="border-line focus:border-brand mt-1.5 w-full rounded-xl border-2 px-3 py-2.5 text-sm font-semibold outline-none"
+              />
+            </div>
+            <div>
+              <label for="folderSelect" class="text-xs font-bold uppercase"
+                >Folder</label
+              >
+              <select
+                id="folderSelect"
+                class="border-line focus:border-brand mt-1.5 w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm font-semibold outline-none"
+              ></select>
+            </div>
+          </div>
+
+          <label
+            class="border-line hover:border-brand/60 mt-4 block cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors"
+          >
+            <i class="fa-solid fa-cloud-arrow-up text-brand text-2xl"></i>
+            <p class="mt-2 text-sm font-bold">
+              Klik untuk pilih gambar
+              <span id="fileName" class="text-ink-soft/50"
+                >(mockup je — fail tak dihantar ke mana-mana)</span
+              >
+            </p>
+            <input id="fileInput" type="file" accept="image/*" class="hidden" />
+          </label>
+
+          <button
+            type="submit"
+            class="bg-accent hover:bg-accent/90 mt-4 inline-flex min-h-11 items-center gap-2 rounded-full px-6 text-sm font-extrabold text-white transition-colors"
+          >
+            <i class="fa-solid fa-upload"></i>
+            Upload gambar
+          </button>
+        </form>
+
+        <ul id="adminList" class="mt-6 space-y-2"></ul>
+      </section>
+    </main>
+
+    <!-- LIGHTBOX -->
+    <div
+      id="lightbox"
+      class="bg-ink/70 fixed inset-0 z-50 hidden place-items-center p-3 backdrop-blur-sm sm:p-6"
+    >
+      <div
+        id="lbPanel"
+        class="max-h-[92dvh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl md:grid md:grid-cols-[1.2fr_1fr] md:overflow-hidden"
+      >
+        <div class="bg-ink/5 relative">
+          <img
+            id="lbImg"
+            src=""
+            alt=""
+            class="h-56 w-full object-cover sm:h-72 md:h-full md:min-h-[440px]"
+          />
+          <span
+            id="lbFolder"
+            class="bg-paper/90 absolute top-3 left-3 rounded-full px-3 py-1 text-xs font-bold backdrop-blur-sm"
+          ></span>
+        </div>
+        <div class="flex min-h-0 flex-col md:max-h-[80dvh]">
+          <div
+            class="border-line flex items-start justify-between gap-3 border-b px-5 py-4"
+          >
+            <h2 id="lbTitle" class="text-xl leading-snug font-extrabold"></h2>
+            <button
+              id="lbClose"
+              aria-label="Tutup"
+              class="border-line text-ink-soft hover:text-ink grid size-11 shrink-0 place-items-center rounded-full border-2 bg-white transition-colors"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div
+            class="border-line flex items-center justify-between border-b px-5 py-3"
+          >
+            <button
+              id="lbLike"
+              class="border-line hover:border-rose-300 hover:text-rose-500 inline-flex min-h-11 items-center gap-2 rounded-full border-2 bg-white px-4 text-sm font-bold transition-colors"
+            >
+              <i class="fa-heart" id="lbLikeIcon"></i>
+              <span id="lbLikeCount">0</span>
+            </button>
+            <span id="lbCommentCount" class="text-ink-soft/60 text-sm font-bold"
+              >0 komen</span
+            >
+          </div>
+          <div
+            id="lbComments"
+            class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4"
+          ></div>
+          <form
+            id="commentForm"
+            class="border-line flex items-center gap-2 border-t px-4 py-3"
+          >
+            <label for="commentInput" class="sr-only">Tulis komen</label>
+            <input
+              id="commentInput"
+              type="text"
+              placeholder="Tulis komen sebagai 'Kau'..."
+              class="border-line focus:border-brand min-h-11 min-w-0 flex-1 rounded-full border-2 px-4 text-sm font-semibold outline-none"
+            />
+            <button
+              type="submit"
+              aria-label="Hantar komen"
+              class="bg-brand hover:bg-brand/90 grid size-11 shrink-0 place-items-center rounded-full text-white transition-colors"
+            >
+              <i class="fa-solid fa-paper-plane text-sm"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="toast"
+      class="bg-ink pointer-events-none fixed bottom-6 left-1/2 z-50 hidden -translate-x-1/2 rounded-full px-4 py-2 text-sm font-bold text-white shadow-lg"
+    ></div>
+
+    <footer class="border-line mt-10 border-t py-8 text-center">
+      <p class="text-ink-soft/50 mx-auto max-w-md px-4 text-xs font-bold">
+        Mockup je — takde database di belakang. Refresh, data balik asal.
+        Dibina guna HTML + Tailwind + Font Awesome + JavaScript.
+      </p>
+    </footer>
+
+    <script>
+      const fallbackClass =
+        "bg-linear-to-br from-indigo-200 to-sky-200 text-white grid place-items-center aspect-[4/3] w-full";
+
+      const folders = ["Semua", "Alam", "Makanan", "Kucing", "Jalanan"];
+
+      let photos = [
+        {
+          id: 1,
+          title: "Pagi kat gunung",
+          folder: "Alam",
+          seed: "gunung-pagi",
+          likes: 12,
+          liked: false,
+          comments: [
+            { author: "Aiman", text: "Fuh cantik gila.", time: "2 jam lalu" },
+            { author: "Siti", text: "Warna dia kena betul.", time: "1 jam lalu" },
+          ],
+        },
+        {
+          id: 2,
+          title: "Sunset tepi pantai",
+          folder: "Alam",
+          seed: "pantai-sunset",
+          likes: 24,
+          liked: true,
+          comments: [
+            { author: "Hafiz", text: "Ni wallpaper phone aku dah.", time: "semalam" },
+          ],
+        },
+        {
+          id: 3,
+          title: "Nasi lemak pagi",
+          folder: "Makanan",
+          seed: "nasi-lemak",
+          likes: 31,
+          liked: false,
+          comments: [],
+        },
+        {
+          id: 4,
+          title: "Kopi ais",
+          folder: "Makanan",
+          seed: "kopi-ais",
+          likes: 8,
+          liked: false,
+          comments: [],
+        },
+        {
+          id: 5,
+          title: "Kucing jiran",
+          folder: "Kucing",
+          seed: "kucing-jiran",
+          likes: 45,
+          liked: true,
+          comments: [
+            { author: "Mei", text: "Gemuknya! Nama dia apa?", time: "3 jam lalu" },
+          ],
+        },
+        {
+          id: 6,
+          title: "Kucing gemuk",
+          folder: "Kucing",
+          seed: "kucing-gemuk",
+          likes: 19,
+          liked: false,
+          comments: [],
+        },
+        {
+          id: 7,
+          title: "Lorong belakang",
+          folder: "Jalanan",
+          seed: "lorong-belakang",
+          likes: 6,
+          liked: false,
+          comments: [],
+        },
+        {
+          id: 8,
+          title: "Hujan kat bandar",
+          folder: "Jalanan",
+          seed: "hujan-bandar",
+          likes: 14,
+          liked: false,
+          comments: [],
+        },
+        {
+          id: 9,
+          title: "Kabus pagi",
+          folder: "Alam",
+          seed: "kabus-pagi",
+          likes: 10,
+          liked: false,
+          comments: [],
+        },
+      ];
+
+      let activeFolder = "Semua";
+      let mode = "visitor";
+      let openId = null;
+      let nextId = 100;
+      let toastTimer = null;
+
+      const $ = (id) => document.getElementById(id);
+      const grid = $("grid");
+      const folderBar = $("folderBar");
+
+      function photoUrl(photo, size) {
+        return `https://picsum.photos/seed/${photo.seed}/${size}/${Math.round(
+          (size * 3) / 4,
+        )}`;
+      }
+
+      function wireImgFallback(root) {
+        root.querySelectorAll("img[data-fallback]").forEach((img) => {
+          img.onerror = () => {
+            const div = document.createElement("div");
+            div.className = img.dataset.fallback;
+            div.innerHTML = '<i class="fa-solid fa-image text-2xl"></i>';
+            img.replaceWith(div);
+          };
+        });
+      }
+
+      function toast(message) {
+        const el = $("toast");
+        el.textContent = message;
+        el.classList.remove("hidden");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add("hidden"), 2200);
+      }
+
+      function visiblePhotos() {
+        return activeFolder === "Semua"
+          ? photos
+          : photos.filter((p) => p.folder === activeFolder);
+      }
+
+      function renderFolders() {
+        folderBar.innerHTML = folders
+          .map((folder) => {
+            const count =
+              folder === "Semua"
+                ? photos.length
+                : photos.filter((p) => p.folder === folder).length;
+            const active = folder === activeFolder;
+            return `
+              <button data-folder="${folder}" class="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border-2 px-3.5 text-sm font-bold transition-colors ${
+                active
+                  ? "border-ink bg-ink text-white"
+                  : "border-line text-ink-soft hover:border-ink/40 hover:text-ink bg-white"
+              }">
+                ${folder}
+                <span class="text-[11px] ${active ? "text-white/70" : "text-ink-soft/60"}">${count}</span>
+              </button>`;
+          })
+          .join("");
+      }
+
+      function renderHero() {
+        $("heroCount").innerHTML = `
+          <span class="size-2 rounded-full bg-emerald-400"></span>
+          ${photos.length} gambar · ${folders.length - 1} folder`;
+      }
+
+      function renderGrid() {
+        const list = visiblePhotos();
+        if (list.length === 0) {
+          grid.innerHTML = `
+            <div class="border-line col-span-full grid place-items-center rounded-2xl border-2 border-dashed bg-white/60 px-6 py-14 text-center">
+              <i class="fa-regular fa-images text-ink-soft/40 text-3xl"></i>
+              <p class="mt-3 font-extrabold">Belum ada gambar dalam folder ni</p>
+              <p class="text-ink-soft/60 mt-1 text-sm font-bold">Pergi Admin, upload satu.</p>
+            </div>`;
+          return;
+        }
+        grid.innerHTML = list
+          .map(
+            (photo) => `
+            <button data-open="${photo.id}" class="group border-line hover:border-brand/50 relative overflow-hidden rounded-2xl border-2 bg-white text-left transition-all duration-200 hover:-translate-y-1">
+              <img data-fallback="${fallbackClass}" src="${photoUrl(photo, 600)}" alt="${photo.title}" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <span class="from-ink/75 pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent p-3 pt-9">
+                <span class="block truncate text-sm font-extrabold text-white">${photo.title}</span>
+                <span class="block text-[11px] font-bold text-white/80">${photo.folder}</span>
+              </span>
+              <span class="text-ink absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold backdrop-blur-sm">
+                <i class="fa-heart ${photo.liked ? "text-rose-500" : ""} text-[10px]"></i>
+                ${photo.likes}
+              </span>
+            </button>`,
+          )
+          .join("");
+        wireImgFallback(grid);
+      }
+
+      function renderAdmin() {
+        const totalLikes = photos.reduce((sum, p) => sum + p.likes, 0);
+        const totalComments = photos.reduce((sum, p) => sum + p.comments.length, 0);
+        $("statPhotos").textContent = photos.length;
+        $("statLikes").textContent = totalLikes;
+        $("statComments").textContent = totalComments;
+
+        $("folderSelect").innerHTML = folders
+          .filter((f) => f !== "Semua")
+          .map((f) => `<option value="${f}">${f}</option>`)
+          .join("");
+
+        $("adminList").innerHTML = [...photos]
+          .reverse()
+          .map(
+            (photo) => `
+            <li class="border-line flex items-center gap-3 rounded-2xl border-2 bg-white p-2.5">
+              <img data-fallback="size-14 shrink-0 rounded-xl bg-linear-to-br from-indigo-200 to-sky-200 grid place-items-center text-white" src="${photoUrl(photo, 112)}" alt="" class="size-14 shrink-0 rounded-xl object-cover" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-extrabold">${photo.title}</p>
+                <p class="text-ink-soft/60 text-xs font-bold">${photo.folder} · ${photo.likes} like · ${photo.comments.length} komen</p>
+              </div>
+              <button data-delete="${photo.id}" aria-label="Padam ${photo.title}" class="text-ink-soft/50 hover:text-rose-500 grid size-11 shrink-0 place-items-center rounded-xl transition-colors">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </li>`,
+          )
+          .join("");
+        wireImgFallback($("adminList"));
+      }
+
+      function setMode(next) {
+        mode = next;
+        $("visitorView").classList.toggle("hidden", mode !== "visitor");
+        $("adminView").classList.toggle("hidden", mode !== "admin");
+        $("modeLabel").textContent = mode === "visitor" ? "Visitor" : "Admin";
+        $("adminToggleText").textContent =
+          mode === "visitor" ? "Admin" : "Visitor";
+      }
+
+      function openLightbox(id) {
+        openId = id;
+        const photo = photos.find((p) => p.id === id);
+        if (!photo) return;
+        $("lbImg").src = photoUrl(photo, 1000);
+        $("lbImg").alt = photo.title;
+        $("lbFolder").textContent = photo.folder;
+        $("lbTitle").textContent = photo.title;
+        renderLightbox();
+        const box = $("lightbox");
+        box.classList.remove("hidden");
+        box.classList.add("grid");
+        $("lbClose").focus();
+      }
+
+      function closeLightbox() {
+        openId = null;
+        const box = $("lightbox");
+        box.classList.add("hidden");
+        box.classList.remove("grid");
+      }
+
+      function renderLightbox() {
+        const photo = photos.find((p) => p.id === openId);
+        if (!photo) return;
+        $("lbLikeCount").textContent = photo.likes;
+        $("lbLikeIcon").className = photo.liked
+          ? "fa-solid fa-heart text-rose-500"
+          : "fa-regular fa-heart";
+        $("lbCommentCount").textContent = `${photo.comments.length} komen`;
+        $("lbComments").innerHTML =
+          photo.comments.length === 0
+            ? `<p class="text-ink-soft/50 py-6 text-center text-sm font-bold">Belum ada komen. Jadi orang pertama.</p>`
+            : photo.comments
+                .map(
+                  (c) => `
+                  <div class="flex gap-3">
+                    <span class="bg-brand/10 text-brand grid size-9 shrink-0 place-items-center rounded-full text-sm font-extrabold">${c.author.charAt(0)}</span>
+                    <div class="bg-paper/80 min-w-0 flex-1 rounded-2xl px-3.5 py-2.5">
+                      <p class="flex items-baseline gap-2">
+                        <span class="text-sm font-extrabold">${c.author}</span>
+                        <span class="text-ink-soft/50 text-xs font-bold">${c.time}</span>
+                      </p>
+                      <p class="text-ink-soft/80 mt-0.5 text-sm">${c.text}</p>
+                    </div>
+                  </div>`,
+                )
+                .join("");
+      }
+
+      function toggleLike() {
+        const photo = photos.find((p) => p.id === openId);
+        if (!photo) return;
+        photo.liked = !photo.liked;
+        photo.likes += photo.liked ? 1 : -1;
+        renderLightbox();
+        renderGrid();
+      }
+
+      function addComment(text) {
+        const photo = photos.find((p) => p.id === openId);
+        if (!photo) return;
+        photo.comments.push({ author: "Kau", text, time: "baru je" });
+        renderLightbox();
+      }
+
+      document.addEventListener("click", (e) => {
+        const folderBtn = e.target.closest("[data-folder]");
+        if (folderBtn) {
+          activeFolder = folderBtn.dataset.folder;
+          renderFolders();
+          renderGrid();
+          return;
+        }
+
+        const openBtn = e.target.closest("[data-open]");
+        if (openBtn) {
+          openLightbox(Number(openBtn.dataset.open));
+          return;
+        }
+
+        const deleteBtn = e.target.closest("[data-delete]");
+        if (deleteBtn) {
+          const id = Number(deleteBtn.dataset.delete);
+          photos = photos.filter((p) => p.id !== id);
+          renderAdmin();
+          renderGrid();
+          renderHero();
+          toast("Gambar dah dipadam (mockup je).");
+        }
+      });
+
+      $("adminToggle").addEventListener("click", () => {
+        setMode(mode === "visitor" ? "admin" : "visitor");
+      });
+      $("backVisitor").addEventListener("click", () => setMode("visitor"));
+
+      $("uploadForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = $("titleInput").value.trim();
+        const folder = $("folderSelect").value;
+        if (!title) {
+          toast("Isi title dulu.");
+          return;
+        }
+        photos.push({
+          id: nextId++,
+          title,
+          folder,
+          seed: `mockup-${Date.now()}`,
+          likes: 0,
+          liked: false,
+          comments: [],
+        });
+        $("titleInput").value = "";
+        $("fileName").textContent = "(mockup je — fail tak dihantar ke mana-mana)";
+        renderAdmin();
+        renderGrid();
+        renderHero();
+        toast("Gambar dah masuk! Tengok public page.");
+      });
+
+      $("fileInput").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        $("fileName").textContent = file ? `— ${file.name}` : "";
+      });
+
+      $("lbClose").addEventListener("click", closeLightbox);
+      $("lightbox").addEventListener("click", (e) => {
+        if (e.target === $("lightbox")) closeLightbox();
+      });
+      $("lbLike").addEventListener("click", toggleLike);
+      $("commentForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const value = $("commentInput").value.trim();
+        if (!value) return;
+        addComment(value);
+        $("commentInput").value = "";
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && openId !== null) closeLightbox();
+      });
+
+      renderHero();
+      renderFolders();
+      renderGrid();
+      renderAdmin();
+    </script>
+  </body>
+</html>

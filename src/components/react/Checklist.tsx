@@ -10,19 +10,21 @@ const defaultItems = [
   "Masa 5-10 minit sehari, secara konsisten",
 ];
 
-const STORAGE_KEY = "jom-mula-checklist";
-
 interface Props {
   items?: string[];
+  storageKey?: string;
 }
 
-export default function Checklist({ items = defaultItems }: Props) {
+export default function Checklist({
+  items = defaultItems,
+  storageKey = "jom-mula-checklist",
+}: Props) {
   const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false));
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(storageKey);
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -33,17 +35,16 @@ export default function Checklist({ items = defaultItems }: Props) {
       // localStorage tak available — takpe, demo je
     }
     setReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storageKey, items]);
 
   useEffect(() => {
     if (!ready) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+      window.localStorage.setItem(storageKey, JSON.stringify(checked));
     } catch {
       // ignore
     }
-  }, [checked, ready]);
+  }, [checked, ready, storageKey]);
 
   const count = checked.filter(Boolean).length;
   const pct = Math.round((count / items.length) * 100);
