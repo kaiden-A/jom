@@ -1,0 +1,61 @@
+---
+const tree = [
+  [{ text: "gallery-blog/", type: "root", comment: "" }],
+  [
+    { text: "├─ apps/", type: "folder", comment: "semua app dalam satu tempat" },
+  ],
+  [
+    { text: "│  ├─ web/", type: "folder", comment: "React — public site + admin UI" },
+  ],
+  [{ text: "│  │  ├─ src/", type: "folder", comment: "" }],
+  [{ text: "│  │  └─ package.json", type: "file", comment: "dependencies untuk web" }],
+  [{ text: "│  └─ api/", type: "folder", comment: "Express — REST API" }],
+  [{ text: "│     ├─ src/", type: "folder", comment: "" }],
+  [{ text: "│     └─ package.json", type: "file", comment: "dependencies untuk api" }],
+  [
+    { text: "├─ packages/", type: "folder", comment: "barang yang dikongsi" },
+  ],
+  [{ text: "│  └─ shared/", type: "folder", comment: "types & helper kongsi" }],
+  [
+    { text: "├─ package.json", type: "file", comment: "scripts untuk semua app" },
+  ],
+  [{ text: "└─ README.md", type: "file", comment: "cara nak run projek" }],
+];
+---
+
+<div class="not-prose my-8">
+  <div class="clay overflow-x-auto p-5">
+    <p class="text-ink-soft mb-3 text-xs font-bold tracking-widest uppercase">
+      Struktur repo
+    </p>
+    <pre class="font-mono text-[12.5px] leading-7"><code>{tree.map((line) => (
+        <span class="block whitespace-nowrap">{line.map((part) => (
+          <>
+            <span
+              class:list={[
+                part.type === "folder" && "text-brand font-bold",
+                part.type === "file" && "text-ink",
+                part.type === "root" && "text-ink font-bold",
+              ]}
+            >
+              {part.text}
+            </span>
+            {part.comment && (
+              <span class="text-ink-soft/70"> {part.comment}</span>
+            )}
+          </>
+        ))}</span>
+      ))}</code></pre>
+  </div>
+  <div class="mt-3 flex flex-wrap gap-2">
+    <span class="border-line rounded-full border bg-white px-3 py-1 text-xs font-bold">
+      <span class="text-brand font-mono">apps/web</span> = React
+    </span>
+    <span class="border-line rounded-full border bg-white px-3 py-1 text-xs font-bold">
+      <span class="text-brand font-mono">apps/api</span> = Express
+    </span>
+    <span class="border-line rounded-full border bg-white px-3 py-1 text-xs font-bold">
+      <span class="text-brand font-mono">packages/shared</span> = kongsi
+    </span>
+  </div>
+</div>

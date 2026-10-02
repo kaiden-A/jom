@@ -1,0 +1,57 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-line mt-24 border-t">
+  <div
+    class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]"
+  >
+    <div>
+      <p class="font-display text-lg font-semibold">
+        Jom<span class="text-brand">Mula</span>
+      </p>
+      <p class="text-ink-soft mt-2 max-w-xs text-sm leading-relaxed">
+        Tutorial santai dalam BM. Faham flow dulu, kod kemudian. Sikit-sikit,
+        lama-lama jadi.
+      </p>
+    </div>
+    <div>
+      <p class="font-display text-sm font-semibold tracking-wide uppercase">
+        Lessons
+      </p>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li>
+          <a
+            href="/lessons/gallery-blog"
+            class="text-ink-soft hover:text-brand font-bold transition-colors"
+          >
+            01 · Gallery Blog
+          </a>
+        </li>
+        <li>
+          <a
+            href="/#roadmap"
+            class="text-ink-soft hover:text-brand font-bold transition-colors"
+          >
+            Lesson seterusnya
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <p class="font-display text-sm font-semibold tracking-wide uppercase">
+        Guna
+      </p>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        <li>Astro + React</li>
+        <li>Tailwind CSS</li>
+        <li>Demo tanpa backend</li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-line/70 border-t">
+    <p class="text-ink-soft mx-auto max-w-6xl px-4 py-5 text-xs sm:px-6">
+      © {year} Jom Mula. Buat dengan sabar dan banyak kopi.
+    </p>
+  </div>
+</footer>

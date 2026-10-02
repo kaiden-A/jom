@@ -1,0 +1,142 @@
+---
+title: "Gallery Blog: dari idea sampai flow"
+slug: "gallery-blog"
+lesson: 1
+summary: "Kita bedah dulu apa benda yang kita nak buat, macam mana orang guna dia, dan tech stack apa yang kita pakai. Kod nanti — faham dulu."
+duration: "5 minit baca"
+tags: ["Gambaran besar", "Tanpa kod"]
+updated: "Oktober 2026"
+draft: false
+---
+
+import Callout from "../../components/lesson/Callout.astro";
+import TwoSides from "../../components/lesson/TwoSides.astro";
+import TechStackCards from "../../components/lesson/TechStackCards.astro";
+import RepoTree from "../../components/lesson/RepoTree.astro";
+import RecapCards from "../../components/lesson/RecapCards.astro";
+import NextLesson from "../../components/lesson/NextLesson.astro";
+import Checklist from "../../components/react/Checklist.tsx";
+import NamePicker from "../../components/react/NamePicker.tsx";
+import FlowSteps from "../../components/react/FlowSteps.tsx";
+import ArchDiagram from "../../components/react/ArchDiagram.tsx";
+import GalleryDemo from "../../components/react/GalleryDemo.tsx";
+
+Okay harini kita nak belajar pasal macam mana nak buat **gallery blog** — haa, tu pun aku tak tau nak kasi nama apa yang sesuai. Nanti kita pilih sama-sama.
+
+Okay berdasarkan yang kau cakap hari tu kan — basically kau nak buat website yang orang boleh **tgk gambar-gambar** yang kau post, and boleh **comment** or maybe **like**. But you want to build it in your own design kann. Sooo its very simple actually — but let think it in flow, macam mana a user akan guna dia.
+
+<Callout variant="note" title="Cara baca lesson ni">
+Takde kod dalam lesson ni. Ni sesi faham bentuk dulu — sebab kalau kau faham flow, kod tu cuma alat. Jangan rush.
+</Callout>
+
+## Nama dulu — sebab ni yang paling susah
+
+Ni part paling susah sebenarnya. Bukan kod — nama. Tekan mana-mana satu yang kau rasa kena:
+
+<NamePicker client:visible />
+
+<Callout variant="tip" title="Fun fact">
+Banyak projek tak siap bukan sebab kod susah tau, tapi sebab nak pilih nama je dah 3 hari. Jangan jadi macam tu. Pilih satu, jalan terus.
+</Callout>
+
+## Apa yang projek ni kena ada
+
+Okay senang cerita — ni senarai benda yang projek ni kena boleh buat. Tick la yang kau dah ada:
+
+<Checklist client:visible />
+
+Yang belum ada tu tak kisah langsung. Kita akan setup satu-satu dalam lesson akan datang.
+
+## Flow: macam mana orang guna website ni
+
+First we need to understand that bila kau masuk website tu, obviously benda yang orang akan nampak adalah **gambar-gambar** etc. And then maybe die boleh **open gambar tu** and comment or like, dan sebagainya.
+
+Tapi ingat — flow dia bukan satu, tapi **dua**. Ada flow visitor, dan ada flow admin (kau). Tekan tab tu dan tengok satu-satu:
+
+<FlowSteps client:visible />
+
+Haa tu je sebenarnya flow dia. Simple kan?
+
+## Tapi tunggu — gambar tu datang dari mana?
+
+Ni part yang orang selalu terlepas pandang. Visitor nampak gambar je — tapi macam mana gambar tu sampai ke sana?
+
+<Callout variant="haa" title="Haa!">
+**but die ada lagi satu component which is? haa — the mechanism on how to post picture.**
+
+So in simple term, kau perlukan juga **admin section** — where maybe kau boleh customize that page, or post new photo etc. Sebab kalau takde admin section, setiap kali nak upload gambar kena edit kod? No.
+</Callout>
+
+So sekarang kau ada dua bahagian besar yang jelas:
+
+<TwoSides />
+
+Thats about how it works. Simple right?
+
+## Tech stack: apa kita pakai untuk bina ni
+
+Now we go into tech stack. **Haa this is pretty wide** — sebab you can use anything. Laravel pun boleh, PHP pun boleh, WordPress pun boleh. But for simplicity, let just use **react + expressjs + neon + r2 cloudflare**. Simple and practical.
+
+Kenapa stack ni? Sebab dia **satu bahasa** — JavaScript dari depan sampai belakang. Kau tak payah switch otak antara dua bahasa yang berbeza.
+
+<TechStackCards />
+
+<Callout variant="note" title="Soalan biasa: kenapa tak simpan gambar dalam database je?">
+Sebab fail gambar tu besar dan tak sesuai duduk dalam database row. Database untuk **data bersusun**, storage untuk **fail**. Dua benda lain, dua tempat lain.
+</Callout>
+
+## Macam mana semua ni bersambung
+
+Ni part paling penting dalam lesson ni — macam mana semua benda tu bercakap antara satu sama lain. Tekan dua-dua flow tu:
+
+<ArchDiagram client:visible />
+
+<Callout variant="tip" title="Insight penting">
+Perasan tak? Masa visitor tengok gambar, **gambar tu tak lalu server kita**. Express bagi URL R2, browser terus amik dari sana. Ni yang buat website rasa laju — dan server kita tak penat.
+</Callout>
+
+## Struktur projek: mono repo
+
+Last sekali — **mono repo structure**. Mono repo ni maksudnya **satu repo, banyak app**. Instead of asingkan frontend dan backend dalam repo berlainan, kita letak semua dalam satu:
+
+<RepoTree />
+
+Kenapa? Sebab React dan Express **kongsi benda yang sama**. Contoh, bentuk data `Photo` — dua-dua perlukan dia:
+
+```ts
+// packages/shared/src/types.ts
+// Satu "bentuk" data yang dikongsi oleh web + api
+export interface Photo {
+  id: number;
+  title: string;
+  folder: string;
+  imageUrl: string; // URL dari Cloudflare R2
+  createdAt: string;
+}
+```
+
+Kalau dua repo berasingan, setiap kali tukar bentuk data ni kena copy-paste kat dua tempat. Satu repo — senang, takde nak sync sana sini.
+
+## Cuba dulu: demo yang boleh klik
+
+Okay sekarang part paling best. Ni demo gallery blog yang kita akan bina — bukan screenshot, betul-betul boleh klik:
+
+<GalleryDemo client:visible />
+
+Try buat macam ni:
+
+1. Pergi **Admin**, upload gambar baru.
+2. **Create folder** sendiri, susun gambar ikut suka.
+3. Balik ke **Visitor**, klik gambar tu, like dan tinggal komen.
+
+Semua yang kau baru buat tu — itulah projek kita. Bezanya nanti, data tu duduk dalam Neon dan gambar duduk dalam R2, bukan dalam browser je.
+
+## Recap: apa kita dah tau harini
+
+<RecapCards />
+
+## Lesson seterusnya
+
+<NextLesson />
+
+That's it untuk Lesson 1. Kalau kau baca sampai habis — tahniah, kau dah faham bentuk projek kita sebelum tulis walau satu line kod pun.

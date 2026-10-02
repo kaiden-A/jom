@@ -1,0 +1,89 @@
+---
+const sides = [
+  {
+    icon: "globe",
+    tone: "bg-brand-soft text-brand-deep",
+    title: "Public side",
+    sub: "untuk visitor",
+    items: [
+      "Sesiapa boleh masuk, takde login",
+      "Tengok gambar ikut folder",
+      "Buka gambar besar (lightbox)",
+      "Like dan tinggal komen",
+    ],
+  },
+  {
+    icon: "lock",
+    tone: "bg-ink text-sun",
+    title: "Admin side",
+    sub: "untuk kau sorang",
+    items: [
+      "Login dulu baru boleh masuk",
+      "Upload gambar baru bila-bila masa",
+      "Create folder dan susun gambar",
+      "Customize page ikut suka",
+    ],
+  },
+] as const;
+
+const iconPaths = {
+  globe: "M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8M12 3c2.4 2.4 3.6 5.4 3.6 9s-1.2 6.6-3.6 9c-2.4-2.4-3.6-5.4-3.6-9S9.6 5.4 12 3z",
+  lock: "M6 11V8a6 6 0 1112 0v3M5 11h14v9H5v-9z",
+} as const;
+---
+
+<div class="not-prose my-8 grid gap-4 sm:grid-cols-2">
+  {
+    sides.map((side) => (
+      <div class="clay p-5">
+        <div class="flex items-center gap-3">
+          <span
+            class:list={["grid size-10 place-items-center rounded-xl", side.tone]}
+          >
+            <svg
+              class="size-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d={iconPaths[side.icon]}
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <div>
+            <p class="font-display text-base leading-tight font-semibold">
+              {side.title}
+            </p>
+            <p class="text-ink-soft text-xs font-bold">{side.sub}</p>
+          </div>
+        </div>
+        <ul class="mt-4 space-y-2">
+          {side.items.map((item) => (
+            <li class="flex items-start gap-2.5 text-sm font-bold">
+              <svg
+                class="text-mint-deep mt-0.5 size-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20 6L9 17l-5-5"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span class="text-ink-soft">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</div>

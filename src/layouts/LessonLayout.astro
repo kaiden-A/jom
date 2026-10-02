@@ -1,0 +1,80 @@
+---
+import type { CollectionEntry } from "astro:content";
+import BaseLayout from "./BaseLayout.astro";
+import Sidebar from "../components/site/Sidebar.astro";
+
+interface Props {
+  entry: CollectionEntry<"lessons">;
+}
+
+const { entry } = Astro.props;
+const { title, slug, lesson, summary, duration, tags, updated } = entry.data;
+const lessonNumber = String(lesson).padStart(2, "0");
+---
+
+<BaseLayout title={`${title} · Jom Mula`} description={summary}>
+  <section class="border-line bg-brand-soft/60 border-b">
+    <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+      <nav class="text-ink-soft text-sm font-bold" aria-label="Breadcrumb">
+        <a href="/" class="hover:text-brand transition-colors">Utama</a>
+        <span class="mx-1.5" aria-hidden="true">›</span>
+        <span class="text-ink">Lesson {lessonNumber}</span>
+      </nav>
+      <p
+        class="font-display text-brand-deep mt-5 text-xs font-semibold tracking-widest uppercase"
+      >
+        Lesson {lessonNumber} · Gambaran besar
+      </p>
+      <h1
+        class="font-display mt-2 max-w-3xl text-3xl leading-tight font-semibold sm:text-5xl"
+      >
+        {title}
+      </h1>
+      <p class="text-ink-soft mt-4 max-w-2xl text-lg leading-relaxed">
+        {summary}
+      </p>
+      <div class="mt-6 flex flex-wrap items-center gap-2">
+        <span
+          class="border-line text-ink-soft inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-bold"
+        >
+          <svg
+            class="size-3.5"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="10"
+              cy="10"
+              r="7"
+              stroke="currentColor"
+              stroke-width="1.8"></circle>
+            <path
+              d="M10 6.5V10l2.5 1.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"></path>
+          </svg>
+          {duration}
+        </span>
+        {
+          tags.map((tag) => (
+            <span class="border-line text-ink-soft rounded-full border bg-white px-3 py-1 text-xs font-bold">
+              {tag}
+            </span>
+          ))
+        }
+        <span class="text-ink-soft/80 text-xs font-bold">Kemaskini {updated}</span>
+      </div>
+    </div>
+  </section>
+
+  <div
+    class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-14"
+  >
+    <Sidebar currentSlug={slug} />
+    <article class="lesson-prose min-w-0">
+      <slot />
+    </article>
+  </div>
+</BaseLayout>

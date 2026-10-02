@@ -1,0 +1,77 @@
+---
+const stack = [
+  {
+    name: "React",
+    role: "Frontend",
+    monogram: "Re",
+    tone: "bg-[#61dafb] text-ink",
+    desc: "Semua yang orang nampak — grid gambar, lightbox, admin dashboard. Ni yang kau tulis dengan JavaScript.",
+    why: "Senang pecahkan UI jadi component, dan boleh guna balik untuk public side dengan admin side.",
+  },
+  {
+    name: "ExpressJS",
+    role: "Backend API",
+    monogram: "Ex",
+    tone: "bg-ink text-white",
+    desc: "Pintu masuk data. React tanya, Express jawab. Upload, komen, like — semua lalu sini.",
+    why: "Ringan dan tak banyak magik. Kau nampak setiap line buat apa.",
+  },
+  {
+    name: "Neon",
+    role: "Database (Postgres)",
+    monogram: "Ne",
+    tone: "bg-[#00e599] text-ink",
+    desc: "Simpan data bersusun: senarai gambar, folder, komen, like, dan user admin.",
+    why: "Postgres serverless — tak payah setup server database sendiri, dan ada free tier.",
+  },
+  {
+    name: "Cloudflare R2",
+    role: "Storage gambar",
+    monogram: "R2",
+    tone: "bg-[#f38020] text-ink",
+    desc: "Simpan fail gambar tu sendiri. Database simpan URL je, bukan fail.",
+    why: "Murah (takde bayaran egress), laju, dan S3-compatible — senang nak guna.",
+  },
+] as const;
+---
+
+<div class="not-prose my-8 grid gap-5 sm:grid-cols-2">
+  {
+    stack.map((item) => (
+      <div class="clay flex flex-col p-5">
+        <div class="flex items-center gap-3">
+          <span
+            class:list={[
+              "font-display grid size-11 place-items-center rounded-2xl text-sm font-semibold",
+              item.tone,
+            ]}
+          >
+            {item.monogram}
+          </span>
+          <div>
+            <p class="font-display text-lg leading-tight font-semibold">
+              {item.name}
+            </p>
+            <p class="text-ink-soft text-xs font-bold">{item.role}</p>
+          </div>
+        </div>
+        <p class="text-ink-soft mt-4 text-sm leading-relaxed">{item.desc}</p>
+        <div class="bg-brand-soft/70 mt-4 rounded-xl p-3">
+          <p class="text-brand-deep flex items-center gap-1.5 text-xs font-bold uppercase">
+            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 3a6 6 0 00-3.5 10.9c.5.4.8 1 .9 1.6l.1.5h5l.1-.5c.1-.6.4-1.2.9-1.6A6 6 0 0012 3zM10 21h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Kenapa ni?
+          </p>
+          <p class="text-ink-soft mt-1 text-sm leading-relaxed">{item.why}</p>
+        </div>
+      </div>
+    ))
+  }
+</div>
