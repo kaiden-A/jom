@@ -85,7 +85,7 @@ export default function Lightbox({
               ref={closeRef}
               type="button"
               onClick={onClose}
-              aria-label="Tutup"
+              aria-label="Close"
               className="border-line text-ink-soft hover:text-ink hover:border-ink grid size-11 shrink-0 place-items-center rounded-full border-2 bg-white transition-colors"
             >
               <X className="size-5" aria-hidden="true" />
@@ -112,14 +112,14 @@ export default function Lightbox({
               {photo.likes}
             </button>
             <span className="text-ink-soft text-sm font-bold">
-              {photo.comments.length} komen
+              {photo.comments.length} comments
             </span>
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
             {photo.comments.length === 0 && (
               <p className="text-ink-soft py-6 text-center text-sm font-bold">
-                Belum ada komen. Jadi orang pertama.
+                No comments yet. Be the first.
               </p>
             )}
             {photo.comments.map((c) => (
@@ -147,19 +147,19 @@ export default function Lightbox({
             className="border-line flex items-center gap-2 border-t px-4 py-3"
           >
             <label htmlFor="comment-input" className="sr-only">
-              Tulis komen
+              Write a comment
             </label>
             <input
               id="comment-input"
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Tulis komen sebagai 'Kau'..."
+              placeholder="Write a comment as 'You'..."
               className="border-line focus:border-brand min-h-11 min-w-0 flex-1 rounded-full border-2 bg-white px-4 text-sm font-bold outline-none"
             />
             <button
               type="submit"
-              aria-label="Hantar komen"
+              aria-label="Send comment"
               className="bg-brand hover:bg-brand-deep grid size-11 shrink-0 place-items-center rounded-full text-white transition-colors"
             >
               <Send className="size-4" aria-hidden="true" />

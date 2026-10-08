@@ -29,7 +29,7 @@ const totalLabel = String(total).padStart(2, "0");
     <summary
       class="font-display flex cursor-pointer items-center justify-between text-sm font-semibold"
     >
-      <span>Dalam projek ni ({currentNumber}/{totalLabel})</span>
+      <span>In this project ({currentNumber}/{totalLabel})</span>
       <svg
         class="text-ink-soft size-4 transition-transform group-open:rotate-180"
         viewBox="0 0 20 20"
@@ -81,11 +81,11 @@ const totalLabel = String(total).padStart(2, "0");
     </ol>
   </details>
 
-  <nav class="clay hidden p-3 lg:block" aria-label="Senarai sub-lesson">
+  <nav class="clay hidden p-3 lg:block" aria-label="Lesson list">
     <p
       class="font-display text-ink-soft px-2.5 pt-2 text-xs font-semibold tracking-widest uppercase"
     >
-      Dalam projek ni
+      In this project
     </p>
     {
       groups.map((group) => (
@@ -94,7 +94,7 @@ const totalLabel = String(total).padStart(2, "0");
             <span>{group.project.title}</span>
             <span class="font-display">
               {String(group.published.length + group.project.upcoming.length).padStart(2, "0")}{" "}
-              sub-lesson
+              lessons
             </span>
           </p>
           <ol class="space-y-1">
@@ -155,10 +155,9 @@ const totalLabel = String(total).padStart(2, "0");
   </nav>
 
   <div class="note rounded-2xl p-4">
-    <p class="font-display text-sm font-semibold">Baca ikut turutan</p>
+    <p class="font-display text-sm font-semibold">Read in order</p>
     <p class="text-ink-soft mt-1 text-sm leading-relaxed">
-      Setiap sub-lesson pendek je. Habiskan satu, baru pergi yang seterusnya —
-      jangan skip.
+      Each lesson is short. Finish one, then move on to the next — don't skip.
     </p>
   </div>
 </div>

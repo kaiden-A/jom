@@ -1,0 +1,106 @@
+---
+title: "Meet Express: what it is and where it came from"
+slug: "intro-expressjs"
+project: "backend-expressjs"
+order: 2
+summary: "The story of Express — who made it, why it took over, and what a server actually looks like when it's just a few lines of code."
+duration: "6 min read"
+tags: ["Express", "history"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Okay, time to actually meet the thing we're learning. Not the docs — the story first. Tools make more sense when you know what problem they were born to solve.
+
+## What is Express, in one breath?
+
+**Express is a minimal web framework for Node.js.** That sentence is dense, so let's unpack it:
+
+- **Node.js** lets JavaScript run outside the browser — on a server, as a program.
+- Node gives you a raw HTTP module, and it's… fine. But it's low-level: you're parsing URLs and writing headers by hand.
+- **Express** wraps that raw module in something human. You describe routes like `GET /api/users`, and Express handles the plumbing.
+
+It's "minimal" because it doesn't decide anything for you. No folder structure imposed, no magic, no convention police. You get routing, middleware, and a request/response toolkit — then you choose the rest.
+
+<Callout variant="note" title="Unopinionated — say it right">
+"Unopinionated" sounds like an insult. In framework talk it means **freedom**. Express won't tell you how to organise your app. Annoying? A little. But it also means nothing to unlearn later.
+</Callout>
+
+## The history, because it explains everything
+
+Here's the short version, and it's genuinely relevant to why Express looks the way it does:
+
+- **2010** — TJ Holowaychuk releases Express. He'd been inspired by **Sinatra**, a famously minimal Ruby web framework. That DNA is everywhere in Express: small core, routes as simple lines of code.
+- **2010–2013** — it becomes *the* default Node framework. Every tutorial, every boilerplate, every stack — MEAN, MERN — had Express sitting in the middle.
+- **2014** — Express 4 lands, and the project is acquired by StrongLoop.
+- **2015** — IBM acquires StrongLoop.
+- **2016** — Express is donated to the **Node.js Foundation** (an incubator project), which later merges into the **OpenJS Foundation**. Today it's still there — a rare case of a community tool finding an institutional home.
+- **2024** — Express 5 is finally released after years of work. Same philosophy, modernised internals.
+
+Fifteen years old and still the default. In JavaScript, that's ancient and immortal at the same time.
+
+<Callout variant="tip" title="Why it stuck">
+Express survived frameworks that promised more — because it promised less, and delivered it perfectly. Everything in the ecosystem (auth, logging, file uploads) became a small piece you plug in. That's the whole design.
+</Callout>
+
+## Your first server, for real
+
+Enough history. This is a complete Express server:
+
+```js
+import express from "express";
+
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Hello from Express!");
+});
+
+app.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
+});
+```
+
+Read it like a sentence:
+
+- `express()` — creates the application object. This is your server.
+- `app.get("/", handler)` — "when someone requests the root URL with GET, run this function."
+- `req` and `res` — the request coming in, and the response going out. Those are your only two characters in every route.
+- `app.listen(5000)` — start listening on port 5000. From this moment, the program just waits.
+
+<Callout variant="haa" title="Haa!">
+Notice what's missing: no browser, no HTML, no page. Run this file and open `http://localhost:5000` — you'll see plain text. The backend's whole job is to answer, not to look pretty.
+</Callout>
+
+## What a route really is
+
+A route is a **promise**: *if a request looks like this, this function will answer.*
+
+```js
+app.get("/about", (req, res) => res.send("About page"));
+app.get("/api/users", (req, res) => res.json([{ id: 1 }]));
+```
+
+Two things to feel here:
+
+- The first argument is the **URL pattern**. Express matches it for you.
+- `res.send` vs `res.json` — same idea, one says "here's text", the other says "here's JSON". For an API, JSON is the voice.
+
+That's genuinely most of Express. Routes in, responses out. The rest is arrangement.
+
+## Recap
+
+<RecapCards
+  points={[
+    "Express is a minimal web framework on top of Node.js.",
+    "Created in 2010 by TJ Holowaychuk, inspired by Ruby's Sinatra.",
+    "Now stewarded by the OpenJS Foundation after decades of adoption.",
+    "Unopinionated: routing + middleware core, everything else is your call.",
+    "A server is just routes: request in, response out.",
+  ]}
+/>
+
+Now that the server exists, it needs a language for talking to the outside world. Next: the four HTTP methods and how real APIs get named.

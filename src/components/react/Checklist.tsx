@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Check, RotateCcw } from "lucide-react";
 
 const defaultItems = [
-  "Nama projek (guna pemilih nama kat atas tu)",
-  "Laptop + Node.js dah install",
-  "Akaun Neon (untuk database)",
-  "Akaun Cloudflare (untuk R2)",
-  "Editor code — VS Code ke, apa-apa pun boleh",
-  "Masa 5-10 minit sehari, secara konsisten",
+  "A project name (use the name picker above)",
+  "Laptop + Node.js installed",
+  "A Neon account (for the database)",
+  "A Cloudflare account (for R2)",
+  "A code editor — VS Code or anything works",
+  "5–10 minutes a day, consistently",
 ];
 
 interface Props {
@@ -32,7 +32,7 @@ export default function Checklist({
         }
       }
     } catch {
-      // localStorage tak available — takpe, demo je
+      // localStorage not available — no worries, it's just a demo
     }
     setReady(true);
   }, [storageKey, items]);
@@ -60,10 +60,10 @@ export default function Checklist({
   return (
     <div className="clay not-prose my-8 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="font-display text-lg font-semibold">Senarai keperluan</p>
+        <p className="font-display text-lg font-semibold">Requirements checklist</p>
         <div className="flex items-center gap-3">
           <span className="text-ink-soft text-sm font-bold">
-            {count}/{items.length} siap
+            {count}/{items.length} done
           </span>
           {count > 0 && (
             <button
@@ -84,7 +84,7 @@ export default function Checklist({
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Kemajuan senarai keperluan"
+        aria-label="Checklist progress"
       >
         <div
           className="bg-mint h-full rounded-full transition-[width] duration-300 ease-out"

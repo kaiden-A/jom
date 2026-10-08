@@ -29,16 +29,16 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
   <section class="border-line bg-brand-soft/60 border-b">
     <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
       <nav class="text-ink-soft text-sm font-bold" aria-label="Breadcrumb">
-        <a href="/" class="hover:text-brand transition-colors">Utama</a>
+        <a href="/" class="hover:text-brand transition-colors">Home</a>
         <span class="mx-1.5" aria-hidden="true">›</span>
         <a href="/#projek" class="hover:text-brand transition-colors">{projectTitle}</a>
         <span class="mx-1.5" aria-hidden="true">›</span>
-        <span class="text-ink">Sub-lesson {lessonNumber}</span>
+        <span class="text-ink">Lesson {lessonNumber}</span>
       </nav>
       <p
         class="font-display text-brand-deep mt-5 text-xs font-semibold tracking-widest uppercase"
       >
-        {projectTitle} · Sub-lesson {lessonNumber}
+        {projectTitle} · Lesson {lessonNumber}
       </p>
       <h1
         class="font-display mt-2 max-w-3xl text-3xl leading-tight font-semibold sm:text-5xl"
@@ -79,7 +79,7 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
             </span>
           ))
         }
-        <span class="text-ink-soft/80 text-xs font-bold">Kemaskini {updated}</span>
+        <span class="text-ink-soft/80 text-xs font-bold">Updated {updated}</span>
       </div>
     </div>
   </section>
@@ -107,7 +107,7 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
                   stroke-linejoin="round"
                 />
               </svg>
-              Sebelum: {prev.data.title}
+              Previous: {prev.data.title}
             </a>
           )
         }
@@ -128,7 +128,7 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
             />
           ) : (
             <p class="text-ink-soft text-sm font-bold">
-              Ni sub-lesson terakhir buat masa ni. Yang seterusnya tengah dimasak.
+              This is the last lesson for now. The next one is still cooking.
             </p>
           )
         }

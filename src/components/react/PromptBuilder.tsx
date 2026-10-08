@@ -13,8 +13,6 @@ import {
   vibes,
 } from "./prompt-builder/data";
 
-type Lang = "en";
-
 export default function PromptBuilder() {
   const [presetId, setPresetId] = useState(presets[0]!.id);
   const preset = presets.find((p) => p.id === presetId) ?? presets[0]!;
@@ -22,7 +20,6 @@ export default function PromptBuilder() {
   const [selected, setSelected] = useState<string[]>(preset.defaultFeatures);
   const [paletteId, setPaletteId] = useState(preset.defaultPalette);
   const [vibeId, setVibeId] = useState(preset.defaultVibe);
-  const [lang, setLang] = useState<Lang>("en");
   const [copied, setCopied] = useState(false);
 
   const palette = palettes.find((p) => p.id === paletteId) ?? palettes[0]!;
@@ -31,14 +28,13 @@ export default function PromptBuilder() {
   const prompt = useMemo(
     () =>
       buildPrompt({
-        lang,
         projectName: name.trim() || preset.name,
         what: preset.what,
-        features: preset.features.filter((f) => selected.includes(f.bm)),
+        features: preset.features.filter((f) => selected.includes(f)),
         palette,
         vibe,
       }),
-    [lang, name, preset, selected, palette, vibe],
+    [name, preset, selected, palette, vibe],
   );
 
   function applyPreset(id: string) {
@@ -51,9 +47,11 @@ export default function PromptBuilder() {
     setVibeId(next.defaultVibe);
   }
 
-  function toggleFeature(bm: string) {
+  function toggleFeature(feature: string) {
     setSelected((prev) =>
-      prev.includes(bm) ? prev.filter((x) => x !== bm) : [...prev, bm],
+      prev.includes(feature)
+        ? prev.filter((x) => x !== feature)
+        : [...prev, feature],
     );
   }
 
@@ -82,25 +80,6 @@ export default function PromptBuilder() {
               Choose, copy and paste inside opencode
             </p>
           </div>
-        </div>
-        <div
-          className="border-line flex rounded-full border bg-white p-1"
-          role="group"
-          aria-label="Bahasa prompt"
-        >
-          {(["en"] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLang(l)}
-              aria-pressed={lang === l}
-              className={`font-display min-h-9 rounded-full px-4 text-xs font-semibold transition-colors ${
-                lang === l ? "bg-ink text-white" : "text-ink-soft hover:text-ink"
-              }`}
-            >
-              {"English"}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -132,7 +111,7 @@ export default function PromptBuilder() {
             </div>
             <label className="mt-3 block">
               <span className="text-xs font-bold tracking-wide uppercase">
-                Projects Name
+                Project name
               </span>
               <input
                 type="text"
@@ -145,16 +124,16 @@ export default function PromptBuilder() {
 
           <fieldset>
             <legend className="font-display text-sm font-semibold">
-              2 · What feature you want?
+              2 · Which features do you want?
             </legend>
             <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
               {preset.features.map((feature) => {
-                const active = selected.includes(feature.bm);
+                const active = selected.includes(feature);
                 return (
                   <button
-                    key={feature.bm}
+                    key={feature}
                     type="button"
-                    onClick={() => toggleFeature(feature.bm)}
+                    onClick={() => toggleFeature(feature)}
                     aria-pressed={active}
                     className={`flex min-h-11 items-center gap-2.5 rounded-xl border-2 px-3 text-left text-sm font-bold transition-colors ${
                       active
@@ -171,7 +150,7 @@ export default function PromptBuilder() {
                     >
                       <Check className="size-3" strokeWidth={3} aria-hidden="true" />
                     </span>
-                    {feature.bm}
+                    {feature}
                   </button>
                 );
               })}
@@ -180,7 +159,7 @@ export default function PromptBuilder() {
 
           <fieldset>
             <legend className="font-display text-sm font-semibold">
-              3 · Warna
+              3 · Colours
             </legend>
             <div className="mt-3 grid gap-2">
               {palettes.map((p) => {
@@ -249,7 +228,7 @@ export default function PromptBuilder() {
         <div className="bg-ink flex flex-col p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-display text-sm font-semibold text-white">
-              Prompt kau
+              Your prompt
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -282,8 +261,8 @@ export default function PromptBuilder() {
             {prompt}
           </pre>
           <p className="mt-3 text-xs font-bold text-white/50">
-            Paste prompt ni dalam opencode. Lepas tu iterate — tukar sikit-sikit,
-            bukan sekali jadi.
+            Paste this prompt into opencode. Then iterate — fix it bit by bit,
+            it won't be perfect in one shot.
           </p>
         </div>
       </div>

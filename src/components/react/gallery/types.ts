@@ -17,4 +17,4 @@ export interface Photo {
 }
 
 export type DemoMode = "visitor" | "admin";
-export type AdminTab = "dashboard" | "gambar" | "folder" | "tetapan";
+export type AdminTab = "dashboard" | "photos" | "folder" | "settings";

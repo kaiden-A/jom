@@ -23,7 +23,7 @@ export default function GalleryDemo() {
   const [mode, setMode] = useState<DemoMode>("visitor");
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const [folders, setFolders] = useState<string[]>(initialFolders);
-  const [activeFolder, setActiveFolder] = useState("Semua");
+  const [activeFolder, setActiveFolder] = useState("All");
   const [openId, setOpenId] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -56,7 +56,7 @@ export default function GalleryDemo() {
               ...p,
               comments: [
                 ...p.comments,
-                { id: nextId++, author: "Kau", text, time: "baru je" },
+                { id: nextId++, author: "You", text, time: "just now" },
               ],
             }
           : p,
@@ -69,12 +69,12 @@ export default function GalleryDemo() {
       ...prev,
       { id: nextId++, ...data, likes: 0, liked: false, comments: [] },
     ]);
-    notify("Gambar dah masuk! Tekan Visitor untuk tengok.");
+    notify("Photo added! Hit Visitor to see it.");
   }
 
   function deletePhoto(id: number) {
     setPhotos((prev) => prev.filter((p) => p.id !== id));
-    notify("Gambar dah dipadam (demo je).");
+    notify("Photo deleted (demo only).");
   }
 
   function addFolder(name: string): boolean {
@@ -82,11 +82,11 @@ export default function GalleryDemo() {
     const exists = folders.some(
       (f) => f.toLowerCase() === clean.toLowerCase(),
     );
-    if (!clean || exists || clean === "Semua" || clean === UNCATEGORIZED) {
+    if (!clean || exists || clean === "All" || clean === UNCATEGORIZED) {
       return false;
     }
     setFolders((prev) => [...prev, clean]);
-    notify(`Folder "${clean}" dah dicipta.`);
+    notify(`Folder "${clean}" created.`);
     return true;
   }
 
@@ -99,16 +99,16 @@ export default function GalleryDemo() {
     setPhotos((prev) =>
       prev.map((p) => (p.folder === name ? { ...p, folder: UNCATEGORIZED } : p)),
     );
-    if (activeFolder === name) setActiveFolder("Semua");
-    notify(`Folder "${name}" dipadam. Gambar pindah ke "${UNCATEGORIZED}".`);
+    if (activeFolder === name) setActiveFolder("All");
+    notify(`Folder "${name}" deleted. Photos moved to "${UNCATEGORIZED}".`);
   }
 
   function reset() {
     setPhotos(initialPhotos.map((p) => ({ ...p, comments: [...p.comments] })));
     setFolders([...initialFolders]);
-    setActiveFolder("Semua");
+    setActiveFolder("All");
     setOpenId(null);
-    notify("Demo dah reset. Bersih macam baru.");
+    notify("Demo reset. Fresh as new.");
   }
 
   return (
@@ -127,7 +127,7 @@ export default function GalleryDemo() {
         <div
           className="ml-auto flex shrink-0 rounded-full bg-white/10 p-1"
           role="tablist"
-          aria-label="Pilih pandangan demo"
+          aria-label="Choose demo view"
         >
           <button
             type="button"
@@ -185,7 +185,7 @@ export default function GalleryDemo() {
           onDeleteFolder={deleteFolder}
           onGoVisitor={() => {
             setMode("visitor");
-            setActiveFolder("Semua");
+            setActiveFolder("All");
           }}
           onReset={reset}
         />

@@ -1,43 +1,58 @@
 ---
-const stack = [
+export interface StackItem {
+  name: string;
+  role: string;
+  monogram: string;
+  tone: string;
+  desc: string;
+  why: string;
+}
+
+interface Props {
+  items?: StackItem[];
+}
+
+const defaultStack: StackItem[] = [
   {
     name: "React",
     role: "Frontend",
     monogram: "Re",
     tone: "bg-[#61dafb] text-ink",
-    desc: "Semua yang orang nampak — grid gambar, lightbox, admin dashboard. Ni yang kau tulis dengan JavaScript.",
-    why: "Senang pecahkan UI jadi component, dan boleh guna balik untuk public side dengan admin side.",
+    desc: "Everything people see — the photo grid, the lightbox, the admin dashboard. This is what you write with JavaScript.",
+    why: "Easy to split the UI into components, and you can reuse them for both the public side and the admin side.",
   },
   {
     name: "ExpressJS",
     role: "Backend API",
     monogram: "Ex",
     tone: "bg-ink text-white",
-    desc: "Pintu masuk data. React tanya, Express jawab. Upload, komen, like — semua lalu sini.",
-    why: "Ringan dan tak banyak magik. Kau nampak setiap line buat apa.",
+    desc: "The doorway for data. React asks, Express answers. Uploads, comments, likes — all go through here.",
+    why: "Lightweight with very little magic. You can see what every line does.",
   },
   {
     name: "Neon",
     role: "Database (Postgres)",
     monogram: "Ne",
     tone: "bg-[#00e599] text-ink",
-    desc: "Simpan data bersusun: senarai gambar, folder, komen, like, dan user admin.",
-    why: "Postgres serverless — tak payah setup server database sendiri, dan ada free tier.",
+    desc: "Stores the structured data: photo list, folders, comments, likes, and the admin user.",
+    why: "Serverless Postgres — no need to set up your own database server, and it has a free tier.",
   },
   {
     name: "Cloudflare R2",
-    role: "Storage gambar",
+    role: "Photo storage",
     monogram: "R2",
     tone: "bg-[#f38020] text-ink",
-    desc: "Simpan fail gambar tu sendiri. Database simpan URL je, bukan fail.",
-    why: "Murah (takde bayaran egress), laju, dan S3-compatible — senang nak guna.",
+    desc: "Stores the photo files themselves. The database only keeps the URL, not the file.",
+    why: "Cheap (no egress fees), fast, and S3-compatible — easy to work with.",
   },
-] as const;
+];
+
+const { items = defaultStack } = Astro.props;
 ---
 
 <div class="not-prose my-8 grid gap-5 sm:grid-cols-2">
   {
-    stack.map((item) => (
+    items.map((item) => (
       <div class="clay flex flex-col p-5">
         <div class="flex items-center gap-3">
           <span
@@ -67,7 +82,7 @@ const stack = [
                 stroke-linejoin="round"
               />
             </svg>
-            Kenapa ni?
+            Why this?
           </p>
           <p class="text-ink-soft mt-1 text-sm leading-relaxed">{item.why}</p>
         </div>

@@ -37,9 +37,9 @@ interface Props {
 
 const tabs: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "gambar", label: "Gambar", icon: Images },
-  { id: "folder", label: "Folder", icon: FolderOpen },
-  { id: "tetapan", label: "Tetapan", icon: Settings },
+  { id: "photos", label: "Photos", icon: Images },
+  { id: "folder", label: "Folders", icon: FolderOpen },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 function StatCard({
@@ -97,11 +97,11 @@ export default function AdminView({
     if (uploading) return;
     const value = title.trim();
     if (!value) {
-      setError("Isi title dulu, baru boleh upload.");
+      setError("Fill in the title first, then you can upload.");
       return;
     }
     if (!folder) {
-      setError("Pilih folder dulu. Kalau takde, create satu.");
+      setError("Pick a folder first. If there isn't one, create some.");
       return;
     }
     setError(null);
@@ -135,12 +135,12 @@ export default function AdminView({
     e.preventDefault();
     const value = newFolder.trim();
     if (!value) {
-      setFolderError("Bagi nama folder tu.");
+      setFolderError("Give the folder a name.");
       return;
     }
     const ok = onAddFolder(value);
     if (!ok) {
-      setFolderError(`"${value}" dah ada. Letak nama lain.`);
+      setFolderError(`"${value}" already exists. Try another name.`);
       return;
     }
     setFolderError(null);
@@ -181,10 +181,10 @@ export default function AdminView({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="font-display text-xl font-semibold">
-                  Selamat datang balik
+                  Welcome back
                 </h3>
                 <p className="text-ink-soft text-sm font-bold">
-                  Ni yang kau nampak bila login.
+                  This is what you see after logging in.
                 </p>
               </div>
               <button
@@ -192,26 +192,26 @@ export default function AdminView({
                 onClick={onGoVisitor}
                 className="btn btn-ghost !min-h-10 !px-4 !py-1.5 text-sm"
               >
-                Tengok public page
+                View public page
               </button>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-3">
-              <StatCard icon={Images} label="Gambar" value={photos.length} />
-              <StatCard icon={Heart} label="Like" value={totalLikes} />
+              <StatCard icon={Images} label="Photos" value={photos.length} />
+              <StatCard icon={Heart} label="Likes" value={totalLikes} />
               <StatCard
                 icon={MessageCircle}
-                label="Komen"
+                label="Comments"
                 value={totalComments}
               />
             </div>
             <div className="mt-6">
               <p className="font-display text-sm font-semibold">
-                Baru-baru ni
+                Recent
               </p>
               <ul className="mt-3 space-y-2">
                 {recent.length === 0 && (
                   <li className="text-ink-soft text-sm font-bold">
-                    Takde gambar lagi. Pergi tab Gambar.
+                    No photos yet. Head to the Photos tab.
                   </li>
                 )}
                 {recent.map((p) => (
@@ -226,7 +226,7 @@ export default function AdminView({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{p.title}</p>
                       <p className="text-ink-soft text-xs font-bold">
-                        {p.folder} · {p.likes} like · {p.comments.length} komen
+                        {p.folder} · {p.likes} likes · {p.comments.length} comments
                       </p>
                     </div>
                   </li>
@@ -236,11 +236,11 @@ export default function AdminView({
           </div>
         )}
 
-        {tab === "gambar" && (
+        {tab === "photos" && (
           <div>
-            <h3 className="font-display text-xl font-semibold">Gambar</h3>
+            <h3 className="font-display text-xl font-semibold">Photos</h3>
             <p className="text-ink-soft text-sm font-bold">
-              Upload gambar baru, dan urus yang dah ada.
+              Upload new photos and manage the ones you have.
             </p>
 
             <form
@@ -260,7 +260,7 @@ export default function AdminView({
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Contoh: Sunset kat jeti"
+                    placeholder="e.g. Sunset at the pier"
                     className="border-line focus:border-brand mt-1.5 min-h-11 w-full rounded-xl border-2 px-3 text-sm font-bold outline-none"
                   />
                 </div>
@@ -287,7 +287,7 @@ export default function AdminView({
               </div>
 
               <p className="mt-4 text-xs font-bold tracking-wide uppercase">
-                Pilih fail gambar
+                Pick a photo file
               </p>
               <div className="mt-2 flex gap-2">
                 {uploadSeeds.map((s, i) => (
@@ -296,7 +296,7 @@ export default function AdminView({
                     type="button"
                     onClick={() => setSeedIndex(i)}
                     aria-pressed={seedIndex === i}
-                    aria-label={`Pilih fail gambar ${i + 1}`}
+                    aria-label={`Pick photo file ${i + 1}`}
                     className={`relative size-16 overflow-hidden rounded-xl border-2 transition-all ${
                       seedIndex === i
                         ? "border-brand scale-105"
@@ -337,7 +337,7 @@ export default function AdminView({
                   className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UploadCloud className="size-4" aria-hidden="true" />
-                  {uploading ? "Uploading..." : "Upload gambar"}
+                  {uploading ? "Uploading..." : "Upload photo"}
                 </button>
                 {uploading && (
                   <div
@@ -346,7 +346,7 @@ export default function AdminView({
                     aria-valuenow={progress}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label="Kemajuan upload"
+                    aria-label="Upload progress"
                   >
                     <div
                       className="bg-accent h-full rounded-full transition-[width] duration-100"
@@ -360,7 +360,7 @@ export default function AdminView({
             <ul className="mt-5 space-y-2">
               {photos.length === 0 && (
                 <li className="text-ink-soft text-sm font-bold">
-                  Takde gambar lagi.
+                  No photos yet.
                 </li>
               )}
               {[...photos].reverse().map((p) => (
@@ -375,13 +375,13 @@ export default function AdminView({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{p.title}</p>
                     <p className="text-ink-soft text-xs font-bold">
-                      {p.folder} · {p.likes} like · {p.comments.length} komen
+                      {p.folder} · {p.likes} likes · {p.comments.length} comments
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => onDeletePhoto(p.id)}
-                    aria-label={`Padam ${p.title}`}
+                    aria-label={`Delete ${p.title}`}
                     className="text-ink-soft hover:border-rose hover:text-rose grid size-11 shrink-0 place-items-center rounded-xl border-2 border-transparent transition-colors"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -394,26 +394,26 @@ export default function AdminView({
 
         {tab === "folder" && (
           <div>
-            <h3 className="font-display text-xl font-semibold">Folder</h3>
+            <h3 className="font-display text-xl font-semibold">Folders</h3>
             <p className="text-ink-soft text-sm font-bold">
-              Susun gambar ikut kategori.
+              Arrange photos by category.
             </p>
 
             <form onSubmit={handleAddFolder} className="mt-4 flex gap-2">
               <label htmlFor="new-folder" className="sr-only">
-                Nama folder baru
+                New folder name
               </label>
               <input
                 id="new-folder"
                 type="text"
                 value={newFolder}
                 onChange={(e) => setNewFolder(e.target.value)}
-                placeholder="Contoh: Bunga"
+                placeholder="e.g. Flowers"
                 className="border-line focus:border-brand min-h-11 min-w-0 flex-1 rounded-xl border-2 bg-white px-3 text-sm font-bold outline-none"
               />
               <button type="submit" className="btn btn-primary !px-4">
                 <FolderPlus className="size-4" aria-hidden="true" />
-                Tambah
+                Add
               </button>
             </form>
             {folderError && (
@@ -436,13 +436,13 @@ export default function AdminView({
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{f}</p>
                       <p className="text-ink-soft text-xs font-bold">
-                        {count} gambar
+                        {count} photos
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => onDeleteFolder(f)}
-                      aria-label={`Padam folder ${f}`}
+                      aria-label={`Delete folder ${f}`}
                       className="text-ink-soft hover:border-rose hover:text-rose grid size-11 shrink-0 place-items-center rounded-xl border-2 border-transparent transition-colors"
                     >
                       <Trash2 className="size-4" aria-hidden="true" />
@@ -452,24 +452,24 @@ export default function AdminView({
               })}
             </div>
             <p className="text-ink-soft mt-3 text-xs font-bold">
-              Bila folder dipadam, gambar dalam dia pindah ke “Tak berkategori”.
-              Takde gambar hilang, jangan risau.
+              When a folder is deleted, its photos move to “Uncategorised”.
+              No photos are lost, don't worry.
             </p>
           </div>
         )}
 
-        {tab === "tetapan" && (
+        {tab === "settings" && (
           <div>
-            <h3 className="font-display text-xl font-semibold">Tetapan</h3>
+            <h3 className="font-display text-xl font-semibold">Settings</h3>
             <p className="text-ink-soft text-sm font-bold">
-              Untuk demo ni, tetapan cuma satu je.
+              For this demo, there's only one setting.
             </p>
             <div className="border-line mt-4 space-y-3 rounded-2xl border-2 bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-bold">Reset demo</p>
                   <p className="text-ink-soft text-sm font-bold">
-                    Balik ke 8 gambar asal. Semua upload & komen hilang.
+                    Back to the original 8 photos. All uploads & comments are gone.
                   </p>
                 </div>
                 <button
@@ -483,15 +483,15 @@ export default function AdminView({
               </div>
             </div>
             <div className="border-line bg-brand-soft/50 mt-4 rounded-2xl border-2 p-4 text-sm leading-relaxed">
-              <p className="font-bold">Real dalam demo ni:</p>
+              <p className="font-bold">Real in this demo:</p>
               <p className="text-ink-soft mt-1 font-bold">
-                Flow upload, filter folder, like, komen — semua betul-betul
-                jalan. Cuma data duduk dalam browser je, refresh hilang.
+                Upload flow, folder filter, likes, comments — they all actually
+                work. The data just lives in your browser, so a refresh wipes it.
               </p>
-              <p className="mt-3 font-bold">Fake dalam demo ni:</p>
+              <p className="mt-3 font-bold">Fake in this demo:</p>
               <p className="text-ink-soft mt-1 font-bold">
-                Gambar dari picsum.photos, dan takde server di belakang. Nanti
-                dalam lesson akan datang, kita sambung betul-betul.
+                The photos come from picsum.photos, and there's no server behind
+                it. In a future lesson, we'll wire it up for real.
               </p>
             </div>
           </div>

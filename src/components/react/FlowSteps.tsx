@@ -20,46 +20,46 @@ interface Step {
 const visitorSteps: Step[] = [
   {
     icon: Globe,
-    title: "Buka website",
-    body: "Terus nampak grid gambar. Takde login, takde apa — public punya page.",
+    title: "Open the website",
+    body: "The photo grid is right there. No login, nothing — it's a public page.",
   },
   {
     icon: LayoutGrid,
-    title: "Pilih folder",
-    body: "Klik kategori macam \u201cAlam\u201d atau \u201cKucing\u201d. Grid filter ikut folder tu.",
+    title: "Pick a folder",
+    body: "Click a category like \u201cNature\u201d or \u201cCats\u201d. The grid filters to that folder.",
   },
   {
     icon: MousePointerClick,
-    title: "Klik gambar",
-    body: "Gambar besar keluar (orang panggil lightbox). Title dan folder pun nampak.",
+    title: "Click a photo",
+    body: "The big version pops up (people call it a lightbox). Title and folder show too.",
   },
   {
     icon: MessageCircle,
-    title: "Like & komen",
-    body: "Visitor boleh tekan like atau tinggal komen. Ni yang buat blog rasa hidup.",
+    title: "Like & comment",
+    body: "Visitors can hit like or leave a comment. This is what makes a blog feel alive.",
   },
 ];
 
 const adminSteps: Step[] = [
   {
     icon: LogIn,
-    title: "Login",
-    body: "Masuk laluan admin. Ni kawasan kau sorang je — visitor tak nampak langsung.",
+    title: "Log in",
+    body: "Enter the admin route. This area is just for you — visitors never see it.",
   },
   {
     icon: LayoutDashboard,
     title: "Dashboard",
-    body: "Nampak statistik ringkas: berapa gambar, komen dan like setakat ni.",
+    body: "See quick stats: how many photos, comments and likes so far.",
   },
   {
     icon: UploadCloud,
-    title: "Upload gambar",
-    body: "Pilih fail, letak title, pilih folder, tekan upload. Siap.",
+    title: "Upload a photo",
+    body: "Pick a file, add a title, choose a folder, hit upload. Done.",
   },
   {
     icon: Eye,
-    title: "Terus live",
-    body: "Gambar tu terus muncul kat public page. Magic? Tak — tu kerja API.",
+    title: "Live right away",
+    body: "The photo shows up on the public page instantly. Magic? No — that's the API doing its job.",
   },
 ];
 
@@ -81,7 +81,7 @@ export default function FlowSteps() {
         <div
           className="border-line flex rounded-full border bg-white p-1"
           role="tablist"
-          aria-label="Pilih flow"
+          aria-label="Choose flow"
         >
           <button
             type="button"
@@ -94,7 +94,7 @@ export default function FlowSteps() {
                 : "text-ink-soft hover:text-ink"
             }`}
           >
-            Sebagai visitor
+            As a visitor
           </button>
           <button
             type="button"
@@ -107,11 +107,11 @@ export default function FlowSteps() {
                 : "text-ink-soft hover:text-ink"
             }`}
           >
-            Sebagai admin
+            As an admin
           </button>
         </div>
         <p className="text-ink-soft text-xs font-bold">
-          Tekan setiap step untuk fokus
+          Click each step to focus
         </p>
       </div>
 
@@ -176,8 +176,8 @@ export default function FlowSteps() {
 
       <p className="border-line bg-brand-soft/50 border-t px-5 py-3 text-sm font-bold">
         {mode === "visitor"
-          ? "Ringkasan: buka → tengok → klik → like/komen. Semua tanpa login."
-          : "Ringkasan: login → upload → publish. Semua dalam kawalan kau."}
+          ? "Summary: open → browse → click → like/comment. All without logging in."
+          : "Summary: log in → upload → publish. All under your control."}
       </p>
     </div>
   );

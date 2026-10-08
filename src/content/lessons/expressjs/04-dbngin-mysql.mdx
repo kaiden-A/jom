@@ -1,0 +1,114 @@
+---
+title: "Database: DBngin + MySQL"
+slug: "dbngin-mysql"
+project: "backend-expressjs"
+order: 4
+summary: "Spin up a real MySQL server on your laptop with DBngin, then design the users table our API will live on."
+duration: "7 min read"
+tags: ["Database", "MySQL", "DBngin"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Remember the problem from last lesson? Our users lived in an array, and restarting the server wiped them. **A database is memory that survives.**
+
+MySQL is the database; **DBngin** is how we run it without wanting to throw the laptop out the window.
+
+## What is DBngin?
+
+DBngin is a free little app that runs **MySQL, PostgreSQL and Redis locally with one click**. Normally, installing a database server means services, config files and a lot of swearing. DBngin turns that into: press start.
+
+<Callout variant="note" title="Why not the cloud?">
+Cloud databases (Neon, PlanetScale, etc.) are great — the gallery blog uses one. But while learning, a local database is better: it's free, it's instant, and you can break it as many times as you want. Later, the same code can point at the cloud by changing a few values.
+</Callout>
+
+## Set it up
+
+<StepList
+  steps={[
+    {
+      title: "Download DBngin",
+      body: "Go to dbngin.com and download it. It's free and built by the folks behind TablePlus, for Windows and Mac.",
+      code: "https://dbngin.com",
+      note: "No account needed. Yes, that's still allowed on the internet.",
+    },
+    {
+      title: "Install and open it",
+      body: "Standard install. Open the app — you'll see an empty list of database servers.",
+    },
+    {
+      title: "Create a MySQL instance",
+      body: "Click the plus button, choose MySQL, and keep the defaults. Note the port: 3306 is the MySQL standard.",
+      code: "Type: MySQL\nPort: 3306\nVersion: default (8.x)",
+    },
+    {
+      title: "Press Start",
+      body: "That's genuinely it. When the dot goes green, a real MySQL server is running on your machine at 127.0.0.1:3306.",
+    },
+    {
+      title: "Take a look inside (optional)",
+      body: "Install TablePlus — the free tier is plenty — and connect with host 127.0.0.1, port 3306, user root, empty password. This is how you'll peek at rows later.",
+      code: "Host: 127.0.0.1\nPort: 3306\nUser: root\nPassword: (empty)",
+    },
+  ]}
+/>
+
+<Callout variant="tip" title="These credentials are normal">
+User `root` with an empty password is the default for a **local** MySQL. It's fine because nothing outside your laptop can reach it. Never, ever do this on a server that's exposed to the internet — production credentials come from environment variables, which you'll see in the next lesson.
+</Callout>
+
+## Designing the users table
+
+A database stores data in **tables** — rows and columns, like a spreadsheet that got serious. Our API only needs one table for now:
+
+| Column | Type | Rules |
+| ------ | ---- | ----- |
+| `id` | `INT` | primary key, auto increment |
+| `name` | `VARCHAR(255)` | not null |
+| `email` | `VARCHAR(255)` | not null, unique |
+
+And here it is as SQL:
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE
+);
+```
+
+Read it line by line:
+
+- `INT AUTO_INCREMENT` — an integer that fills itself in: 1, 2, 3… You never choose an id, MySQL does.
+- `PRIMARY KEY` — the row's unique identity. It's how a row can be found at all.
+- `VARCHAR(255)` — text, up to 255 characters.
+- `NOT NULL` — this field can't be empty. The database enforces it, not just our code.
+- `UNIQUE` — no two rows can share an email. Insert a duplicate and MySQL refuses.
+
+<Callout variant="haa" title="Haa!">
+Notice where the rules live. "Name is required" could be checked in Express. But `NOT NULL` and `UNIQUE` are checked by the **database itself** — the last line of defence. Good backends use both: friendly error messages in the API, hard guarantees in the database.
+</Callout>
+
+## You don't have to create the database by hand
+
+Here's a nice detail: **the next lesson's code creates `demo_db` automatically** — it connects to MySQL and runs `CREATE DATABASE IF NOT EXISTS`. You don't click anything.
+
+Columns and the table? The code creates those too. We designed the schema here so that when you read the code, every line is already familiar.
+
+## Recap
+
+<RecapCards
+  points={[
+    "DBngin runs MySQL locally with one click — no server setup ritual.",
+    "Local defaults: host 127.0.0.1, port 3306, user root, empty password.",
+    "Tables are rows and columns; rules live on the columns.",
+    "id is auto increment + primary key; email is unique.",
+    "The next lesson's code creates demo_db and the users table for you.",
+  ]}
+/>
+
+MySQL is running, the table is designed, and the credentials are noted. Next lesson: all the code, every line explained, and a real round trip you can make with your own hands.

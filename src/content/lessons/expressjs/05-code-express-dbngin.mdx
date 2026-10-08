@@ -1,0 +1,327 @@
+---
+title: "The full code, explained"
+slug: "code-express-dbngin"
+project: "backend-expressjs"
+order: 5
+summary: "Four files, one real API. Every line of express-dbngin-api/ — the connection, the routes, the queries — and how to run it yourself."
+duration: "12 min read"
+tags: ["Code", "Express", "MySQL"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RepoTree from "../../../components/lesson/RepoTree.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+This is the lesson everything else was pointing at. Four files, one API, real MySQL. Nothing hidden.
+
+The full code also lives on GitHub if you want to clone instead of type: [github.com/kaiden-A/expressjs-codedojo](https://github.com/kaiden-A/expressjs-codedojo).
+
+## The project structure
+
+<RepoTree
+  title="Project structure"
+  tree={[
+    [{ text: "express-dbngin-api/", type: "root", comment: "" }],
+    [{ text: "├─ .env", type: "file", comment: "config + credentials (never committed)" }],
+    [{ text: "├─ package.json", type: "file", comment: "project info + dependencies" }],
+    [{ text: "├─ db.js", type: "file", comment: "the MySQL connection" }],
+    [{ text: "└─ index.js", type: "file", comment: "the server and the routes" }],
+  ]}
+  tags={[
+    { code: "db.js", label: "= database layer" },
+    { code: "index.js", label: "= Express app" },
+  ]}
+/>
+
+## Set it up
+
+<StepList
+  steps={[
+    {
+      title: "Create the folder",
+      body: "A fresh folder, and npm init to start the project.",
+      code: "mkdir express-dbngin-api\ncd express-dbngin-api\nnpm init -y",
+    },
+    {
+      title: "Install the three packages",
+      body: "express for the server, mysql2 for the database driver, dotenv to read the .env file.",
+      code: "npm install express mysql2 dotenv",
+    },
+    {
+      title: "Make sure MySQL is running",
+      body: "Open DBngin — the dot next to your MySQL instance should be green. If not, press Start.",
+    },
+    {
+      title: "Create the four files",
+      body: "Copy each file from the sections below into your folder. Exact names: .env, package.json, db.js, index.js.",
+    },
+    {
+      title: "Run it",
+      body: "One command. You should see the database initialise, then the server start.",
+      code: "node index.js",
+      note: "Expected output: \"Database initialized successfully.\" then \"Server running on http://localhost:5000\".",
+    },
+  ]}
+/>
+
+## package.json
+
+```json
+{
+  "name": "express-dbngin-api",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0",
+    "dotenv": "^17.0.0"
+  }
+}
+```
+
+`npm install` wrote most of this. The one line worth pointing at is `"type": "module"` — it lets us use `import` instead of `require`, and it's what makes the top-level `await` in `db.js` legal.
+
+## .env
+
+```text
+PORT=5000
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=demo_db
+DB_PORT=3306
+```
+
+Everything configurable lives here, in one obvious place. Change the port, change it here. Move to a cloud database, change it here. The code never changes.
+
+<Callout variant="warn" title="Add .env to .gitignore">
+These values are local so they're not secret — but the habit is the point. Real `.env` files hold real passwords. Create a `.gitignore` file and put `.env` in it, so credentials never end up on GitHub.
+</Callout>
+
+## db.js — the database layer
+
+```js
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// 1. Create a root connection without specifying a database
+const connection = await mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 3306,
+});
+
+// 2. Ensure the database exists
+await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
+await connection.end();
+
+// 3. Create pool with the targeted database
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+export default db;
+```
+
+Three moves, in plain words:
+
+1. **Connect without a database.** At this moment `demo_db` might not exist yet. You can't connect *to* a database that isn't there — so we connect to MySQL itself.
+2. **Create the database if needed.** `IF NOT EXISTS` makes it safe to run every time. The backticks around the name are MySQL's way of quoting identifiers.
+3. **Create the pool.** A **pool** keeps a set of open connections and lends one to each request. `connectionLimit: 10` means at most ten at once; extra requests wait in line (`waitForConnections`).
+
+<Callout variant="note" title="Why a pool and not one connection?">
+One connection means requests wait for each other single-file. A pool lets them run in parallel — and it quietly wins back connections when routes forget to close them. It's the default pattern for a reason.
+</Callout>
+
+## index.js — the server
+
+```js
+// index.js
+import express from 'express';
+import dotenv from 'dotenv';
+import db from './db.js'; // Note the explicit .js extension!
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+
+// Initialize Database Table
+const initDb = async () => {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE
+      );
+    `;
+    await db.query(createTableQuery);
+    console.log('Database initialized successfully.');
+  } catch (err) {
+    console.error('Failed to initialize database table:', err);
+  }
+};
+initDb();
+
+// ---------------- REST API ENDPOINTS ----------------
+
+// [GET] Retrieve all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM users');
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching users', error: error.message });
+  }
+});
+
+// [GET] Retrieve a single user by ID
+app.get('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user', error: error.message });
+  }
+});
+
+// [POST] Create a new user
+app.post('/api/users', async (req, res) => {
+  const { name, email } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ message: 'Name and email are required fields.' });
+  }
+
+  try {
+    const [result] = await db.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
+    res.status(201).json({ id: result.insertId, name, email });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating user', error: error.message });
+  }
+});
+
+// [DELETE] Remove a user by ID
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting user', error: error.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+```
+
+The pieces, in order:
+
+- **`import db from './db.js'`** — the connection from the previous file. In ES modules the `.js` extension is required; that's a classic first-day error.
+- **`app.use(express.json())`** — middleware. It reads incoming JSON bodies and puts them on `req.body`. Without it, `req.body` is empty and POST looks haunted.
+- **`initDb()`** — runs once at startup: creates the `users` table if it doesn't exist. Same schema we designed in lesson 4.
+- **`db.query('... WHERE id = ?', [id])`** — the `?` is a **placeholder**. The value travels separately, so user input can never be mistaken for SQL. This is how you avoid SQL injection, almost for free.
+- **Each route answers honestly**: `200` when it works, `201` after creating, `400` for missing fields, `404` when nothing matched, `500` when the server truly breaks.
+- **`result.insertId`** — MySQL's receipt for an insert: the id it generated. We send it straight back.
+
+<Callout variant="haa" title="Haa!">
+Look back at lesson 3's in-memory version — then at this. The routes are *the same shape*. Only the storage changed. That's the point of separating concerns: the API's personality doesn't change when the database does. And notice: restart the server now, and your users are still there.
+</Callout>
+
+## Test it for real
+
+Start the server with `node index.js`, then open this in your browser:
+
+```text
+http://localhost:5000/api/users
+```
+
+You should see `[]` — an empty list. The database exists, the table exists, and nobody has anything to say yet. Let's fix that.
+
+On Windows (PowerShell), use `Invoke-RestMethod` — `curl` in PowerShell is an alias for something else:
+
+```powershell
+Invoke-RestMethod -Method Post http://localhost:5000/api/users `
+  -ContentType "application/json" `
+  -Body '{"name":"Hafiz","email":"hafiz@mail.com"}'
+```
+
+On Mac or Linux (or PowerShell with `curl.exe`), the classic works:
+
+```bash
+curl -X POST http://localhost:5000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Hafiz","email":"hafiz@mail.com"}'
+```
+
+Now refresh the browser tab. Instead of `[]`:
+
+```json
+[{ "id": 1, "name": "Hafiz", "email": "hafiz@mail.com" }]
+```
+
+That row went: **you → browser/PowerShell → Express → MySQL → Express → back to you.** The full round trip, executed with your own hands.
+
+<Callout variant="tip" title="Test the error paths too">
+Try posting the same email twice — MySQL's `UNIQUE` refuses it, and you get a `500`. Try `GET /api/users/999` — a clean `404`. Good APIs are mostly good at saying no.
+</Callout>
+
+## Your turn: add the missing PUT
+
+This code speaks GET, POST and DELETE — but lesson 3 promised four methods. The last one is yours to add. A skeleton to place alongside the others:
+
+```js
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, email } = req.body;
+  // your turn
+});
+```
+
+Hints: validate `name` and `email` like the POST route. The query is `UPDATE users SET name = ?, email = ? WHERE id = ?`. If `result.affectedRows === 0`, nothing matched — that's a `404`. Otherwise, send back the updated user with a `200`.
+
+Getting this right on your own means you understand everything in this project.
+
+## Recap
+
+<RecapCards
+  points={[
+    "Four files: .env, package.json, db.js, index.js.",
+    ".env keeps config out of code; db.js builds one pooled connection.",
+    "? placeholders pass values safely — no SQL injection.",
+    "Routes reuse the same shapes: 200, 201, 400, 404, 500.",
+    "Data now survives restarts — the round trip is real.",
+  ]}
+/>
+
+That's the project. You went from "what is fullstack" to a working API backed by a real database — and you can explain every file in it.
+
+From here, everything compounds: the gallery blog's API becomes readable, and auth, uploads and deploys are all just more routes and more tables.

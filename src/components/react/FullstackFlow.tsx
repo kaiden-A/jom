@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Eye, UploadCloud, type LucideIcon } from "lucide-react";
+import { Download, UploadCloud, type LucideIcon } from "lucide-react";
 import { useReducedMotion } from "./useReducedMotion";
 
-type Flow = "view" | "upload";
+type Flow = "read" | "write";
 
 interface Track {
   id: string;
@@ -15,7 +15,6 @@ interface Badge {
   y: number;
   label: string;
   dy: number;
-  anchor?: "start" | "middle" | "end";
 }
 
 interface FlowInfo {
@@ -28,56 +27,58 @@ interface FlowInfo {
   badges: Badge[];
 }
 
-const REQ_D = "M210,210 H300";
-const QUERY_D = "M480,185 C520,185 520,95 570,95";
-const RESULT_D = "M570,125 C520,125 520,235 480,235";
-const IMAGE_D = "M570,322 C400,404 260,340 212,262";
-const STORE_D = "M480,235 C520,235 520,322 570,322";
+const FWD_A = "M210,200 H300";
+const FWD_B = "M480,200 H570";
+const BACK_B = "M570,220 H480";
+const BACK_A = "M300,220 H210";
 
 const flows: FlowInfo[] = [
   {
-    id: "view",
-    label: "Visitor opens the page",
-    icon: Eye,
+    id: "read",
+    label: "Read data — GET",
+    icon: Download,
     color: "#4f46e5",
     steps: [
-      "React asks Express for data.",
-      "Express queries Neon — returns all photos by folder.",
-      "Neon sends the data back, Express returns it as JSON.",
-      "The browser fetches the photo files straight from R2 — our server doesn't need to relay them.",
+      "The browser sends GET /api/users to Express.",
+      "Express runs a SELECT query against MySQL.",
+      "MySQL returns the matching rows.",
+      "Express wraps them in JSON and sends them back. That's the round trip.",
     ],
     tracks: [
-      { id: "view-req", d: REQ_D },
-      { id: "view-query", d: QUERY_D },
-      { id: "view-result", d: RESULT_D },
-      { id: "view-image", d: IMAGE_D },
+      { id: "read-req", d: FWD_A },
+      { id: "read-query", d: FWD_B },
+      { id: "read-rows", d: BACK_B },
+      { id: "read-res", d: BACK_A },
     ],
     badges: [
-      { n: 1, x: 248, y: 210, label: "request data", dy: -20 },
-      { n: 2, x: 521, y: 140, label: "query", dy: -20 },
-      { n: 3, x: 521, y: 180, label: "JSON back", dy: 34 },
-      { n: 4, x: 345, y: 352, label: "photos straight from R2", dy: 34 },
+      { n: 1, x: 255, y: 200, label: "request", dy: -22 },
+      { n: 2, x: 525, y: 200, label: "query", dy: -22 },
+      { n: 3, x: 525, y: 220, label: "rows", dy: 40 },
+      { n: 4, x: 255, y: 220, label: "JSON back", dy: 40 },
     ],
   },
   {
-    id: "upload",
-    label: "Admin uploads a photo",
+    id: "write",
+    label: "Create data — POST",
     icon: UploadCloud,
     color: "#ea580c",
     steps: [
-      "Admin picks a photo, React sends it to Express.",
-      "Express stores the photo file in R2.",
-      "With the photo URL in hand, Express stores the metadata (title, folder, URL) in Neon.",
+      "The browser sends the new user as JSON to POST /api/users.",
+      "Express runs an INSERT into MySQL.",
+      "MySQL confirms the write and hands back the new id.",
+      "Express replies with 201 Created and the new record.",
     ],
     tracks: [
-      { id: "up-req", d: REQ_D },
-      { id: "up-store", d: STORE_D },
-      { id: "up-meta", d: QUERY_D },
+      { id: "write-req", d: FWD_A },
+      { id: "write-insert", d: FWD_B },
+      { id: "write-ok", d: BACK_B },
+      { id: "write-res", d: BACK_A },
     ],
     badges: [
-      { n: 1, x: 248, y: 210, label: "send photo", dy: -20 },
-      { n: 2, x: 521, y: 278, label: "store file", dy: 34 },
-      { n: 3, x: 521, y: 140, label: "metadata", dy: -20 },
+      { n: 1, x: 255, y: 200, label: "new user data", dy: -22 },
+      { n: 2, x: 525, y: 200, label: "INSERT", dy: -22 },
+      { n: 3, x: 525, y: 220, label: "ok", dy: 40 },
+      { n: 4, x: 255, y: 220, label: "201 + row", dy: 40 },
     ],
   },
 ];
@@ -108,7 +109,7 @@ function Node({
         fill="#ffffff"
         stroke="#e8e3f0"
         strokeWidth={2}
-        filter="url(#archShadow)"
+        filter="url(#flowShadow)"
       />
       <text
         x={x + 20}
@@ -136,8 +137,8 @@ function Node({
   );
 }
 
-export default function ArchDiagram() {
-  const [flow, setFlow] = useState<Flow>("view");
+export default function FullstackFlow() {
+  const [flow, setFlow] = useState<Flow>("read");
   const reduced = useReducedMotion();
   const active = flows.find((f) => f.id === flow) ?? flows[0]!;
 
@@ -147,7 +148,7 @@ export default function ArchDiagram() {
         <div
           className="flex flex-wrap gap-2"
           role="tablist"
-          aria-label="Choose data flow"
+          aria-label="Choose request type"
         >
           {flows.map((f) => {
             const Icon = f.icon;
@@ -181,7 +182,7 @@ export default function ArchDiagram() {
           })}
         </div>
         <p className="text-ink-soft text-xs font-bold">
-          Click a button to switch flow
+          Follow the data around the loop
         </p>
       </div>
 
@@ -190,11 +191,11 @@ export default function ArchDiagram() {
           viewBox="0 0 780 420"
           className="mx-auto h-auto w-full min-w-[660px] max-w-[780px]"
           role="img"
-          aria-label={`Architecture diagram — ${active.label}`}
+          aria-label={`Fullstack flow — ${active.label}`}
         >
           <defs>
             <filter
-              id="archShadow"
+              id="flowShadow"
               x="-20%"
               y="-20%"
               width="140%"
@@ -264,7 +265,7 @@ export default function ArchDiagram() {
               <text
                 x={b.x}
                 y={b.y + b.dy}
-                textAnchor={b.anchor ?? "middle"}
+                textAnchor="middle"
                 fontSize={12.5}
                 fontWeight={800}
                 fill={active.color}
@@ -300,26 +301,20 @@ export default function ArchDiagram() {
           <Node
             x={30}
             y={158}
-            title="React"
-            lines={["Public UI + Admin UI", "runs in the browser"]}
+            title="Client"
+            lines={["the browser", "sends requests"]}
           />
           <Node
             x={300}
             y={158}
             title="Express API"
-            lines={["logic + auth", "the doorway for data"]}
+            lines={["routes + logic", "port 5000"]}
           />
           <Node
             x={570}
-            y={56}
-            title="Neon"
-            lines={["photos · folders", "comments · likes"]}
-          />
-          <Node
-            x={570}
-            y={270}
-            title="Cloudflare R2"
-            lines={["photo files", "cheap + fast"]}
+            y={158}
+            title="MySQL"
+            lines={["the database", "demo_db"]}
           />
         </svg>
       </div>

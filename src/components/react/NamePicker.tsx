@@ -11,22 +11,22 @@ const ideas: NameIdea[] = [
   {
     name: "Galblog",
     tag: "gallery + blog",
-    desc: "Terus orang faham apa benda ni. Simple dan selamat.",
+    desc: "People get it instantly. Simple and safe.",
   },
   {
     name: "Pixspace",
     tag: "pixel + space",
-    desc: "Bunyi modern sikit. Macam nama startup.",
+    desc: "Sounds a bit more modern. Like a startup name.",
   },
   {
-    name: "Galeri Kito",
-    tag: "kito = kita",
-    desc: "Mesra dan warm. Macam orang ajak sembang.",
+    name: "Snapnest",
+    tag: "snap + nest",
+    desc: "Warm and friendly. Like a cosy place for your photos.",
   },
   {
     name: "Snapshelf",
     tag: "snap + shelf",
-    desc: "Macam rak gambar. English tapi comel.",
+    desc: "Like a shelf for your snaps. Short and sweet.",
   },
 ];
 
@@ -86,12 +86,12 @@ export default function NamePicker() {
           className="btn btn-ghost !min-h-10 !px-4 !py-1.5 text-sm"
         >
           <Sparkles className="size-4" aria-hidden="true" />
-          Kasi aku random
+          Pick one for me
         </button>
         <p className="text-ink-soft text-sm font-bold" aria-live="polite">
           {picked
-            ? `Ok, dalam lesson ni kita panggil dia "${picked}". Tukar bila-bila pun boleh.`
-            : "Tekan mana-mana satu. Ni demo je — nama pun tak affect ape-ape."}
+            ? `Okay, for this lesson we'll call it "${picked}". You can change it any time.`
+            : "Tap any one. It's just a demo — the name doesn't affect anything."}
         </p>
       </div>
     </div>

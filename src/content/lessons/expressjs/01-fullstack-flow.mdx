@@ -1,0 +1,113 @@
+---
+title: "The syllabus: how fullstack actually works"
+slug: "fullstack-flow"
+project: "backend-expressjs"
+order: 1
+summary: "Before we touch a server, we map the whole trip — how a request leaves the browser, hits the server, talks to the database, and comes back as data."
+duration: "6 min read"
+tags: ["Explanation", "no code"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import TechStackCards from "../../../components/lesson/TechStackCards.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import FullstackFlow from "../../../components/react/FullstackFlow.tsx";
+
+Welcome to a new project: **Backend Development with ExpressJS**. Different vibe from the gallery blog — this time we're building the thing that *serves* the data, not the thing that shows it.
+
+No pretty UI here. This is the engine room.
+
+## What "fullstack" actually means
+
+You've probably heard the word a hundred times. Let's make it concrete. **Fullstack just means following one piece of data through the whole trip:**
+
+- **Client** — the browser. It asks for things.
+- **Server** — our Express app. It listens, decides, and answers.
+- **Database** — MySQL. It remembers things.
+
+That's it. Three players, one loop. Everything else is detail.
+
+<Callout variant="note" title="The restaurant analogy">
+The client is a customer ordering food. The server is the waiter — takes the order, passes it to the kitchen, brings back the plate. The database is the kitchen: it doesn't talk to customers, it just stores ingredients and follows recipes. You'll see this analogy again inside the code.
+</Callout>
+
+## The round trip, step by step
+
+This is the part to really sit with. Tap both tabs and follow the dots — that loop is what every backend lesson after this one is secretly about:
+
+<FullstackFlow client:visible />
+
+Notice the shape of it: **request goes out, data comes back.** A GET reads. A POST writes. Same road, opposite errands.
+
+## The cast for this project
+
+Four tools, all of them boring on purpose — boring is good in the backend:
+
+<TechStackCards
+  items={[
+    {
+      name: "Node.js",
+      role: "JavaScript runtime",
+      monogram: "No",
+      tone: "bg-[#3C873A] text-white",
+      desc: "Runs JavaScript outside the browser. This is where our server lives — no HTML, no page, just a program that listens.",
+      why: "One language for everything. You already know JavaScript from the frontend, so the backend feels familiar.",
+    },
+    {
+      name: "Express",
+      role: "Web framework",
+      monogram: "Ex",
+      tone: "bg-ink text-white",
+      desc: "The layer on top of Node that makes handling requests bearable. It turns URLs into functions you write.",
+      why: "Tiny, unopinionated, and everywhere. You can read an Express app top to bottom and understand all of it.",
+    },
+    {
+      name: "MySQL",
+      role: "Database",
+      monogram: "My",
+      tone: "bg-[#00758F] text-white",
+      desc: "The kitchen. Stores our users in tables, and answers questions like \"who has id 3?\" without blinking.",
+      why: "The most widely used database in the world — which means tutorials, jobs, and answers everywhere.",
+    },
+    {
+      name: "DBngin",
+      role: "Run MySQL locally",
+      monogram: "DB",
+      tone: "bg-accent text-ink",
+      desc: "A little app that starts MySQL on your laptop with one click. No server setup, no cloud bill.",
+      why: "Local databases are disposable. Break everything, reset everything, learn everything.",
+    },
+  ]}
+/>
+
+## What we'll build across this project
+
+Five lessons, one small but real API — a `users` service. Here's the map:
+
+1. **This lesson** — the fullstack loop in your head.
+2. **Meet Express** — what it is, where it came from, and your first server.
+3. **Basic API development** — the four HTTP methods and how endpoints are named.
+4. **Database with DBngin + MySQL** — installed, running, and ready.
+5. **The full code** — all four files, explained line by line, running for real.
+
+By the end, you'll be able to open a browser, hit your own API, and watch data come out of a real database. That moment never gets old.
+
+<Callout variant="tip" title="Why backend first?">
+Because every frontend bug is easier to fix when you know what the server was thinking. This project makes the gallery blog's API stop being a mystery.
+</Callout>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Fullstack = client → server → database → back to client.",
+    "Client asks. Server decides. Database remembers.",
+    "GET reads data, POST writes data — same road, different errand.",
+    "Our stack: Node.js + Express + MySQL, running locally with DBngin.",
+    "Five lessons, one goal: a real API you can hit from the browser.",
+  ]}
+/>
+
+Next up: meet Express properly — what it is, and why it's been the default way to write backends in JavaScript for over a decade.

@@ -19,9 +19,9 @@ export default function VisitorView({
   onOpen,
   onGoAdmin,
 }: Props) {
-  const allFolders = ["Semua", ...folders];
+  const allFolders = ["All", ...folders];
   const visible =
-    activeFolder === "Semua"
+    activeFolder === "All"
       ? photos
       : photos.filter((p) => p.folder === activeFolder);
 
@@ -31,12 +31,12 @@ export default function VisitorView({
         <div
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
           role="tablist"
-          aria-label="Filter folder"
+          aria-label="Filter by folder"
         >
           {allFolders.map((folder) => {
             const isActive = activeFolder === folder;
             const count =
-              folder === "Semua"
+              folder === "All"
                 ? photos.length
                 : photos.filter((p) => p.folder === folder).length;
             return (
@@ -63,13 +63,13 @@ export default function VisitorView({
           })}
         </div>
         <p className="text-ink-soft text-xs font-bold">
-          Ni yang visitor nampak. Nak upload?{" "}
+          This is what visitors see. Want to upload?{" "}
           <button
             type="button"
             onClick={onGoAdmin}
             className="text-brand hover:text-brand-deep font-bold underline underline-offset-2"
           >
-            Tukar ke Admin
+            Switch to Admin
           </button>
         </p>
       </div>
@@ -78,17 +78,17 @@ export default function VisitorView({
         <div className="border-line mt-5 grid place-items-center rounded-2xl border-2 border-dashed bg-white/60 px-6 py-14 text-center">
           <Images className="text-ink-soft/50 size-8" aria-hidden="true" />
           <p className="font-display mt-3 text-base font-semibold">
-            Belum ada gambar dalam folder ni
+            No photos in this folder yet
           </p>
           <p className="text-ink-soft mt-1 max-w-xs text-sm font-bold">
-            Pergi Admin, upload satu. Lepas tu tekan Visitor balik.
+            Go to Admin, upload one. Then hit Visitor again.
           </p>
           <button
             type="button"
             onClick={onGoAdmin}
             className="btn btn-primary mt-5 !min-h-10 !px-4 !py-1.5 text-sm"
           >
-            Pergi Admin
+            Go to Admin
           </button>
         </div>
       ) : (

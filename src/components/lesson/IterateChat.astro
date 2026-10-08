@@ -9,29 +9,29 @@ const messages: Message[] = [
   {
     role: "user",
     tag: "Prompt 1",
-    text: "Buat mockup gallery blog guna HTML + Tailwind + Font Awesome + JavaScript. Dalam satu fail index.html. Ada grid gambar, filter folder, dan lightbox. Warna krim #FAF7F2 dengan aksen indigo #4F46E5. Design clean, banyak ruang kosong.",
+    text: "Build a gallery blog mockup with HTML + Tailwind + Font Awesome + JavaScript. In a single index.html file. Include a photo grid, folder filter, and lightbox. Cream background #FAF7F2 with indigo accent #4F46E5. Clean design, plenty of whitespace.",
   },
   {
     role: "ai",
-    text: "Dah siap — index.html ada grid gambar, filter folder dan lightbox. Buka dalam browser dan cuba klik.",
+    text: "Done — index.html has the photo grid, folder filter and lightbox. Open it in the browser and try clicking around.",
   },
   {
     role: "user",
     tag: "Follow-up",
-    text: "Hampir ok, tapi background terlalu terang dan grid nampak sesak. Tukar background ke #F5F1E8, tambah spacing antara kad. Kekalkan semua yang lain.",
+    text: "Almost there, but the background is too bright and the grid feels cramped. Change the background to #F5F1E8, add more spacing between the cards. Keep everything else.",
   },
   {
     role: "ai",
-    text: "Done — background dah tukar, spacing dah lega. Yang lain semua kekal sama.",
+    text: "Done — background changed, spacing is roomier now. Everything else stays the same.",
   },
   {
     role: "user",
     tag: "Follow-up",
-    text: "Ok cantik. Sekarang tambah butang 'Admin' kat kanan atas — bila tekan, keluar form upload gambar. Mockup je.",
+    text: "Nice. Now add an 'Admin' button at the top right — when clicked, an upload form appears. Mockup only.",
   },
   {
     role: "ai",
-    text: "Dah siap. Tekan Admin untuk form upload, tekan Visitor untuk balik ke galeri.",
+    text: "Done. Hit Admin for the upload form, hit Visitor to go back to the gallery.",
   },
 ];
 ---
@@ -41,9 +41,9 @@ const messages: Message[] = [
     <div
       class="border-line bg-paper/70 flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-5"
     >
-      <p class="font-display text-sm font-semibold">Contoh sesi iterate</p>
+      <p class="font-display text-sm font-semibold">A sample iterate session</p>
       <span class="text-ink-soft text-xs font-bold">
-        prompt pertama jarang sempurna — dan tu normal
+        the first prompt is rarely perfect — and that's normal
       </span>
     </div>
 

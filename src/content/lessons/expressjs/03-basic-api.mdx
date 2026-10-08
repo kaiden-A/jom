@@ -1,0 +1,114 @@
+---
+title: "Basic API development: the four methods"
+slug: "basic-api"
+project: "backend-expressjs"
+order: 3
+summary: "GET, POST, PUT, DELETE — the four verbs every API speaks, and the naming pattern that makes /api/users feel obvious."
+duration: "8 min read"
+tags: ["API", "REST"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import ApiMethods from "../../../components/react/ApiMethods.tsx";
+
+An **API** is a contract. You say: "ask me in this shape, and I'll answer in this shape." REST is the most common dialect of that contract — and it's built on four verbs.
+
+## The four methods
+
+Everything in this lesson hangs off this. Tap each card, look at the request and response:
+
+<ApiMethods client:visible />
+
+If you remember one sentence: **the URL names the thing, the method says what to do with it.**
+
+That's why `POST /api/users` and `GET /api/users` hit the same address but mean completely different things. In a well-designed API, you almost never need to invent a URL for an action.
+
+## Naming rules that keep you out of trouble
+
+You've seen the pattern in the component above. Three habits make it click:
+
+1. **Prefix with `/api`** — separates your API routes from pages and static files. `/api/users` is data; `/users` might be a web page.
+2. **Name things with plural nouns** — `/api/users`, not `/api/user`, not `/api/getUsers`.
+3. **Put the id at the end** — `/api/users/:id`. The colon marks a placeholder: any id can live there.
+
+<Callout variant="warn" title="Don't put verbs in your URLs">
+`/api/getUsers` and `/api/createUser` feel natural but fight the grain. The method already said "get" or "create". When naming goes bad, the whole API gets harder to guess — and guessing is how clients (and teammates) use APIs.
+</Callout>
+
+## Status codes: the backend's tone of voice
+
+Every response carries a status code. You only need a handful to start:
+
+| Code | Meaning | When you'll use it |
+| ---- | ------- | ------------------ |
+| `200 OK` | Success | GET, PUT, DELETE went fine |
+| `201 Created` | Made a thing | After a successful POST |
+| `400 Bad Request` | You sent nonsense | Missing fields, bad data |
+| `404 Not Found` | Doesn't exist | No user with that id |
+| `500 Internal Server Error` | Server broke | Something threw an error |
+
+The difference between `400` and `500` matters: `400` blames the request, `500` blames us. Never make the client take the fall for our bugs.
+
+## Our first API, no database yet
+
+Before MySQL, let's prove the routes work with an array pretending to be a database:
+
+```js
+import express from "express";
+
+const app = express();
+app.use(express.json()); // lets Express read JSON bodies
+
+let users = [{ id: 1, name: "Aiman", email: "aiman@mail.com" }];
+
+app.get("/api/users", (req, res) => {
+  res.json(users);
+});
+
+app.get("/api/users/:id", (req, res) => {
+  const user = users.find((u) => u.id === Number(req.params.id));
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.json(user);
+});
+
+app.post("/api/users", (req, res) => {
+  const { name, email } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ message: "Name and email are required." });
+  }
+  const user = { id: users.length + 1, name, email };
+  users.push(user);
+  res.status(201).json(user);
+});
+
+app.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
+});
+```
+
+Try it right now, no setup needed: save as `index.js`, run `node index.js`, then open `http://localhost:5000/api/users` in your browser.
+
+<Callout variant="haa" title="Haa!">
+The browser only does GET when you type a URL. To try POST, PUT and DELETE you need a tool — lesson 5 shows you `curl` and other ways. For now, reading the code is enough.
+</Callout>
+
+There's an obvious problem though: **restart the server, and every user you added is gone.** An array lives in memory. Memory forgets.
+
+That's not a bug to fix — that's the door to the next lesson.
+
+## Recap
+
+<RecapCards
+  points={[
+    "URL names the thing; the method says what to do with it.",
+    "GET reads, POST creates, PUT updates, DELETE removes.",
+    "Naming: /api + plural noun, id at the end as :id.",
+    "Status codes are tone of voice — 200, 201, 400, 404, 500.",
+    "In-memory arrays forget on restart. Databases don't.",
+  ]}
+/>
+
+Next: put MySQL behind these routes with DBngin — a real database, one click away.
