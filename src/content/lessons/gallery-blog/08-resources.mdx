@@ -1,0 +1,186 @@
+---
+title: "Domain resources: the six-file pattern"
+slug: "resources"
+project: "gallery-blog"
+order: 8
+summary: "Phase 5 — the photo resource, built the same way every resource will ever be built: table, service, router, view, mount, test. Plus the migration workflow where the robot writes SQL and you sign off."
+duration: "11 min read"
+tags: ["Phase 5", "Drizzle", "migrations"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import ResourceFactory from "../../../components/react/ResourceFactory.tsx";
+
+Everything so far was the venue: the app boots, you can get in, pages render. Phase 5 is the actual show — **storing photos.**
+
+And it's built to a pattern so fixed that the plan calls it "the template for anything app-specific". Learn it once, and folders, likes, and comments are the same six moves with different nouns.
+
+<ResourceFactory client:visible />
+
+## The six files, for real
+
+### 1. The table
+
+```ts
+// src/db/schema/photos.ts
+export const photos = appSchema.table(
+  "photos",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    body: text().notNull().default(""),
+    imageKey: text(),                       // the R2 object key — never a URL
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index().on(t.createdAt)],
+);
+```
+
+Decisions to notice, because they're all load-bearing:
+
+- **`imageKey`, not `imageUrl`.** The database stores `images/2026/<uuid>.jpg` — a pointer. The URL gets built at read time (public base + key, or a fresh signed URL). If we stored URLs, a bucket rename would mean rewriting every row.
+- **One owner, so no `owner_id`.** There's no per-row ownership check anywhere in this app — `requireAuth` on the router is the entire gate. Ownership columns exist to separate users; there's one user.
+- **`appSchema.table(...)` on every table.** `pgSchema("public")` exists to force schema-qualified SQL. Why: Neon's transaction-mode pooler can reassign your connection *between statements*, so session state like `search_path` can't be trusted. Qualified SQL has no session state to trust.
+
+### 2. The service
+
+Business rules live here — schema, projections, writes. Routes stay thin:
+
+```ts
+// src/services/photo_services.ts
+export const PhotoIn = z.object({
+  title: z.string().trim().min(1, "Give it a title.").max(200, "Keep the title under 200 characters."),
+  body: z.string().max(10_000, "That's too long.").default(""),
+  imageKey: z.string().nullable().default(null),
+});
+
+export async function photoView(storage: Storage, row: Photo) {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    imageUrl: row.imageKey ? await storage.readUrl(row.imageKey) : null,
+    createdAt: toMs(row.createdAt),
+  };
+}
+
+export async function deletePhoto(db: Db, storage: Storage, id: string) {
+  const [row] = await db.delete(photos).where(eq(photos.id, id)).returning();
+  if (!row) throw new HttpError(404, "Not found.");
+  if (row.imageKey) {
+    // DB first, R2 second: a failed object delete never fails the user's request.
+    await storage.remove(row.imageKey).catch((e) => console.warn("R2 delete failed:", row.imageKey, e));
+  }
+}
+```
+
+Three patterns worth naming:
+
+- **Zod schemas carry human error messages.** The message you see in the form comes from here, not from a route.
+- **The view projection (`photoView`) is the only thing templates ever see.** Note `toMs(row.createdAt)` — views get integer milliseconds, never raw `Date` objects. Templates format; they don't guess.
+- **`deletePhoto` deletes the row first, then the object, and never fails on the object.** You'll meet that "DB first, R2 second" ordering again in the next lesson — it's an invariant, not a style.
+
+### 3. The router
+
+```ts
+// src/routes/photos.ts
+export function photosRouter({ settings, db, storage }: Deps): Router {
+  const router = Router();
+  router.use(requireAuth(settings, "page"));   // the whole gate, one line
+
+  router.get("/", async (_req, res) => {
+    res.render("photos", { photos: await listPhotos(db, storage), form: {}, error: null });
+  });
+
+  router.post("/", async (req, res) => {
+    const parsed = PhotoIn.safeParse({ ...req.body, imageKey: req.body?.imageKey || null });
+    if (!parsed.success) {
+      res.status(422).render("photos", {
+        photos: await listPhotos(db, storage), form: req.body,
+        error: parsed.error.issues[0]?.message ?? "Check the details.",
+      });
+      return;
+    }
+    await createPhoto(db, storage, settings.IMAGE_MAX_BYTES, parsed.data);
+    res.redirect(303, "/photos");
+  });
+
+  router.post("/:id/delete", async (req, res) => {
+    await deletePhoto(db, storage, parseId(req.params.id));   // bad uuid → 404
+    res.redirect(303, "/photos");
+  });
+
+  return router;
+}
+```
+
+The phase 4 rules, executed precisely: `safeParse` failure re-renders with **422** and the input; success answers **303**; a malformed uuid is just `HttpError(404)` from `parseId`. And the whole gate is the single `router.use(requireAuth(...))` at the top — no per-route auth checks, no ownership logic.
+
+### 4–6. View, mount, test
+
+`views/photos.ejs` is the list + create form + per-row delete form with `data-confirm`. Mounting is one line in `app.ts`:
+
+```ts
+app.use("/photos", photosRouter(deps));
+```
+
+And the test file (`test/photos.test.ts`) asserts the shape: validation re-renders 422, create redirects 303, delete redirects, anonymous gets bounced to `/login`. It runs in phase 7 — but write it now while the shape is fresh.
+
+## Migrations: the robot writes, the human signs
+
+The schema above is TypeScript. The database needs SQL. Between those two facts sits the workflow the plan is strictest about:
+
+```bash
+npm run db:generate     # drizzle-kit writes drizzle/000X_*.sql — a PROPOSAL
+# ...then you open that file and read it. Every line.
+npm run db:migrate      # apply it — locally now; by hand in production
+```
+
+<Callout variant="warn" title="Why “read it by hand” is in bold in the plan">
+The generator is excellent at adding things and *can* misread changes. Rename a column and it may propose `DROP COLUMN` + `ADD COLUMN` — which silently deletes everyone's data for that column. It's not a bug; the generator can't read your mind about renames. That's why generated SQL is a proposal until a human signs it, and why <strong>deploys never run migrations</strong> — applying schema changes is a deliberate act, not a side effect of shipping code.
+</Callout>
+
+<Callout variant="note" title="One more pooler-safe habit">
+You'll see raw SQL stay boring too: no named prepared statements, no `SET search_path`, no unqualified table names. All three are the same lesson — under transaction-mode pooling, nothing session-scoped survives, so every statement must carry its own context.
+</Callout>
+
+## Let opencode write it
+
+```text
+Build Phase 5 of master-plan.md for a `photos` resource, following the six-file
+table in §3 exactly: src/db/schema/photos.ts, src/services/photo_services.ts
+(zod schema with human messages, photoView projection with toMs, deletePhoto with
+DB-first/R2-second ordering), src/routes/photos.ts (requireAuth, 422 re-render,
+303 redirects, parseId), views/photos.ejs, the mount line in app.ts, and
+test/photos.test.ts. Then run npm run db:generate.
+```
+
+Then do the human part: open the generated `.sql` and read it out loud. Every line should be something you can explain. Then migrate.
+
+<MissionBox
+  body="Generate the migration, read it by hand, apply it — then use the app like a person: log in, add a photo, see it listed, delete it, and check the row is gone in Neon's SQL editor."
+  code={`npm run db:generate
+# open drizzle/000X_*.sql and actually read it
+npm run db:migrate
+# then: /photos → add → delete`}
+  note="No image field yet on purpose — uploads are phase 6, and the resource works without them. If a row survives a delete in Neon, phase 5 is done."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Every resource is the same six files: table, service, router, view, mount, test.",
+    "imageKey not imageUrl — the URL is built fresh at read time; the DB stores a pointer.",
+    "Services own the rules (zod + HttpError); routers stay thin (parse, call, render or redirect).",
+    "Migrations: generate → read by hand → apply. Deploys never run them.",
+    "appSchema + no session state + no named statements: pooler-proof by construction.",
+  ]}
+/>
+
+Next: phase 6 — images. The browser uploads straight to R2, the server never touches the bytes, and the database learns one new word: a key. This is the phase that makes the gallery feel like a gallery.

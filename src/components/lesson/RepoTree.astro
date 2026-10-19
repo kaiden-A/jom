@@ -18,31 +18,31 @@ interface Props {
 
 const defaultTree: TreePart[][] = [
   [{ text: "gallery-blog/", type: "root", comment: "" }],
-  [
-    { text: "├─ apps/", type: "folder", comment: "every app in one place" },
-  ],
-  [
-    { text: "│  ├─ web/", type: "folder", comment: "React — public site + admin UI" },
-  ],
-  [{ text: "│  │  ├─ src/", type: "folder", comment: "" }],
-  [{ text: "│  │  └─ package.json", type: "file", comment: "dependencies for web" }],
-  [{ text: "│  └─ api/", type: "folder", comment: "Express — REST API" }],
-  [{ text: "│     ├─ src/", type: "folder", comment: "" }],
-  [{ text: "│     └─ package.json", type: "file", comment: "dependencies for api" }],
-  [
-    { text: "├─ packages/", type: "folder", comment: "things we share" },
-  ],
-  [{ text: "│  └─ shared/", type: "folder", comment: "shared types & helpers" }],
-  [
-    { text: "├─ package.json", type: "file", comment: "scripts for every app" },
-  ],
-  [{ text: "└─ README.md", type: "file", comment: "how to run the project" }],
+  [{ text: "├─ src/", type: "folder", comment: "the server — one app" }],
+  [{ text: "│  ├─ app.ts", type: "file", comment: "middleware order + routers" }],
+  [{ text: "│  ├─ index.ts", type: "file", comment: "boot: settings, db, listen" }],
+  [{ text: "│  ├─ config.ts", type: "file", comment: "zod-parsed env → Settings" }],
+  [{ text: "│  ├─ db/", type: "folder", comment: "schema + client" }],
+  [{ text: "│  ├─ services/", type: "folder", comment: "the business logic" }],
+  [{ text: "│  ├─ middleware/", type: "folder", comment: "auth, same-origin, headers" }],
+  [{ text: "│  └─ routes/", type: "folder", comment: "URLs in, responses out" }],
+  [{ text: "├─ views/", type: "folder", comment: "EJS templates" }],
+  [{ text: "│  ├─ partials/", type: "folder", comment: "head + foot on every page" }],
+  [{ text: "│  └─ photos.ejs", type: "file", comment: "list + create form" }],
+  [{ text: "├─ public/", type: "folder", comment: "served as-is" }],
+  [{ text: "│  ├─ css/app.css", type: "file", comment: "hand-written, small" }],
+  [{ text: "│  └─ js/", type: "folder", comment: "app.js + upload.js" }],
+  [{ text: "├─ drizzle/", type: "folder", comment: "generated SQL migrations" }],
+  [{ text: "├─ test/", type: "folder", comment: "vitest on a test branch" }],
+  [{ text: "├─ master-plan.md", type: "file", comment: "the document we follow" }],
+  [{ text: "└─ package.json", type: "file", comment: "scripts: dev, test, db:migrate" }],
 ];
 
 const defaultTags: TreeTag[] = [
-  { code: "apps/web", label: "= React" },
-  { code: "apps/api", label: "= Express" },
-  { code: "packages/shared", label: "= shared" },
+  { code: "src/", label: "= the server" },
+  { code: "views/", label: "= the pages" },
+  { code: "public/", label: "= browser files" },
+  { code: "drizzle/", label: "= migrations" },
 ];
 
 const {

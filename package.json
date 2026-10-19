@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync:plan": "node -e \"const fs=require('fs');if(fs.existsSync('master-plan.md')){fs.mkdirSync('public/downloads',{recursive:true});fs.copyFileSync('master-plan.md','public/downloads/master-plan.md')}\"",
+    "predev": "npm run sync:plan",
     "dev": "astro dev",
+    "prebuild": "npm run sync:plan",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check"

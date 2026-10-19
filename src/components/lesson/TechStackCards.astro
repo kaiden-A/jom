@@ -14,36 +14,36 @@ interface Props {
 
 const defaultStack: StackItem[] = [
   {
-    name: "React",
-    role: "Frontend",
-    monogram: "Re",
-    tone: "bg-[#61dafb] text-ink",
-    desc: "Everything people see — the photo grid, the lightbox, the admin dashboard. This is what you write with JavaScript.",
-    why: "Easy to split the UI into components, and you can reuse them for both the public side and the admin side.",
-  },
-  {
-    name: "ExpressJS",
-    role: "Backend API",
+    name: "Express 5",
+    role: "The server",
     monogram: "Ex",
     tone: "bg-ink text-white",
-    desc: "The doorway for data. React asks, Express answers. Uploads, comments, likes — all go through here.",
-    why: "Lightweight with very little magic. You can see what every line does.",
+    desc: "One app that does everything: routes, forms, JSON endpoints, pages. It's the only program in this project.",
+    why: "Boring on purpose. You can read the whole app top to bottom and understand every line.",
+  },
+  {
+    name: "EJS",
+    role: "The pages",
+    monogram: "EJ",
+    tone: "bg-[#b4ca65] text-ink",
+    desc: "Templates that turn data into finished HTML on the server. No framework, no build step, no browser-side rendering.",
+    why: "Escaping is automatic — <%= %> keeps whatever users type from becoming something that runs.",
   },
   {
     name: "Neon",
     role: "Database (Postgres)",
     monogram: "Ne",
     tone: "bg-[#00e599] text-ink",
-    desc: "Stores the structured data: photo list, folders, comments, likes, and the admin user.",
-    why: "Serverless Postgres — no need to set up your own database server, and it has a free tier.",
+    desc: "Stores the structured data: photos, folders, comments, likes. Never the photo files themselves.",
+    why: "Serverless Postgres with a free tier — and a second branch just for tests.",
   },
   {
     name: "Cloudflare R2",
     role: "Photo storage",
     monogram: "R2",
     tone: "bg-[#f38020] text-ink",
-    desc: "Stores the photo files themselves. The database only keeps the URL, not the file.",
-    why: "Cheap (no egress fees), fast, and S3-compatible — easy to work with.",
+    desc: "Stores the photo files themselves. The database only keeps the object key.",
+    why: "Cheap, fast, S3-compatible — and the browser uploads straight to it with a short-lived signed URL.",
   },
 ];
 

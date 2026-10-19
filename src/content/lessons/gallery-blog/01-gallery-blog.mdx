@@ -10,16 +10,16 @@ updated: "October 2026"
 draft: false
 ---
 
-import Callout from "../../components/lesson/Callout.astro";
-import TwoSides from "../../components/lesson/TwoSides.astro";
-import TechStackCards from "../../components/lesson/TechStackCards.astro";
-import RepoTree from "../../components/lesson/RepoTree.astro";
-import RecapCards from "../../components/lesson/RecapCards.astro";
-import Checklist from "../../components/react/Checklist.tsx";
-import NamePicker from "../../components/react/NamePicker.tsx";
-import FlowSteps from "../../components/react/FlowSteps.tsx";
-import ArchDiagram from "../../components/react/ArchDiagram.tsx";
-import GalleryDemo from "../../components/react/GalleryDemo.tsx";
+import Callout from "../../../components/lesson/Callout.astro";
+import TwoSides from "../../../components/lesson/TwoSides.astro";
+import TechStackCards from "../../../components/lesson/TechStackCards.astro";
+import RepoTree from "../../../components/lesson/RepoTree.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Checklist from "../../../components/react/Checklist.tsx";
+import NamePicker from "../../../components/react/NamePicker.tsx";
+import FlowSteps from "../../../components/react/FlowSteps.tsx";
+import OneAppArchitecture from "../../../components/react/OneAppArchitecture.tsx";
+import GalleryDemo from "../../../components/react/GalleryDemo.tsx";
 
 Okay, today we're going to learn how to build a **gallery blog** (no idea what to name it yet). We'll pick a name together later.
 
@@ -75,9 +75,9 @@ That's about how it works. Simple right?
 
 ## Tech stack: what we use to build this
 
-Now we go into tech stack. **Haa this is pretty wide** — because you can use anything. Laravel works, PHP works, WordPress works. But for simplicity, let's just use **react + expressjs + neon + r2 cloudflare**. Simple and practical.
+Now we go into tech stack. **Haa this is pretty wide** — because you can use anything. Laravel works, PHP works, WordPress works. But for simplicity, let's just use **expressjs + ejs + neon + r2 cloudflare** — one app that renders its own pages and talks to its own database and storage.
 
-Why this stack? Because it's **one language** — JavaScript from front to back. You don't have to switch your brain between two different languages.
+Why this stack? Because it's **one language, one app** — JavaScript from back to front, and no separate front-end project to keep in sync. You don't have to switch your brain between two codebases.
 
 <TechStackCards />
 
@@ -87,35 +87,33 @@ Because photo files are big and don't belong in a database row. Database for **s
 
 ## How it all connects
 
-This is the most important part of this lesson — how all these things talk to each other. Tap both flows:
+This is the most important part of this lesson — how all these things talk to each other. Tap the flows:
 
-<ArchDiagram client:visible />
+<OneAppArchitecture client:visible />
 
 <Callout variant="tip" title="Key insight">
-Notice something? When a visitor views a photo, **that photo doesn't pass through our server**. Express gives the R2 URL, the browser fetches it straight from there. That's what makes the website feel fast — and keeps our server from getting tired.
+Notice something? When a visitor views a photo, **that photo doesn't pass through our server**. Express gives the browser the R2 address, and the browser fetches it straight from there. That's what makes the website feel fast — and keeps our server from getting tired.
 </Callout>
 
-## Project structure: mono repo
+## Project structure: one app, one repo
 
-Last one — **mono repo structure**. Mono repo means **one repo, many apps**. Instead of separating frontend and backend into different repos, we put everything in one:
+Last one — the project structure. **One app, one repo.** No separate frontend folder, no API contract to keep in sync:
 
 <RepoTree />
 
-Why? Because React and Express **share the same things**. For example, the `Photo` data shape — both of them need it:
+Why one app? Because there's nothing to sync. The pages, the routes, the database schema — they all live in one codebase, get read in one sitting, and ship as one container. The `Photo` shape lives in exactly one place:
 
 ```ts
-// packages/shared/src/types.ts
-// One "shape" of data shared by web + api
-export interface Photo {
-  id: number;
-  title: string;
-  folder: string;
-  imageUrl: string; // URL from Cloudflare R2
-  createdAt: string;
-}
+// src/db/schema/photos.ts — the one place the shape lives
+export const photos = appSchema.table("photos", {
+  id: uuid().primaryKey().defaultRandom(),
+  title: text().notNull(),
+  imageKey: text(), // R2 object key, never a URL
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
 ```
 
-If you had two separate repos, every time this data shape changes you'd copy-paste it in two places. One repo — easy, no syncing back and forth.
+The page that lists photos and the route that creates them both go through this schema. One definition, zero drift.
 
 ## Try it: a demo you can click
 
@@ -138,8 +136,8 @@ Everything you just did — that's our project. The difference later is the data
     "A gallery blog has two sides: public for visitors, admin for you.",
     "Visitor flow: open → pick a folder → click a photo → like & comment.",
     "Admin flow: log in → upload a photo → instantly live on the public page.",
-    "Our stack: React (UI) + Express (API) + Neon (database) + R2 (photo files).",
-    "One repo, many apps — that's what people call a monorepo.",
+    "Our stack: Express + EJS (pages) + Neon (data) + R2 (photo files) — one app, not a pile of services.",
+    "One app, one repo — fewer moving parts, fewer things to break.",
   ]}
 />
 

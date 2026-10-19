@@ -1,0 +1,196 @@
+---
+title: "The skeleton boots"
+slug: "server-skeleton"
+project: "gallery-blog"
+order: 5
+summary: "Phase 2 — a config that refuses to boot without proper secrets, a middleware order that matters, error pages that never leak, and a /health you can curl."
+duration: "9 min read"
+tags: ["Phase 2", "Express", "middleware"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import MiddlewarePipeline from "../../../components/react/MiddlewarePipeline.tsx";
+
+This is the phase where the app stops being a folder and starts being a process. The plan is picky about the order you write these files in — `config.ts` → `db/client.ts` → `lib/errors.ts` → `middleware/security-headers.ts` → `app.ts` → `routes/health.ts` → `views/error.ejs` + partials → `index.ts` — and the reason is dependency flow. Each file may use the ones above it, never the ones below.
+
+Let's take the three ideas that actually teach something.
+
+## Config that refuses to boot
+
+Every app has environment variables. Most apps limp along with missing ones and break mysteriously later. This one reads them through a single gate:
+
+```ts
+// src/config.ts (the important parts)
+const schema = z.object({
+  DATABASE_URL: z.string().min(1),
+  APP_SECRET: z.string().min(32, "APP_SECRET must be at least 32 characters"),
+  ADMIN_EMAIL: z.string().email(),
+  ADMIN_PASSWORD: z.string().min(12, "ADMIN_PASSWORD must be at least 12 characters"),
+  // ...plus ports, cookie name, R2 settings, with sensible defaults
+});
+
+export function loadSettings(env: NodeJS.ProcessEnv = process.env): Settings {
+  const parsed = schema.safeParse(env);
+  if (!parsed.success) {
+    const problems = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+    throw new Error(`Invalid environment:\n  ${problems.join("\n  ")}`);
+  }
+  return parsed.data;
+}
+```
+
+Three things to love here:
+
+- **`loadSettings(env)` takes the env as an argument.** Production passes nothing (reads `process.env`); tests pass their own fake. One function, two lives — you'll use this in phase 7.
+- **No defaults for secrets.** Missing `APP_SECRET`, `ADMIN_EMAIL` or `ADMIN_PASSWORD` means the app **refuses to boot** and names the variable. A short password (under 12 chars) is also a boot failure.
+- **Everything downstream is typed.** Routes never read `process.env` directly; they get a `Settings` object. If it typechecks, it exists.
+
+<Callout variant="haa" title="Haa!">
+The app refuses to boot without a 32+ character secret. That's not fussiness — that's a bouncer. A weak APP_SECRET means forged session cookies; the cheapest place to stop bad config is before the app ever listens. Same energy as a database constraint: the last line of defence is the one that can't be bypassed.
+</Callout>
+
+One more quiet decision lives here: `normalizeDatabaseUrl()` strips libpq-only parameters (`sslmode`, `channel_binding`, …) out of Neon's connection string and sets SSL explicitly on the driver. Neon hands you a URL meant for `psql`; the `pg` driver chokes on parts of it. Normalize once, at the boundary — never patch it later.
+
+## Middleware order is not a style choice
+
+This is where a lot of Express apps quietly go wrong. Middleware is a pipeline: a request enters at the top, and *the order decides everything.* Tap between the two arrangements:
+
+<MiddlewarePipeline client:visible />
+
+Then here's the whole app assembly, top to bottom:
+
+```ts
+// src/app.ts
+export function createApp(deps: Deps): Express {
+  const { settings } = deps;
+  const app = express();
+  app.disable("x-powered-by");
+  app.set("trust proxy", settings.TRUST_PROXY);
+  app.set("view engine", "ejs");
+  app.set("views", path.resolve("views"));
+
+  app.use(securityHeaders(settings));   // headers on EVERY response
+  app.use(express.static(path.resolve("public")));
+  app.use(express.json({ limit: "100kb" }));
+  app.use(express.urlencoded({ extended: false, limit: "100kb" }));
+  app.use(cookieParser());
+  app.use(sameOriginOnly(settings));    // CSRF gate, before any route
+
+  app.use("/health", healthRouter(deps));
+  app.use("/", authRouter(settings));
+  app.use("/", homeRouter(deps));
+  app.use("/uploads", uploadsRouter(deps));  // + domain routers
+
+  app.use(() => { throw new HttpError(404, "Page not found."); });
+  app.use(errorHandler);                // always LAST
+  return app;
+}
+```
+
+Notice `createApp(deps)` — it doesn't reach out and grab database or storage itself; everything arrives as a `deps` object (`{ settings, db, storage }`). That's the one seam in the entire architecture, and it's what lets tests swap in fakes later.
+
+## Errors: pages get pages, JSON gets JSON
+
+```ts
+// src/lib/errors.ts
+export class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  let status = 500;
+  let message = "Something went wrong.";
+  if (err instanceof ZodError)      { status = 422; message = "Check the details you sent."; }
+  else if (err instanceof HttpError) { status = err.status; message = err.message; }
+  else { console.error(err); }
+
+  const wantsJson = req.path.startsWith("/uploads") || req.accepts(["html", "json"]) === "json";
+  if (wantsJson) return void res.status(status).json({ error: message });
+  res.status(status).render("error", { status, message });
+};
+```
+
+- A browser gets a **rendered error page** with a status and a human sentence.
+- A JSON endpoint (`/uploads/*`) gets `{"error": "..."}` in the same shape either way.
+- Unknown errors: the real error goes to the **server log**; the user gets a generic sentence. Stack traces are for you, never for visitors.
+
+You'll meet `HttpError` constantly from here on — it's how services say "this is a 404" or "this is a 400" without knowing anything about HTTP responses.
+
+## /health — three lines that matter later
+
+```ts
+// src/routes/health.ts
+router.get("/", async (_req, res) => {
+  await db.execute(sql`select 1`);
+  res.json({ status: "ok" });
+});
+```
+
+That's it: touch the database, answer OK. Why it matters: in phase 8, this exact endpoint is how deploys and monitors decide whether the app is alive. A health check that doesn't check the database is decoration; this one means it.
+
+## index.ts — the boot file
+
+```ts
+// src/index.ts
+const settings = loadSettings();
+const { db, pool } = createDb(settings.DATABASE_URL);
+const app = createApp({ settings, db, storage: createStorage(settings) });
+
+const server = app.listen(settings.PORT, "0.0.0.0", () => {
+  console.log(`Listening on :${settings.PORT}`);
+});
+
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    server.close(() => void pool.end().then(() => process.exit(0)));
+  });
+}
+```
+
+Settings → database → app → listen. And a graceful shutdown for free: on `SIGTERM` (what Docker and Cloud Run send), stop accepting requests, drain the pool, exit. Small file, grown-up behavior.
+
+## Let opencode write it
+
+```text
+Build Phase 2 of master-plan.md exactly as specified in §3 and appendix A.1-A.5:
+config.ts (zod-parsed env, loadSettings(env), normalizeDatabaseUrl),
+db/client.ts, lib/errors.ts (HttpError + errorHandler), middleware/security-headers.ts,
+app.ts (createApp(deps) with this exact middleware order), routes/health.ts,
+views/error.ejs + partials, and index.ts. Match the plan's code verbatim where
+it gives code. Then run npm run typecheck.
+```
+
+Then walk your app: the middleware order in `app.ts`, the 404 line, `errorHandler` dead last. Three minutes of reading, whole phase reviewed.
+
+<MissionBox
+  body="Start the dev server, then knock on two doors: the health check and a path that doesn't exist. First one answers JSON; second one renders the 404 error page."
+  code={`npm run dev
+curl http://localhost:8000/health
+# → {"status":"ok"}
+
+# then visit http://localhost:8000/does-not-exist in the browser`}
+  note="The plan adds npm run typecheck here. If it's clean, phase 2 passes — and you have a server."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "config.ts validates env once; the app refuses to boot on missing/short secrets.",
+    "loadSettings(env) takes env as an argument — production and tests share one gate.",
+    "Middleware order is behavior: headers and parsers first, routers middle, error net last.",
+    "Errors: pages render error.ejs, /uploads answers JSON, stack traces stay server-side.",
+    "GET /health touches the database — it's the honest version of 'I'm alive'.",
+  ]}
+/>
+
+Next: phase 3 — auth. One owner, one signed cookie, and a login form that gives nothing away. This is the phase where the app stops being public.

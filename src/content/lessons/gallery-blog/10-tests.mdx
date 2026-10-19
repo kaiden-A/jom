@@ -1,0 +1,157 @@
+---
+title: "Tests that never touch real R2"
+slug: "tests"
+project: "gallery-blog"
+order: 10
+summary: "Phase 7 — a separate Neon branch, a FakeStorage that lives in memory, a logged-in supertest agent, and the flaky-connection rule that keeps you sane."
+duration: "9 min read"
+tags: ["Phase 7", "testing", "vitest"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import TestIsolation from "../../../components/react/TestIsolation.tsx";
+
+This is the phase people skip — right up until the first time they deploy a change and quietly break login. Then testing stops feeling like homework and starts feeling like a seatbelt.
+
+The plan's testing strategy is exactly two files of infrastructure: `test/setup.ts` and `test/helpers.ts`. Everything else is a test that reads like a sentence.
+
+<TestIsolation client:visible />
+
+## The guard, and why it's first
+
+```ts
+// test/setup.ts (shape)
+beforeAll(async () => {
+  if (!process.env.TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is required");
+  if (process.env.TEST_DATABASE_URL === process.env.DATABASE_URL) {
+    throw new Error("TEST_DATABASE_URL must point at a separate Neon branch");
+  }
+  await migrate(drizzle(testPool), { migrationsFolder: "./drizzle" });
+});
+
+afterEach(async () => {
+  await testPool.query("TRUNCATE photos RESTART IDENTITY CASCADE");  // every table
+});
+```
+
+Read that check again: if the test URL is empty **or equal to your real database URL**, the suite refuses to run. This is the single most important test in the suite — it's the one that stops a careless `.env` edit from truncating your real photos. The plan's footguns table has a row for it: *"Test run wipes real data → tests pointed at the live database."* Never again.
+
+Two more quiet wins in these ten lines:
+
+- **Migrations run in `beforeAll`**, so the test branch always has the current schema — no manual setup between branches.
+- **`TRUNCATE ... RESTART IDENTITY CASCADE` after each test** means order never matters. Test 1 can't leave a row that test 7 trips over.
+
+## The helpers, and why the app became `createApp(deps)`
+
+Remember the `deps` seam from phase 2? This is the payoff:
+
+```ts
+// test/helpers.ts (shape)
+export const testSettings = (overrides = {}) =>
+  loadSettings({ ...testEnv, ...overrides });   // the same loadSettings, fed fake env
+
+export class FakeStorage implements Storage {
+  readonly configured = true;
+  objects = new Map<string, StoredObject>();
+  removed: string[] = [];
+  async createUploadUrl(key: string) { return `https://r2.test/upload/${key}`; }
+  async head(key: string) { return this.objects.get(key) ?? null; }
+  async readUrl(key: string) { return `https://r2.test/read/${key}`; }
+  async remove(key: string) { this.removed.push(key); this.objects.delete(key); }
+}
+
+export function buildTestApp(overrides = {}) {
+  const settings = testSettings(overrides);
+  const { db } = createDb(settings.DATABASE_URL);
+  const storage = new FakeStorage();
+  return { app: createApp({ settings, db, storage }), settings, db, storage };
+}
+
+export async function loggedInAgent(app) {
+  const agent = request.agent(app);   // supertest agent = a browser with a cookie jar
+  await agent.post("/login").type("form")
+    .send({ email: testEnv.ADMIN_EMAIL, password: testEnv.ADMIN_PASSWORD })
+    .expect(303);
+  return agent;
+}
+```
+
+- **No real R2, ever.** `FakeStorage` is a `Map` with the same interface — and it *records* what was removed, so tests can assert on upload verification and deletion without an internet connection.
+- **`loggedInAgent` is a logged-in browser.** A supertest agent keeps cookies across requests, so "signed-in behavior" is one `await`.
+- **`createApp(deps)` got swapped, not hacked.** Production passes `R2Storage`; tests pass `FakeStorage`. Zero conditionals in app code deciding "am I in test mode?" — the seam does it.
+
+## A representative test
+
+```ts
+describe("login", () => {
+  it("rejects a wrong password and sets no cookie", async () => {
+    const { app } = buildTestApp();
+    const res = await request(app).post("/login").type("form")
+      .send({ email: testEnv.ADMIN_EMAIL, password: "nope-nope-nope" });
+    expect(res.status).toBe(401);
+    expect(res.headers["set-cookie"]).toBeUndefined();
+    expect(res.text).toContain("Wrong email or password.");
+  });
+
+  it("ignores an off-site next target", async () => {
+    const { app } = buildTestApp();
+    const res = await request(app).post("/login").type("form")
+      .send({ email: testEnv.ADMIN_EMAIL, password: testEnv.ADMIN_PASSWORD, next: "//evil.com" });
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe("/");
+  });
+
+  it("redirects anonymous visitors to the login page", async () => {
+    const { app } = buildTestApp();
+    const res = await request(app).get("/photos");
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe("/login?next=%2Fphotos");
+  });
+});
+```
+
+That's the tone of every test in this app: build the app, make a request, assert on behavior a person could verify by hand. No mocks-of-mocks, no snapshot files, no framework.
+
+And per resource, the plan tests the same four facts: **validation failure re-renders (422), create redirects (303), delete redirects, anonymous access bounces to login.** Four tests per resource — small, but they cover the entire contract between router and service.
+
+<Callout variant="tip" title="When we already build test files... why is this a separate phase?">
+Because until this phase, "test" was a promise. The auth and photos test *files* were written alongside their phases — this phase is the harness that makes them actually run, isolated and repeatable. Never write tests you can't execute; never execute tests that can delete real data.
+</Callout>
+
+## Let opencode write it
+
+```text
+Build Phase 7 of master-plan.md as specified in §3 and appendix A.8: test/setup.ts
+(the TEST_DATABASE_URL guard, migrate in beforeAll, TRUNCATE after each test),
+test/helpers.ts (testEnv, testSettings, FakeStorage, buildTestApp, loggedInAgent),
+vitest.config.ts registering the setup file, and make sure test/auth.test.ts,
+test/photos.test.ts and test/uploads.test.ts all run. Then run npm test.
+```
+
+Review checklist: the guard throws on empty/equal URLs, FakeStorage implements every `Storage` method, and no test file imports the real `R2Storage`.
+
+<MissionBox
+  body="The suite runs green and the typecheck stays clean — the plan's verify for this phase. Then run one file alone, because that focused loop is how you'll work from now on."
+  code={`npm test
+npm test -- auth
+npm run typecheck`}
+  note="Neon drops a connection mid-run? Rerun. The plan's exact words: it's a flaky failure — do not 'fix' code for it."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The first test is a guard: TEST_DATABASE_URL must exist and differ from DATABASE_URL.",
+    "Migrate beforeAll, TRUNCATE afterEach — the test branch is always current and always clean.",
+    "FakeStorage + createApp(deps): tests swap the seam instead of hacking conditionals.",
+    "loggedInAgent = a supertest agent with a cookie jar — signed-in in one await.",
+    "Four facts per resource: 422, 303, delete, anonymous redirect. Flaky Neon → rerun.",
+  ]}
+/>
+
+Next: phase 8 — deploy. One container, one origin, secrets in a vault, migrations by hand. Everything you've built finally gets an address.

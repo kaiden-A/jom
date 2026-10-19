@@ -1,0 +1,127 @@
+---
+title: "Pages people can actually use"
+slug: "pages"
+project: "gallery-blog"
+order: 7
+summary: "Phase 4 — server-rendered EJS with automatic escaping, the post/redirect/get dance, a strict CSP that keeps XSS out, and the two tiny JS files that earn their place."
+duration: "9 min read"
+tags: ["Phase 4", "EJS", "CSP"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import PostRedirectGet from "../../../components/react/PostRedirectGet.tsx";
+
+Phase 4 gives the app its face — and the plan's philosophy for that face is one sentence: **the server renders HTML, and the browser gets two tiny scripts.** No framework, no bundler, no client-side routing.
+
+It sounds retro. It's actually the phase where the app becomes *safe by construction*.
+
+## Templates with automatic armor
+
+Every page is a `.ejs` file that starts and ends with the same two includes:
+
+```html
+<%- include("partials/head", { title: "Items" }) %>
+<main>
+  <h1>Photos</h1>
+  <strong><%= photo.title %></strong>
+</main>
+<%- include("partials/foot") %>
+```
+
+Those two tags look almost identical and mean completely different things:
+
+- **`<%= value %>`** escapes the output. `<script>alert(1)</script>` in a title renders as visible, harmless text. **Data always uses this.**
+- **`<%- ... %>`** does *not* escape. It's for `include()` — template reassembly by the developer — and **never** for anything a user typed.
+
+<Callout variant="warn" title="The one-line XSS">
+Write `<%- photo.title %>` and a photo titled with a script tag runs it in every visitor's browser. Where could a title come from? An upload form. That's stored XSS — through a data field, not a hack. The plan's rule is absolute: `<%= %>` for data, `<%- %>` only for includes.
+</Callout>
+
+Layout is handled the same boring way: `partials/head.ejs` has the doctype, title, stylesheet link, `<script src="/js/app.js" defer>` and the header (brand + your email + a **Sign out POST form**); `partials/foot.ejs` closes the document. Every page is bookended by them, so the site has one header and one footer, forever.
+
+## The form rule: post, redirect, get
+
+Cookies carry no opinion about forms. This phase does — one rule, enforced everywhere:
+
+<PostRedirectGet client:visible />
+
+The service layer enforces the second half of the rule: a validation failure re-renders the page with a **4xx** status and the user's input — except the password, which never comes back. And a successful POST **never renders**; it always answers `303` and lets a fresh GET produce the page. Refresh stays harmless.
+
+## The CSP: a lock on the door
+
+Remember the "no inline scripts" rules from the middleware lesson? They're not etiquette — they're mechanically enforced. Every response carries this header:
+
+```ts
+const csp = [
+  "default-src 'self'",
+  "script-src 'self'",       // no inline scripts — page JS lives in public/js
+  "style-src 'self'",        // no inline styles
+  `img-src 'self' blob: ${r2} ${publicR2}`,
+  `connect-src 'self' ${r2}`, // the browser's direct PUT to R2
+  "object-src 'none'",
+  "base-uri 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+].join("; ");
+```
+
+Why this matters: even if someone *did* sneak a script tag into a photo title, the browser refuses to execute it. The CSP is the second lock on the same door as `<%= %>` — escaping stops the payload from rendering as code; the CSP stops code from running even if it does. Two independent defenses, one header.
+
+It also explains the two odd allowances: `connect-src` and `img-src` must know about R2, because in phase 6 the *browser itself* uploads to and displays from Cloudflare. And it explains the house rule: **inline `<script>`, inline `<style>`, and `onclick=` attributes are simply dead here.** If you see behavior, it lives in `public/js/`.
+
+## The two browser files
+
+The whole client-side budget: two files.
+
+```js
+// public/js/app.js — confirm prompts without inline handlers (the CSP forbids them)
+document.addEventListener("submit", (event) => {
+  const message = event.target.dataset?.confirm;
+  if (message && !window.confirm(message)) event.preventDefault();
+});
+```
+
+That's file one, complete. Any form with `data-confirm="Delete this photo?"` now asks first — delegated, no per-button wiring, CSP-clean. File two (`upload.js`) debuts in phase 6, when there's an R2 bucket to talk to.
+
+**State-changing buttons are always POST forms.** Not links, not GETs. A "delete" link is a footgun waiting for a browser prefetch or a crawler to fire it.
+
+<Callout variant="tip" title="The little pages that carry the whole app">
+Three templates do the real work here: `login.ejs` (the form from phase 3, `next` in a hidden field), `home.ejs` (your protected landing page), and the resource template you'll build next — a list, a create form, and a delete form per row. That's a CRUD app for humans who don't know what CRUD means yet.
+</Callout>
+
+## Let opencode write it
+
+```text
+Build Phase 4 of master-plan.md as specified in §3: views/partials/head.ejs and foot.ejs,
+views/login.ejs, views/home.ejs, views/error.ejs, a small hand-written public/css/app.css
+(no framework), and public/js/app.js with the data-confirm delegate. Follow the
+template rules exactly: <%= %> for all data, <%- %> only for includes, no inline
+script/style/on* attributes, every mutation is a POST form.
+```
+
+Review checklist: grep the views for `<%-` and confirm every use is an `include()`. That single grep is most of the security review.
+
+<MissionBox
+  body="Render everything and open the browser console — the plan's verify for this phase is one sentence: pages render with no CSP errors, and Sign out works."
+  code="npm run dev\n# visit /login, /, then hit Sign out\n# open DevTools → Console → the only acceptable answer is silence"
+  note="A CSP violation shows up in the console like a red siren. Silence means every script and style is coming from where it should."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "EJS renders HTML on the server — no framework, no front-end build step.",
+    "<%= %> escapes data (always); <%- %> is for includes only (never data).",
+    "Post/redirect/get: success 303s, failure re-renders 422 with input — never the password.",
+    "The CSP blocks inline code, so behavior lives in public/js — two files, delegated handlers.",
+    "State changes are POST forms. Links never mutate.",
+  ]}
+/>
+
+Next: phase 5 — domain resources. Six files, one shape, and a migration workflow where the robot writes SQL and the human signs off. This is where the gallery starts storing photos.

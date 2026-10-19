@@ -1,0 +1,200 @@
+---
+title: "Scaffold: an empty project that boots"
+slug: "scaffold"
+project: "gallery-blog"
+order: 4
+summary: "Phase 1 — package.json, tsconfig, env files, and the folder map the whole app will live in. Nothing runs yet; everything has a place."
+duration: "8 min read"
+tags: ["Phase 1", "setup", "opencode"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RepoTree from "../../../components/lesson/RepoTree.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+
+Phase 1 of the master plan has one job: **an empty project that installs cleanly.** No routes, no database, no pages. Just the floor, the walls, and labels on every door.
+
+It sounds like fluff. It isn't — this is the phase that decides whether adding a new file is obvious or archaeological. The plan is specific about where everything lives, so let's look at the map first.
+
+## The repo map
+
+One project at the root. No `client/`, no `server/`, no `apps/`:
+
+<RepoTree />
+
+Get the shape of it:
+
+- `src/` is the **server** — app wiring, database, business logic, routes.
+- `views/` is the **pages** — EJS templates, rendered on the server.
+- `public/` is what the **browser** gets as-is — one stylesheet, two tiny JS files.
+- `drizzle/` holds **generated SQL migrations** — proposals until you apply them.
+- `test/` talks to a **separate database branch** (phase 7's whole story).
+
+<Callout variant="note" title="The plan says">
+Core files are copied to fit the app, then left alone except for deliberate decisions. Do not "improve" them opportunistically — every oddity in this codebase exists for a reason you'll meet later.
+</Callout>
+
+## package.json
+
+Here's the target, straight from the plan:
+
+```json
+{
+  "name": "gallery-blog",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "build": "tsup src/index.ts src/scripts/migrate.ts --format esm --target node22 --out-dir dist --clean",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file=.env src/scripts/migrate.ts"
+  }
+}
+```
+
+The scripts are the phase list in miniature. Look:
+
+- `dev` — `tsx watch` runs TypeScript directly and restarts on save. No build step while developing.
+- `build` + `start` — `tsup` bundles for production; `start` runs the bundle. That's the Docker image's job later.
+- `typecheck` — `tsc --noEmit` means "check everything, emit nothing". This is a mission, not a suggestion.
+- `db:generate` / `db:migrate` — **two separate commands on purpose.** Generating SQL and *applying* it are different acts with different levels of danger.
+- `test` — vitest, with the env file loaded.
+
+<Callout variant="haa" title="Haa!">
+Notice `--env-file=.env` sitting in the scripts. Node 22 loads env files natively — no `dotenv` package needed. The plan prefers the platform's own feature over a dependency every single time.
+</Callout>
+
+## Install the stack
+
+Two commands, boring on purpose:
+
+<StepList
+  steps={[
+    {
+      title: "Create the folder and grab the plan",
+      body: "Your project lives alone in its own folder. Drop the master-plan.md you downloaded in lesson 3 into the root — it belongs to this repo now.",
+      code: "mkdir gallery-blog\ncd gallery-blog",
+    },
+    {
+      title: "Runtime dependencies",
+      body: "Eight packages, each with a job: server, templates, validation, cookies, rate limiting, Postgres, ORM, and the S3 two-piece for R2.",
+      code: "npm install express ejs zod cookie-parser express-rate-limit pg drizzle-orm @aws-sdk/client-s3 @aws-sdk/s3-request-presigner",
+    },
+    {
+      title: "Dev dependencies",
+      body: "TypeScript, the dev runner, the production bundler, the migration generator, tests, and types.",
+      code: "npm install -D typescript tsx tsup drizzle-kit vitest supertest @types/express @types/cookie-parser @types/pg @types/supertest @types/node",
+      note: "Commit the lockfile. Always.",
+    },
+    {
+      title: "Ask before adding more",
+      body: "That's the whole dependency list. A ninth package needs a reason, and the plan's rule is: a new dependency requires asking first.",
+    },
+  ]}
+/>
+
+## tsconfig.json and the rules of the house
+
+The TypeScript config is short, strict, and does one unusual thing:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src", "test", "drizzle.config.ts"]
+}
+```
+
+- **`strict: true`** — null checks, implicit any, the works. Strict TypeScript is not punishment; it's a typecheck you can actually trust as a mission.
+- **`moduleResolution: "Bundler"`** — this is why imports have **no file extensions** (`import { createApp } from "./app"`). It works everywhere in this toolchain: tsc, tsx, tsup, drizzle-kit.
+- **`noEmit: true`** — TypeScript here only *checks*; `tsx` and `tsup` do the running and bundling.
+
+## .gitignore and .env.example — the two-file habit
+
+Create both now, before there's anything to leak:
+
+```text
+# .gitignore
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+```
+
+```text
+# .env.example — documents EVERY setting (real .env is never committed)
+NODE_ENV=development
+PORT=8000
+APP_NAME=Gallery Blog
+APP_SECRET=               # generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+DATABASE_URL=             # Neon pooled connection string
+TEST_DATABASE_URL=        # a second Neon branch for tests
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=
+R2_PUBLIC_BASE_URL=
+```
+
+That's the arrangement for the entire project: **every setting is documented in the example file, every real value lives only in `.env`.** Future-you setting up a new laptop reads the example and is done in five minutes.
+
+<Callout variant="warn" title="The habit is the point">
+The values in a local `.env` aren't secrets yet — they're just local. The habit is what matters: real deploys hold real credentials, and the first time `.env` lands in a git commit, the only fix is rotating every key. Never, ever, commit it.
+</Callout>
+
+## Let opencode write it
+
+You now know exactly what each file must contain — which means you're qualified to review the agent:
+
+```text
+Create the Phase 1 scaffold for a single Express 5 + TypeScript (ESM, strict)
+app in this folder. Files: package.json (name gallery-blog, scripts for dev,
+build, start, typecheck, test, db:generate, db:migrate exactly as I specify),
+tsconfig.json (strict, ES2022, moduleResolution Bundler, noEmit),
+.gitignore (.env ignored, .env.example kept), and .env.example documenting
+every variable in the variable table of master-plan.md.
+
+Do not install anything yet — just write the files. Then run npm install.
+```
+
+Then do what a reviewer does: open each file against the sections above. Ten minutes now saves an afternoon of "why does nothing resolve".
+
+<MissionBox
+  body="The plan's Verify line for this phase: install works and the project typechecks once there's code. Right now there's no code, so the honest version is: `npm install` completes with no errors, and every file in the map exists."
+  code="npm install"
+  note="If the install is clean and the map matches, phase 1 is done. On to the skeleton."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Phase 1 = a clean install + a map: src, views, public, drizzle, test.",
+    "Eight runtime packages, twelve dev packages — the whole stack, deliberately small.",
+    "Scripts are the phase list: dev, build, typecheck, test, db:generate, db:migrate.",
+    "Extensionless imports come from moduleResolution: Bundler.",
+    ".env is never committed; .env.example documents every setting forever.",
+  ]}
+/>
+
+Next: phase 2 — the skeleton wakes up. A config that refuses to boot without proper secrets, a middleware order that matters, and a `/health` endpoint you can actually curl.

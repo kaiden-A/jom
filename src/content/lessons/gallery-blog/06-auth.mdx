@@ -1,0 +1,192 @@
+---
+title: "One owner, one cookie"
+slug: "auth"
+project: "gallery-blog"
+order: 6
+summary: "Phase 3 — no users table, no signup, no reset. Just your email and password from env vars, a signed cookie, a rate limiter, and a gate every private page walks through."
+duration: "11 min read"
+tags: ["Phase 3", "auth", "security"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import AuthCookieLab from "../../../components/react/AuthCookieLab.tsx";
+
+Every app you've ever imagined has a login page. Most of them then add: a users table, a password reset flow, email verification, sessions in the database, maybe an OIDC provider. The master plan looks at all of that and says one word: **no.**
+
+Here's the entire auth model:
+
+> One email and one password live in environment variables. Logging in sets a signed, HttpOnly cookie. The cookie *is* the session.
+
+That's not a simplification for the course. That's the shipped architecture. There's no `users` table — which means there's no user data to leak, no password hashes to crack, no reset tokens to intercept. The database holds your photos, not your identity.
+
+<Callout variant="warn" title="The credentials rules are absolute">
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` exist only as environment variables. They are never stored in the database, never logged, never rendered into a page, and never committed. The app refuses to boot without them — you met that bouncer in the last lesson.
+</Callout>
+
+## The cookie, dissected
+
+Everything about auth lives inside one cookie. Poke at it — including what happens when someone tries to mess with it:
+
+<AuthCookieLab client:visible />
+
+## Comparing secrets without leaking them
+
+Login compares the submitted email and password against the env values. Compare two strings normally (`a === b`) and the comparison stops at the first different character — so the time it takes tells an attacker how much they guessed correctly. So the plan doesn't compare strings at all:
+
+```ts
+// src/lib/security.ts
+export function safeEqual(a: string, b: string): boolean {
+  const ha = createHash("sha256").update(a).digest();
+  const hb = createHash("sha256").update(b).digest();
+  return timingSafeEqual(ha, hb);
+}
+```
+
+Hash both sides first — now the lengths are always equal — then compare in constant time. And in the login route, both checks **always run**:
+
+```ts
+const emailOk = safeEqual(email.trim().toLowerCase(), settings.ADMIN_EMAIL);
+const passwordOk = safeEqual(password, settings.ADMIN_PASSWORD);
+if (!(emailOk && passwordOk)) {
+  renderLogin(res, 401, { error: "Wrong email or password.", prefill: email });
+  return;
+}
+```
+
+No short-circuit. One generic message whether the email or the password was wrong. The app never tells an attacker which half they got right.
+
+## Signing the cookie
+
+The cookie value is a tiny envelope with a wax seal:
+
+```ts
+export function signPayload(payload: Record<string, unknown>, secret: string): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${sig}`;   // {sub, iat, exp} + "." + signature
+}
+
+export function unsignPayload(value: string | undefined, secret: string): Record<string, unknown> | null {
+  // split on ".", recompute the HMAC, safeEqual the signatures,
+  // THEN trust the JSON inside. Tampered body → signature mismatch → null.
+}
+```
+
+Base64url-encode the payload, sign those exact bytes with HMAC-SHA256 using `APP_SECRET`, glue with a dot. The server never *reads* an unsigned cookie — the signature check happens first, and the payload only gets parsed after it passes.
+
+## The gate: requireAuth
+
+Every private route walks through the same door, and the door has exactly one opinion:
+
+```ts
+export function requireAuth(settings: Settings, mode: "page" | "json" = "page"): RequestHandler {
+  const ttl = settings.SESSION_TTL_DAYS * 86_400;
+  return (req, res, next) => {
+    const remaining = sessionRemaining(req, settings);   // verifies sig + exp + sub
+    if (remaining === null) {
+      if (mode === "json") throw new HttpError(401, "Not signed in.");
+      const next_ = req.method === "GET" ? `?next=${encodeURIComponent(req.originalUrl)}` : "";
+      res.redirect(`/login${next_}`);
+      return;
+    }
+    if (remaining < ttl / 2) issueSession(res, settings); // rolling refresh
+    res.locals.email = settings.ADMIN_EMAIL;
+    next();
+  };
+}
+```
+
+- A session is valid only if the **signature verifies**, `exp` **is in the future**, and `sub` **still equals ADMIN_EMAIL**. All three, every request. A cookie's mere presence means nothing.
+- `mode: "page"` redirects anonymous visitors to `/login?next=<where they were going>` — but only for GETs, because a POST can't be replayed by visiting a URL.
+- `mode: "json"` throws a clean 401 — that's for `/uploads/*`, which talks JSON.
+- Under half the TTL left? The cookie is re-issued on the spot. Active users never get logged out mid-project; idle cookies still expire.
+
+<Callout variant="haa" title="Haa!">
+There is no session table. Which means there is no "log out all devices" feature — and also no multi-million-row table to query on every request. The one true kill switch is rotating `APP_SECRET` (or changing `ADMIN_EMAIL`): every existing cookie instantly fails the signature check. One env var, everyone's out.
+</Callout>
+
+## The redirect trap: localPath
+
+Login carries a `next` parameter so you land where you were heading. That parameter is user input — and user input pointing at redirects is exactly how open-redirect phishing works. So every `next` goes through one function:
+
+```ts
+/** Same-site paths only: "/x" is fine, "//evil.com" and "/\evil.com" are not. */
+export function localPath(value: unknown, fallback = "/"): string {
+  if (typeof value !== "string") return fallback;
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback;
+  return value;
+}
+```
+
+`?next=//evil.com` — the classic "looks like a path, is actually a domain" trick — lands on `/`. Both `GET /login` and `POST /login` sanitize. No exceptions.
+
+## Two more guards, both one screen long
+
+```ts
+// Rate limit: 10 failed attempts / 15 minutes / IP — only failures count.
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  handler: (req, res) => renderLogin(res, 429, { error: "Too many attempts. Try again later.", ... }),
+});
+```
+
+```ts
+// Same-origin gate: any non-GET/HEAD/OPTIONS with an Origin header must match PUBLIC_BASE_URL.
+const allowed = new URL(settings.PUBLIC_BASE_URL).origin;
+if (!SAFE.has(req.method) && origin && origin !== allowed) {
+  throw new HttpError(403, "Cross-site request blocked.");
+}
+```
+
+The rate limiter makes brute-forcing a 12+ character password… tedious. The same-origin check, plus `SameSite=Lax` on the cookie, is the CSRF defence for every form in the app.
+
+<Callout variant="warn" title="Two footguns that live here">
+Behind a proxy (Cloud Run!), `trust proxy` must be set or every request looks like it came from the proxy's IP — and your limiter bans everyone at once. And `COOKIE_SECURE=true` over plain HTTP means the browser never sends the cookie back — login "succeeds" and instantly forgets you. Both are phase 8 checklist items; we'll return to them.
+</Callout>
+
+## What there is NOT, by design
+
+No users table. No sessions table. No signup route. No password reset. No OIDC, no magic links, no "remember me". To change the credentials: change the env vars and redeploy. That's the whole admin account lifecycle — which is fine, because the admin is you, and there is exactly one of you.
+
+## Let opencode write it
+
+```text
+Build Phase 3 of master-plan.md exactly as specified in §3 and appendix A.3–A.4:
+lib/security.ts (safeEqual, signPayload, unsignPayload), middleware/auth.ts
+(issueSession, clearSession, sessionRemaining, requireAuth with page/json modes and
+rolling refresh), routes/auth.ts (GET/POST /login, POST /logout, rate-limited with
+the same generic error), middleware/same-origin.ts, and middleware/security-headers.ts.
+Match the plan's code. Then run npm run typecheck.
+```
+
+Review checklist: both comparisons in the login route (no short-circuit), `localPath` on both login handlers, `errorHandler` untouched, cookie flags `HttpOnly` + `SameSite=Lax` + `secure` from settings.
+
+<MissionBox
+  body="Verify the whole loop in a browser, exactly like the plan says: an anonymous visit bounces to /login carrying next; a wrong password shows the error; the right password lands you where you were going; reloading stays signed in; Sign out signs out, and the next visit bounces again."
+  code={`# 1. visit the site  → redirected to /login?next=…
+# 2. wrong password   → "Wrong email or password."
+# 3. right one        → you land on next
+# 4. reload           → still you
+# 5. Sign out         → bounced again`}
+  note="The plan pairs this with `npm test -- auth` — that test file arrives with the test harness in lesson 10. Browser verification is today's full mission."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "One owner: credentials live in env vars — never in the database, logs, or pages.",
+    "safeEqual hashes both sides and compares in constant time; both checks always run.",
+    "The cookie is {sub, iat, exp} plus an HMAC signature — valid only if all three checks pass.",
+    "requireAuth guards every private route; page mode redirects, json mode throws 401.",
+    "Sessions roll at half-TTL; rotating APP_SECRET is the one true logout-everyone switch.",
+  ]}
+/>
+
+Next: phase 4 — pages. EJS templates, the post/redirect/get dance, a strict CSP, and two tiny browser JS files. The app gets a face.

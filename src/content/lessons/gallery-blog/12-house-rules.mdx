@@ -1,0 +1,128 @@
+---
+title: "House rules, traps & the boss fight"
+slug: "house-rules"
+project: "gallery-blog"
+order: 12
+summary: "The last lesson is the plan's real payload: the invariants as house rules, the footguns as a gallery of traps you'll never step on, the definition of done as a boss fight — and how to grow the gallery next."
+duration: "10 min read"
+tags: ["Invariants", "footguns", "finale"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import Checklist from "../../../components/react/Checklist.tsx";
+import TrapCards from "../../../components/react/TrapCards.tsx";
+
+Every phase is behind you. This last lesson is the part of the plan people skim — and it's the part that keeps working after the tutorial ends.
+
+## House rules
+
+The plan calls these **hard invariants**, and the plan means it: if a requirement seems to conflict with one, you stop and ask — you never break the invariant. Here's the whole set, arranged the way you'll actually meet them:
+
+<div class="not-prose my-8 grid gap-4 sm:grid-cols-2">
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Auth & sessions</p>
+    <ul class="text-ink-soft mt-3 space-y-2 text-sm leading-relaxed font-bold">
+      <li>Credentials live only in env vars — never stored, logged, rendered, committed.</li>
+      <li>A cookie counts only if the signature verifies, it's unexpired, and <code class="font-mono text-xs">sub</code> still matches ADMIN_EMAIL.</li>
+      <li>Every non-GET with an Origin must match PUBLIC_BASE_URL. Every <code class="font-mono text-xs">next</code> goes through <code class="font-mono text-xs">localPath()</code>.</li>
+    </ul>
+  </div>
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Database</p>
+    <ul class="text-ink-soft mt-3 space-y-2 text-sm leading-relaxed font-bold">
+      <li>Pooler-safe always: schema-qualified SQL, no session state, no named statements.</li>
+      <li>snake_case in the database, camelCase in code — the mapping lives in one layer.</li>
+      <li>Migrations: generated, <span class="text-ink">read by hand</span>, applied by hand. Deploys never migrate.</li>
+    </ul>
+  </div>
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Pages & HTTP</p>
+    <ul class="text-ink-soft mt-3 space-y-2 text-sm leading-relaxed font-bold">
+      <li>Post/redirect/get. A successful POST never renders — it 303s.</li>
+      <li><code class="font-mono text-xs">&lt;%= %&gt;</code> for data; <code class="font-mono text-xs">&lt;%- %&gt;</code> only for includes. No inline script or style, ever.</li>
+      <li>Mutations are POST forms. A GET never changes anything.</li>
+    </ul>
+  </div>
+  <div class="clay p-5">
+    <p class="font-display text-base font-semibold">Images & R2</p>
+    <ul class="text-ink-soft mt-3 space-y-2 text-sm leading-relaxed font-bold">
+      <li>The browser gets tickets, never credentials: one key, one method, 5 minutes.</li>
+      <li>The database stores keys; server-minted, HeadObject-verified, raster-only.</li>
+      <li>DB first, R2 second. A failed object delete never fails a user's request.</li>
+    </ul>
+  </div>
+</div>
+
+<Callout variant="note" title="Why “invariant” and not “guideline”">
+Because these are the rules that, when followed, make entire categories of bugs *impossible* rather than *fixed*. A pooler can't break schema-qualified SQL. A stolen cookie can't be edited. A refresh can't double-write. That's the difference between patching and designing.
+</Callout>
+
+## The footgun gallery
+
+The plan keeps a table of traps — every one earned by somebody's bad evening, kept so it doesn't have to be yours. Tap through them:
+
+<TrapCards client:visible />
+
+## The boss fight: definition of done
+
+The plan ends with a checklist, and "done" is not a feeling — it's eight verifiable facts. Tick them honestly; each one runs a real thing:
+
+<Checklist
+  storageKey="jom-mula-gallery-boss"
+  items={[
+    "npm install, then npm run dev — the single server boots",
+    "npm test is green and npm run typecheck is clean",
+    "Browser flow: / bounces to /login?next=…; a wrong password errors; the right one lands on next; reload stays signed in; Sign out works — with zero CSP violations in the console",
+    "curl /health → {\"status\":\"ok\"}; an anonymous POST /uploads/sign → 401 JSON; a cross-origin POST → 403",
+    "A photo uploads browser → R2, the item shows it, deleting the item removes the object, and a non-image or oversized file is rejected",
+    "The reviewed migration brings a fresh Neon database to the current schema",
+    "docker build . runs; the container serves pages, static files and /health on one port",
+    ".env.example documents every setting, and real secrets exist only in .env or the platform's store",
+  ]}
+  client:visible
+/>
+
+<Callout variant="tip" title="When a box won't tick">
+That's not failure — that's the checklist doing its job, and it's how you learn the plan's other half. Every failing box points at a section you've now read: a cookie flag, a CORS origin, a missing COPY, a migration you forgot to run. Debug it there, then tick it for real.
+</Callout>
+
+## Now make it yours
+
+The plan doesn't end at "done" — it ends with the **extension playbook**: the seams where new features plug in without touching the core. You've used every one of them already; here's the map for the gallery's missing features:
+
+- **Folders** — a `folder_id` on `photos`, a `folders` resource through the exact six-file pattern from lesson 8, and a `?folder=` filter on the list route. Two files change; nothing else does.
+- **Likes** — a `likes` table (photo id + timestamp), a `POST /photos/:id/like` route, and the count folded into `photoView`. Your first write that isn't admin-only — so it's also your first rate-limit conversation.
+- **Comments** — the same shape, with the body validated by zod and rendered with `<%= %>`. (Guess why the escaping rule matters most here.)
+
+And beyond the gallery, the playbook covers the patterns for external APIs (wrap in a small class with a `configured` flag and a fake for tests), email (`send()` that logs in dev, fakes in tests, always best-effort), and scheduled work (a CLI script under `src/scripts/`, idempotent, dry-run by default — `sweep-orphans.ts` is the model).
+
+<Callout variant="haa" title="Haa!">
+Look at what you actually built: not just a photo site, but a *position* — one owner, three seams, eight verified phases, and a documented answer for every question a new feature can ask. That's why the plan spent four pages on invariants and one on code structure. The code was never the hard part.
+</Callout>
+
+<MissionBox
+  title="The final mission"
+  body="Start the boss fight. Run every check in the checklist above against the real app — the one on your machine, and then the one on the internet. Everything ticks → you're done, and you can say you did it the boring, reliable way."
+  code={`npm test && npm run typecheck
+curl http://localhost:8000/health
+# and then... the production URL. The real one.`}
+  note="The plan's own words for this moment: an app is done when all of it passes — not when it looks done."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "House rules are invariants: they make whole bug categories impossible, not just fixed.",
+    "The footgun gallery exists so you never have to earn those scars yourself.",
+    '"Done" is eight verifiable facts — a checklist, not a feeling.',
+    "The extension playbook: new resources, external APIs, email, and scheduled chores all plug into existing seams.",
+    "You now hold the recipe — the gallery was just the first thing it can build.",
+  ]}
+/>
+
+The gallery still has somewhere to go — folders, likes, comments — and those lessons are on the roadmap. But the engine underneath them is finished, and it's yours.

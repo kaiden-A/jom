@@ -3,20 +3,20 @@ title: "Mockup with opencode"
 slug: "mockup"
 project: "gallery-blog"
 order: 2
-summary: "Before we build the complex stuff with React and a database, let's vibe code first. With opencode, we'll make a mockup using plain HTML — easy to see everything right away."
+summary: "Before we build the real app, let's vibe code first. With opencode, we'll make a mockup using plain HTML — easy to see everything right away."
 duration: "8 min read"
 tags: ["Design", "opencode"]
 updated: "October 2026"
 draft: false
 ---
 
-import Callout from "../../components/lesson/Callout.astro";
-import RecapCards from "../../components/lesson/RecapCards.astro";
-import StepList from "../../components/lesson/StepList.astro";
-import IterateChat from "../../components/lesson/IterateChat.astro";
-import MockupEmbed from "../../components/lesson/MockupEmbed.astro";
-import Checklist from "../../components/react/Checklist.tsx";
-import PromptBuilder from "../../components/react/PromptBuilder.tsx";
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import IterateChat from "../../../components/lesson/IterateChat.astro";
+import MockupEmbed from "../../../components/lesson/MockupEmbed.astro";
+import Checklist from "../../../components/react/Checklist.tsx";
+import PromptBuilder from "../../../components/react/PromptBuilder.tsx";
 
 Okay, after we understand the basic system architecture, usually we want to build it right away — but hold on. Let's **vibe code** for a bit.
 
@@ -66,7 +66,7 @@ Usually for mockups, this is what I find best after building an unhealthy amount
   </div>
 </div>
 
-Why not just use React from the start? Because a mockup is **quick** — remember, with a mockup we're just focusing on seeing the design and the flow.
+Why not just build the real app from the start? Because a mockup is **quick** — we're only focusing on the design and the flow. The real app comes with its own rules (auth, database, storage), and none of that helps you see a layout faster.
 
 <Callout variant="warn" title="Don't get this wrong">
 This Tailwind CDN is for **prototyping only**, not production. Real websites should build Tailwind properly — we'll do that in the setup lesson later. Don't go live with a client website using this CDN.
@@ -210,4 +210,4 @@ If everything's ticked — you're ready for the next lesson.
   ]}
 />
 
-In the next lesson, we start building the real thing: set up the monorepo, React and Express. Code, finally.
+In the next lesson, we meet the blueprint we'll follow for the whole build — the master plan. Then the real code starts.

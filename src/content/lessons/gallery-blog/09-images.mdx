@@ -1,0 +1,186 @@
+---
+title: "Images: straight to R2"
+slug: "images"
+project: "gallery-blog"
+order: 9
+summary: "Phase 6 — the upload that never touches our server. Presigned URLs, a 5-minute ticket, HeadObject verification, and the rule that the database stores a key, never a file."
+duration: "12 min read"
+tags: ["Phase 6", "R2", "uploads"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import UploadFlow from "../../../components/react/UploadFlow.tsx";
+
+A photo is big. A database row is small. Putting photos *in* the database is the classic beginner mistake — rows get obese, queries crawl, backups balloon.
+
+The master plan keeps them apart: **the file lives in R2, the row lives in Neon, and the row holds only a key like `images/2026/<uuid>.jpg`.** Everything interesting in this phase is about how the file gets to R2, because the answer is not what most tutorials do.
+
+## One-time Cloudflare setup
+
+This is a plan "tell the user to do this" moment — three steps only you can authorize:
+
+<StepList
+  steps={[
+    {
+      title: "Create the bucket",
+      body: "Cloudflare dashboard → R2 → create a bucket. Private by default — keep it that way for now. Note your Account ID (it's in the R2 overview).",
+      code: "Bucket: gallery-blog\nAccount ID: <from the dashboard>",
+    },
+    {
+      title: "Mint a scoped API token",
+      body: "R2 → Manage API tokens → create one with Object Read & Write, scoped to this one bucket. Copy the Access Key ID and Secret. This token can only touch this bucket — that's the whole idea.",
+      code: "R2_ACCESS_KEY_ID=...\nR2_SECRET_ACCESS_KEY=...",
+    },
+    {
+      title: "Set the CORS policy",
+      body: "The browser will PUT files straight to R2 — a cross-origin request. The bucket has to explicitly allow it. Both origins: your dev machine and your future production domain.",
+      code: `[{ "AllowedOrigins": ["http://localhost:8000", "https://your-domain"],
+   "AllowedMethods": ["PUT"],
+   "AllowedHeaders": ["Content-Type"],
+   "ExposeHeaders": ["ETag"],
+   "MaxAgeSeconds": 3600 }]`,
+    },
+    {
+      title: "Optional: a custom domain for public images",
+      body: "Public images get a stable URL like cdn.your-domain/photos/... — set R2_PUBLIC_BASE_URL and reads stop needing signatures. Skip it and you get signed URLs instead; both work.",
+      note: "Presigned URLs only ever work against the S3 endpoint, never the custom domain. This trips everyone once. Consider yourself saved.",
+    },
+  ]}
+/>
+
+## The flow
+
+Watch where the file actually goes — this is the heart of the phase:
+
+<UploadFlow client:visible />
+
+## Why a presigned URL is the trick
+
+The naive design: the browser POSTs the file to our server; our server PUTs it to R2; the browser gets a URL back. The plan refuses:
+
+- **Our server never handles the bytes** — no 10MB request bodies through Express, no memory spikes, no timeouts on slow connections.
+- **The browser never gets the credentials.** Instead, `POST /uploads/sign` hands out a *ticket*: a URL that is signed, scoped to one key, one method (PUT), one content type, and expires in 5 minutes. A leaked ticket is nearly worthless: it can only overwrite one specific key, that one time.
+- **The upload request carries no cookies** — it goes to Cloudflare, not us. Session cookies stay home.
+
+<Callout variant="haa" title="Haa!">
+Notice how this mirrors the auth design from phase 3. There, credentials stayed on the server and the browser got a limited, expiring *cookie*. Here, R2 credentials stay on the server and the browser gets a limited, expiring *URL*. Same instinct, different layer: never give a client the keys — give it a ticket.
+</Callout>
+
+## The code, both halves
+
+The sign endpoint is the app's one JSON endpoint:
+
+```ts
+// src/routes/uploads.ts
+router.use(requireAuth(settings, "json"));   // not a page — a 401 here, not a redirect
+
+router.post("/sign", async (req, res) => {
+  if (!storage.configured) throw new HttpError(503, "Image storage is not configured.");
+  const { contentType, size } = SignIn.parse(req.body);
+  const ext = ALLOWED_TYPES[contentType];
+  if (!ext) throw new HttpError(400, "Use a JPEG, PNG, WebP, GIF or AVIF image.");
+  if (size > settings.IMAGE_MAX_BYTES) throw new HttpError(400, "That image is too large.");
+  const key = newImageKey(ext);                                  // images/<yyyy>/<uuid>.<ext>
+  const uploadUrl = await storage.createUploadUrl(key, contentType);
+  res.status(201).json({ key, uploadUrl, expiresIn: 300 });
+});
+```
+
+And the rule that must hold before a key is ever written to the database:
+
+```ts
+// src/services/image_services.ts
+export const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
+  "image/gif": "gif", "image/avif": "avif",
+}; // raster only: never SVG
+
+export async function assertUploadedImage(storage: Storage, key: string, maxBytes: number) {
+  if (!KEY_PATTERN.test(key)) throw new HttpError(400, "That image isn't valid. Choose it again.");
+  const object = await storage.head(key);
+  if (!object) throw new HttpError(400, "The image didn't finish uploading. Try again.");
+  if (object.size > maxBytes || !(object.contentType in ALLOWED_TYPES)) {
+    await storage.remove(key).catch(() => undefined);
+    throw new HttpError(400, "That file isn't an allowed image.");
+  }
+}
+```
+
+Two layers of trust control here. **SVG is banned by name** — an SVG is a little XML document that can carry scripts, and serving one from your domain is stored XSS with extra steps. Raster formats only. And the server doesn't take the client's word at sign-time: before trusting a key, it re-checks with `HeadObject` — does the object exist, is it the right size, is it really an allowed type. A key from a form is accepted only if it matches the minted pattern **and** the object verifies.
+
+<Callout variant="warn" title="The two classic R2 footguns">
+<strong>1. Content-Type must match exactly.</strong> The PUT must send *exactly* the `file.type` that was signed — change it and R2 answers `403 SignatureDoesNotMatch`. <strong>2. Newer AWS SDKs add CRC checksum parameters</strong> that R2's presigned URLs reject. The plan initializes the client with `requestChecksumCalculation: "WHEN_REQUIRED"` — one line that saves an afternoon.
+</Callout>
+
+## Reading images back
+
+Views never see keys. They get `imageUrl`, built fresh on every render:
+
+```ts
+async readUrl(key: string) {
+  if (this.s.R2_PUBLIC_BASE_URL) return `${this.s.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`;
+  const cmd = new GetObjectCommand({ Bucket: this.s.R2_BUCKET, Key: key });
+  return getSignedUrl(this.client, cmd, { expiresIn: 3600 });   // signed GET, one hour
+}
+```
+
+Public base set → stable unsigned URL. Not set → a signed GET that lives for an hour, freshly signed on each page render. (And now the CSP from phase 4 makes sense: `connect-src` and `img-src` allow the R2 host because the browser is a first-class citizen in this design.)
+
+<Callout variant="tip" title="The hour-long mystery">
+Someone leaves a tab open all evening, comes back, and every image is 403. Nothing broke — the signed GET URLs expired. Reload fixes it; `R2_PUBLIC_BASE_URL` removes the class of problem for public images.
+</Callout>
+
+## DB first, R2 second
+
+Deleting a photo deletes two things in a fixed order — and the order is the lesson:
+
+```ts
+const [row] = await db.delete(photos).where(eq(photos.id, id)).returning();
+if (!row) throw new HttpError(404, "Not found.");
+if (row.imageKey) {
+  await storage.remove(row.imageKey).catch((e) => console.warn("R2 delete failed:", row.imageKey, e));
+}
+```
+
+Row first, object second. If the object delete fails: log it, and **never fail the user's request** — the database already told the truth, and a dangling object is cheap. Leftovers get collected by the optional `scripts/sweep-orphans.ts`: it lists `images/` objects older than 24 hours that no row references, dry-run by default, deletes with `--apply`. Database is the source of truth; the bucket is allowed to be eventually-clean.
+
+## Let opencode write it
+
+```text
+Build Phase 6 of master-plan.md exactly as specified in §3 and appendix A.6:
+services/storage.ts (Storage interface + R2Storage + the disabled stub +
+createStorage), services/image_services.ts (ALLOWED_TYPES, newImageKey,
+assertUploadedImage), routes/uploads.ts (POST /sign with requireAuth json mode),
+public/js/upload.js, and scripts/sweep-orphans.ts. Wire assertUploadedImage into
+createPhoto. Match the plan's code.
+```
+
+Review checklist: no SVG in the allowlist, `HeadObject` before DB write, DB-first/R2-second on delete, and the S3 client's `requestChecksumCalculation` settings.
+
+<MissionBox
+  body="With real R2 credentials in .env, do the full physical test the plan describes: upload a photo through the UI, confirm the object exists in the bucket, see the image on the item, then delete the item and confirm the object is gone from the bucket."
+  code="# UI: /photos → choose a file → upload → submit
+# Bucket: the object appears under images/2026/
+# Delete the item → the object disappears
+# Bonus: post a text file and watch it get rejected"
+  note="Also try with R2 settings empty — uploads should answer 503 politely, not crash the app. The disabled stub is part of the design."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The browser uploads straight to R2 with a 5-minute presigned URL — our server never sees the bytes.",
+    "A ticket is scoped: one key, one method, one content type. Leaked = nearly useless.",
+    "Raster allowlist only — never SVG. HeadObject re-verifies size and type before the DB write.",
+    "Reads: a public base URL, or a signed GET freshly minted per page render (1 hour).",
+    "DB first, R2 second. Dangling objects are swept by script; user requests never fail on cleanup.",
+  ]}
+/>
+
+Next: phase 7 — tests. A separate database branch, an in-memory R2, and the flaky-connection rule. The phase that lets you change things without holding your breath.

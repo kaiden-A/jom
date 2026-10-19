@@ -1,0 +1,129 @@
+---
+title: "Deploy: one container, no surprises"
+slug: "deploy"
+project: "gallery-blog"
+order: 11
+summary: "Phase 8 — a two-stage Dockerfile, a CI/CD pipeline you can read end to end, the production settings checklist, and migrations that happen by hand, never by deploy."
+duration: "9 min read"
+tags: ["Phase 8", "Docker", "deploy"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import DeployPipeline from "../../../components/react/DeployPipeline.tsx";
+
+One app that renders pages, talks to Neon, signs URLs for R2 — deploying it should be one of the easiest parts of this course. And it is. That's not luck: it's the accumulated receipt of every "boring" decision so far. No client build to coordinate, no CORS to configure, no build-time environment variables to agonize over.
+
+The pipeline:
+
+<DeployPipeline client:visible />
+
+## The Dockerfile, in two stages
+
+```dockerfile
+# Stage 1 — build
+FROM node:22 AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build && npm prune --omit=dev
+
+# Stage 2 — run
+FROM node:22-slim
+WORKDIR /app
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/views ./views
+COPY --from=build --chown=node:node /app/public ./public
+COPY --from=build --chown=node:node /app/drizzle ./drizzle
+USER node
+CMD ["node", "dist/index.js"]
+```
+
+The build stage compiles TypeScript and throws the dev dependencies away — the image ships only what runs. The runtime stage is lean and **non-root** (the `node` user), because a container that doesn't need root shouldn't have it.
+
+And the most innocent-looking, most dangerous detail:
+
+```dockerfile
+COPY --from=build --chown=node:node /app/views ./views
+COPY --from=build --chown=node:node /app/public ./public
+```
+
+`views/` and `public/` are **not code** — they're data the running program reads from disk, resolved relative to the working directory (`/app`). tsup never bundles them; TypeScript never imports them. Forget these two lines and the container builds perfectly… then every page 500s with *"Failed to lookup view"*. It's the plan's flagship deploy footgun, and now it's one you've read once and will never write.
+
+## CI/CD: push → gates → image → deploy
+
+The full workflow is a `.github/workflows/cd.yml` that reads like the pipeline graphic: on a push to the default branch (with a `paths` filter so docs-only changes don't deploy), build and push a **commit-SHA-tagged** image, authenticate to Google Cloud, and let `deploy-cloudrun` do the rest.
+
+Two details the plan insists on:
+
+- **CI runs the same commands your missions ran** — `npm run typecheck` and `npm test` — before anything ships. Green locally is a habit; green in CI is a gate.
+- **"Verify the `branches` filter rather than trusting this file."** The plan says this about its own reference config, which is refreshing honesty worth copying: an "on push to main" workflow with a typo deploys from anywhere — or nowhere. Read your triggers.
+
+<Callout variant="tip" title="Why Cloud Run, and why one container">
+One process, one origin: pages, static files, and `/health` all answer on the same domain — no CORS anywhere in this app. Cloud Run also accepts the container as-is, scales to (nearly) zero when nobody visits, and injects the port. The plan's hosting choice is a reference, not a religion — but "one container, one origin" is the invariant. Keep that.
+</Callout>
+
+## Production settings — the checklist that bites
+
+| Setting | Production value | Why it matters |
+| --- | --- | --- |
+| `NODE_ENV` | `production` | Enables the EJS view cache — and stops verbose behavior. |
+| `COOKIE_SECURE` | `true` | HTTPS is real now; cookies must require it. |
+| `PUBLIC_BASE_URL` | `https://your-domain` | The same-origin check compares against **exactly** this — scheme, host, port. |
+| `TRUST_PROXY` | `1` | Cloud Run is one hop. Wrong value → the rate limiter sees one IP (the proxy) and locks out the world. |
+| R2 CORS origins | your production origin added | The browser's direct PUT is still cross-origin — the bucket needs to allow the real domain too. |
+
+<Callout variant="warn" title="If another edge sits in front of Cloud Run">
+Firebase Hosting rewrites, for example, strip every cookie except one named <code>__session</code>. In that setup, set <code>SESSION_COOKIE_NAME=__session</code> — otherwise login "succeeds" and every subsequent request is a stranger. The plan keeps this row in the settings table for exactly this reason.
+</Callout>
+
+## Migrations in production: by hand, on purpose
+
+```bash
+docker run --rm -e DATABASE_URL=... <image> node dist/scripts/migrate.js
+```
+
+That's the production migration story: you run it, deliberately, when you decide to. Deploys never migrate — because "code shipped" and "schema changed" are two different events with two different risk profiles, and one accidentally causing the other is how Friday evenings go wrong. Locally, the same script runs via `npm run db:migrate`.
+
+And the secrets — `ADMIN_PASSWORD`, `APP_SECRET`, `R2_SECRET_ACCESS_KEY`, `DATABASE_URL` — live in the platform's secret store (Cloud Run + Secret Manager). Never in the image, never in the repo, never in a log line. The plan's rule is blunt: **log named, non-secret fields only.** Never log the whole settings object.
+
+## Let opencode write it
+
+```text
+Build Phase 8 of master-plan.md as specified in appendix A.8: a two-stage
+Dockerfile (build with tsup, runtime node:22-slim, non-root node user, copying
+dist/ node_modules/ views/ public/ drizzle/), .dockerignore, and
+.github/workflows/cd.yml — build/push a commit-SHA-tagged image, authenticate to
+GCP, deploy-cloudrun, with a paths filter on the default branch. Ask me for my
+GCP project and region before inventing them.
+```
+
+Review checklist: `views/` and `public/` in the runtime COPY list, non-root user, no secrets anywhere in the file, and the workflow triggers pointing at the branch you actually use.
+
+<MissionBox
+  body="Build the image, run it locally, then walk the plan's definition-of-done: container serves pages, static files, and /health on one port. Then deploy for real, run the migration against the production database, and upload one photo in production."
+  code={`docker build -t gallery-blog .
+docker run --rm -p 8000:8000 --env-file .env --env PORT=8000 gallery-blog
+curl http://localhost:8000/health
+# then: deploy, migrate, and upload a real photo from the live site`}
+  note="That first production upload — file to R2, key to Neon, image on the page — is the whole course in one motion. Take a second with it."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Two-stage Dockerfile: build with all deps, ship only what runs — as a non-root user.",
+    "views/ and public/ must be COPYed in: the app resolves them from /app, not from bundles.",
+    "One container, one origin — which is why there's no CORS anywhere in this app.",
+    "NODE_ENV, COOKIE_SECURE, PUBLIC_BASE_URL, TRUST_PROXY: get them exactly right.",
+    "Secrets live in the platform's secret store; migrations are run by hand, never by deploy.",
+  ]}
+/>
+
+Next: the last lesson — everything the plan taught that isn't code. House rules, the footgun gallery, and the boss fight that decides when this app is done.

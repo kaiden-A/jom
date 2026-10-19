@@ -1,0 +1,131 @@
+---
+title: "The Master Plan"
+slug: "master-plan"
+project: "gallery-blog"
+order: 3
+summary: "Before the first line of code, meet the blueprint we'll follow for the whole build — one app, eight phases, and one rule: no phase is done until you've verified it."
+duration: "7 min read"
+tags: ["Explanation", "the plan", "no code"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import PlanRoadmap from "../../../components/react/PlanRoadmap.tsx";
+
+The mockup is done. We know what the gallery looks like. Now — before any real code — we meet the document that runs this entire build.
+
+It's called **the master plan**. It's not a tutorial; it's a blueprint, written for exactly one situation: someone (or something) starting this app from an empty folder. Every remaining lesson in this project maps to a phase inside it.
+
+You're the builder. opencode is your assistant. The plan keeps you both honest.
+
+<div class="not-prose border-line my-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-dashed bg-white p-5 sm:p-6">
+  <div>
+    <p class="font-display text-base font-semibold">The plan itself</p>
+    <p class="text-ink-soft mt-1 text-sm leading-relaxed font-bold">
+      Keep it open in a tab. It's the source of truth — when a lesson and the plan disagree, the plan wins.
+    </p>
+  </div>
+  <a href="/downloads/master-plan.md" download class="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm">Download master-plan.md</a>
+</div>
+
+## One app, not a pile of apps
+
+The stack from lesson 1 — Express, EJS, Neon, R2 — is exactly this plan's stack. But there's a detail a stack list can't show you: it's **one Express app that does everything.**
+
+It renders its own pages (EJS), handles its own forms (plain HTML), talks to Neon for data, and to R2 for photo files. There is no separate client project, no build step for the browser, no CORS, no API contract to keep in sync.
+
+<Callout variant="haa" title="Haa!">
+"Boring" is not a dirty word here. Every piece the plan deliberately leaves out — a front-end framework, a CSS framework, a bundler, a session table — is one less thing that can break at 2am. Fewer moving parts is not a compromise. It's the feature.
+</Callout>
+
+The plan calls the app's own features — photo folders, likes, comments — **extensions**. They plug into fixed seams; they never rewrite the core. That's why we can build the whole thing in one course and still have room to grow it after.
+
+## The eight phases
+
+This is the shape of everything to come. Tap through it — each phase is a lesson, and each lesson ends with a mission:
+
+<PlanRoadmap client:visible />
+
+Read that order like a sentence: *get it to boot, then let yourself in, then show pages, then store data, then store files, then prove it, then ship it.*
+
+<Callout variant="warn" title="No skipping">
+Every phase ends with a verification step — the plan calls it <strong>Verify:</strong>. Pass it before touching the next phase. Skipping ahead feels fast; it's actually the slowest way to build, because now you're debugging three unknown layers at once.
+</Callout>
+
+## What the plan is strict about
+
+The plan has a section called **hard invariants** — rules it will not bend. You'll meet them one by one, but here's the flavor:
+
+- **Auth is one owner.** Your email and password live in environment variables, never in the database. There's no users table, no signup, no password reset. Nothing to attack because nothing is stored.
+- **The database changes slowly, on purpose.** Migrations are generated, then **read by a human** (you), then applied by hand. Deploys never run them.
+- **Images never touch our server.** The browser uploads straight to R2 with a short-lived signed URL. The database stores the key, not the file.
+
+Don't memorize these yet. Just notice the pattern: every invariant is a decision that trades a little convenience for a lot of safety.
+
+## How we'll drive it
+
+<StepList
+  steps={[
+    {
+      title: "Read the plan once",
+      body: "Not memorize — just know its shape. Download it above and skim it. You'll come back to sections constantly.",
+      code: "master-plan.md",
+      note: "It's written for a coding agent, so you can also just... give it to opencode. But you should still know what's in it.",
+    },
+    {
+      title: "Collect the facts",
+      body: "The plan refuses to let anyone invent values — §0.2 is a list of facts only you can supply (app name, domain, credentials, database and R2 details). We'll gather them as each phase needs them.",
+      code: "§0.2 — Facts to collect from the user",
+    },
+    {
+      title: "Build in order, one lesson per phase",
+      body: "Each lesson teaches the concept first — graphics and all — then the files, then you brief opencode or write them yourself. Understanding is what lets you review what the agent produces.",
+    },
+    {
+      title: "Run the mission",
+      body: "Every lesson ends with a mission box — the plan's own Verify step. Run it for real. The app either does the thing or it doesn't; there's no partial credit.",
+    },
+  ]}
+/>
+
+<Callout variant="tip" title="Why understand if the agent writes it?">
+Because you're the reviewer, not the typist. opencode will absolutely produce `config.ts` for you — but when the app refuses to boot at 11pm, the person who knows *why* it refuses is the person who gets it fixed. That's this course's whole job: making you that person.
+</Callout>
+
+## The facts you'll be asked for
+
+Some phases pause and need real values from you. Nothing secret ever goes into the plan document itself — secrets live in a `.env` file that never gets committed:
+
+| Fact | Where it ends up |
+| --- | --- |
+| App name + one-line purpose | `APP_NAME`, page titles |
+| Production domain | `PUBLIC_BASE_URL`, R2's CORS list |
+| Your login email + a 12+ character password | `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
+| Neon connection string (pooled host) + a second branch for tests | `DATABASE_URL`, `TEST_DATABASE_URL` |
+| Cloudflare account id, bucket name, R2 API token | `R2_*` |
+| Public or private images? | `R2_PUBLIC_BASE_URL` |
+
+You don't need all of these today. You'll need each one exactly when its phase arrives — and the lesson will tell you.
+
+<MissionBox
+  body="Your mission for this lesson is a reading one — but do it properly. Download the plan, skim the table of contents, and find three things: the phases list, the invariants list, and the footguns table."
+  note="No code yet. If you can point to where 'footguns' lives, you're ready for the next lesson."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The master plan is the blueprint — one Express app, eight phases, verified one at a time.",
+    "One app renders its own pages, its own forms, and talks to Neon + R2 directly.",
+    "Boring choices are deliberate: fewer moving parts, fewer ways to break.",
+    "Invariants are the rules the plan won't bend — safety traded for small conveniences.",
+    "You drive, opencode assists — and the mission boxes are non-negotiable.",
+  ]}
+/>
+
+Next: phase 1 — scaffolding the project. An empty folder that installs, typechecks, and knows where everything is going to live.
