@@ -1,0 +1,764 @@
+---
+title: "Capstone part 2: the working calculator"
+slug: "capstone-calculator"
+project: "frontend-development"
+order: 21
+part: "javascript"
+summary: "Connect the logic to the page: state, render, form events, add and remove food, live totals, and localStorage. This is the complete vanilla JavaScript app."
+duration: "12 min read"
+tags: ["JavaScript", "build", "state"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+This is it — the whole vanilla JavaScript app.
+
+We have the HTML, the CSS, and the math. Now we connect them:
+
+1. **State** — the target, the numbers, and the food list.
+2. **Render** — draw the page from state.
+3. **Events** — the forms and the remove buttons.
+4. **Storage** — save and load the state.
+
+The pattern is exactly what we practiced in lessons 17 and 18. The only difference is that it's all in one app.
+
+## The shape of the state
+
+```js
+let state = {
+  target: 0,
+  bmr: 0,
+  tdee: 0,
+  activity: "moderate",
+  foods: [],
+};
+```
+
+One object. Everything the UI needs is in there. When something changes, we update the state, save it, and call `render()`.
+
+<Callout variant="tip" title="Derive, don't store">
+The total calories and the remaining calories are **not** in the state. They're calculated from `state.foods` and `state.target` inside `render()`. If you store them too, you have three values that can drift apart.
+</Callout>
+
+## render() is the heart
+
+```js
+function render() {
+  const eaten = totalCalories(state.foods);
+  const left = state.target ? state.target - eaten : null;
+
+  targetEl.textContent = state.target ? state.target.toLocaleString() : "0";
+  eatenEl.textContent = eaten.toLocaleString();
+  leftEl.textContent = left === null ? "—" : left.toLocaleString();
+
+  list.replaceChildren();
+  for (const food of state.foods) {
+    // create a row, set textContent, append
+  }
+}
+```
+
+Every event handler ends with:
+
+```js
+saveState();
+render();
+```
+
+Change the state, save it, redraw. That's the loop.
+
+## The full app
+
+Read it in this order: state, helpers, render, events, startup. Then try it: calculate a target, add foods, remove one, and press **Run** again to see the log persist.
+
+<Playground
+  client:visible
+  title="calorie-calculator.html"
+  showConsole={true}
+  height={680}
+  html={`<header class="site-header">
+  <p class="brand">Calorie Calculator</p>
+</header>
+
+<main class="page">
+  <section class="hero">
+    <p class="eyebrow">Daily target</p>
+    <h1>Eat with a plan.</h1>
+    <p class="lede">Calculate your target, log your food, and see what's left.</p>
+  </section>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Your details</h2>
+
+      <form id="calculator-form">
+        <div class="field-grid">
+          <div class="field">
+            <label for="age">Age</label>
+            <input id="age" type="number" min="13" max="120" value="25" required>
+          </div>
+          <div class="field">
+            <label for="height">Height (cm)</label>
+            <input id="height" type="number" min="100" max="250" value="170" required>
+          </div>
+          <div class="field">
+            <label for="weight">Weight (kg)</label>
+            <input id="weight" type="number" min="30" max="300" step="0.1" value="70" required>
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Sex</legend>
+          <label class="inline"><input type="radio" name="sex" value="female" checked> Female</label>
+          <label class="inline"><input type="radio" name="sex" value="male"> Male</label>
+        </fieldset>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="activity">Activity level</label>
+            <select id="activity">
+              <option value="sedentary">Sedentary</option>
+              <option value="light">Light</option>
+              <option value="moderate" selected>Moderate</option>
+              <option value="active">Active</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="goal">Goal</label>
+            <select id="goal">
+              <option value="maintain" selected>Maintain</option>
+              <option value="lose">Lose weight</option>
+              <option value="gain">Gain weight</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn" type="submit">Calculate</button>
+      </form>
+    </section>
+
+    <aside class="results" aria-live="polite">
+      <p class="label">Your daily target</p>
+      <p class="value"><span id="target">0</span> <span class="unit">kcal</span></p>
+      <p class="result-note" id="summary">Fill in your details and press Calculate.</p>
+
+      <div class="stats">
+        <div class="stat"><span>BMR</span><strong id="bmr">—</strong></div>
+        <div class="stat"><span>TDEE</span><strong id="tdee">—</strong></div>
+        <div class="stat"><span>Eaten</span><strong id="eaten">0</strong></div>
+        <div class="stat"><span>Left</span><strong id="left">—</strong></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="panel log-panel">
+    <div class="panel-head">
+      <h2>Today's food</h2>
+      <span class="badge" id="count">0 items</span>
+    </div>
+
+    <form id="food-form" class="food-form">
+      <div class="field">
+        <label for="food-name">Food</label>
+        <input id="food-name" type="text" placeholder="Chicken and rice" required>
+      </div>
+      <div class="field">
+        <label for="food-calories">Calories</label>
+        <input id="food-calories" type="number" min="0" max="5000" placeholder="550" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Add food</button>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Food log for today</caption>
+        <thead>
+          <tr>
+            <th scope="col">Food</th>
+            <th scope="col">Calories</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="food-list"></tbody>
+        <tfoot>
+          <tr><th scope="row">Total</th><td id="total">0</td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <p class="empty" id="empty">Nothing logged yet. Add your first food above.</p>
+    <button class="clear" id="clear-log" type="button">Clear the log</button>
+  </section>
+</main>`}
+  css={`:root {
+  --ink: #221c46;
+  --soft: #5d5680;
+  --brand: #4f46e5;
+  --brand-deep: #3730a3;
+  --brand-soft: #eef0ff;
+  --paper: #faf7f2;
+  --card: #ffffff;
+  --line: #e8e3f0;
+  --mint: #047857;
+  --mint-soft: #d1fae5;
+  --rose: #be123c;
+  --rose-soft: #fdf2f2;
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.site-header {
+  padding: 14px 24px;
+  background: var(--card);
+  border-bottom: 2px solid var(--line);
+}
+
+.brand { margin: 0; font-weight: 800; }
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+}
+
+.hero { max-width: 560px; }
+
+.eyebrow {
+  margin: 0;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 6px 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.08;
+}
+
+.lede { margin: 0; color: var(--soft); }
+
+.layout {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+@media (min-width: 760px) {
+  .layout { grid-template-columns: 1.4fr 0.8fr; align-items: start; }
+}
+
+.panel {
+  padding: 24px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.panel h2, .panel-head h2 {
+  margin: 0 0 16px;
+  font-size: 21px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.field { margin-bottom: 14px; }
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+input:focus-visible, select:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-soft);
+  outline: none;
+}
+
+fieldset {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+legend { padding: 0 6px; font-size: 14px; font-weight: 800; }
+
+.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 18px;
+  font-weight: 600;
+}
+
+.inline input { width: auto; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--brand-deep); }
+.btn:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+
+.btn-ghost {
+  background: var(--card);
+  color: var(--brand);
+  border: 2px solid var(--line);
+}
+
+.btn-ghost:hover { background: var(--brand-soft); }
+
+.results {
+  padding: 24px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: white;
+}
+
+.results .label { color: var(--brand-soft); }
+
+.value {
+  margin: 6px 0 0;
+  font-size: clamp(2.2rem, 7vw, 3rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.unit { color: var(--brand-soft); font-size: 15px; font-weight: 700; }
+
+.result-note {
+  margin: 8px 0 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.stat span {
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stat strong { display: block; margin-top: 2px; font-size: 18px; }
+.stat strong.over { color: #fda4af; }
+
+.log-panel { margin-top: 16px; }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-head h2 { margin: 0; }
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--mint-soft);
+  color: var(--mint);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.food-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+@media (min-width: 620px) {
+  .food-form { grid-template-columns: 1.4fr 0.7fr auto; }
+  .food-form .field { margin-bottom: 0; }
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+caption {
+  padding-bottom: 8px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+th, td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+thead th {
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+tfoot th, tfoot td { border-bottom: 0; font-weight: 800; }
+
+.remove {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rose-soft);
+  color: var(--rose);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.remove:hover { background: #ffe4e6; }
+
+.empty {
+  margin: 14px 0 0;
+  padding: 14px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  color: var(--soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+.clear {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rose);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+`}
+  js={`const STORAGE_KEY = "calorie-calculator-v1";
+
+const calculatorForm = document.querySelector("#calculator-form");
+const foodForm = document.querySelector("#food-form");
+const foodName = document.querySelector("#food-name");
+const foodCalories = document.querySelector("#food-calories");
+const list = document.querySelector("#food-list");
+
+const targetEl = document.querySelector("#target");
+const bmrEl = document.querySelector("#bmr");
+const tdeeEl = document.querySelector("#tdee");
+const eatenEl = document.querySelector("#eaten");
+const leftEl = document.querySelector("#left");
+const summaryEl = document.querySelector("#summary");
+const countEl = document.querySelector("#count");
+const totalEl = document.querySelector("#total");
+const emptyEl = document.querySelector("#empty");
+const clearButton = document.querySelector("#clear-log");
+
+let state = loadState();
+
+function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return sex === "male" ? base + 5 : base - 161;
+}
+
+function calculateTarget({ weight, height, age, sex, activity, goal }) {
+  const bmr = calculateBMR(weight, height, age, sex);
+  const tdee = bmr * activityMultiplier(activity);
+
+  let adjustment = 0;
+  if (goal === "lose") adjustment = -500;
+  if (goal === "gain") adjustment = 300;
+
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    target: Math.round(tdee + adjustment),
+  };
+}
+
+function totalCalories(foods) {
+  return foods.reduce((sum, food) => sum + food.calories, 0);
+}
+
+function render() {
+  const eaten = totalCalories(state.foods);
+  const left = state.target ? state.target - eaten : null;
+
+  targetEl.textContent = state.target ? state.target.toLocaleString() : "0";
+  bmrEl.textContent = state.bmr ? state.bmr.toLocaleString() : "—";
+  tdeeEl.textContent = state.tdee ? state.tdee.toLocaleString() : "—";
+  eatenEl.textContent = eaten.toLocaleString();
+  leftEl.textContent = left === null ? "—" : left.toLocaleString();
+  leftEl.classList.toggle("over", left !== null && left < 0);
+
+  summaryEl.textContent = state.target
+    ? "Based on your details and " + state.activity + " activity."
+    : "Fill in your details and press Calculate.";
+
+  list.replaceChildren();
+
+  for (const food of state.foods) {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = food.name;
+
+    const calorieCell = document.createElement("td");
+    calorieCell.textContent = food.calories.toLocaleString();
+
+    const actionCell = document.createElement("td");
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove";
+    remove.textContent = "Remove";
+    remove.dataset.id = food.id;
+    remove.setAttribute("aria-label", "Remove " + food.name);
+    actionCell.append(remove);
+
+    row.append(nameCell, calorieCell, actionCell);
+    list.append(row);
+  }
+
+  totalEl.textContent = eaten.toLocaleString();
+  countEl.textContent = state.foods.length + (state.foods.length === 1 ? " item" : " items");
+  emptyEl.hidden = state.foods.length > 0;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return { target: 0, bmr: 0, tdee: 0, activity: "moderate", foods: [] };
+    }
+
+    const parsed = JSON.parse(raw);
+    return {
+      target: Number(parsed.target) || 0,
+      bmr: Number(parsed.bmr) || 0,
+      tdee: Number(parsed.tdee) || 0,
+      activity: parsed.activity || "moderate",
+      foods: Array.isArray(parsed.foods) ? parsed.foods : [],
+    };
+  } catch {
+    return { target: 0, bmr: 0, tdee: 0, activity: "moderate", foods: [] };
+  }
+}
+
+calculatorForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const age = Number(document.querySelector("#age").value);
+  const height = Number(document.querySelector("#height").value);
+  const weight = Number(document.querySelector("#weight").value);
+  const activity = document.querySelector("#activity").value;
+  const goal = document.querySelector("#goal").value;
+  const sex = document.querySelector('input[name="sex"]:checked').value;
+
+  if (!Number.isFinite(age) || !Number.isFinite(height) || !Number.isFinite(weight)) {
+    summaryEl.textContent = "Please enter valid numbers for age, height, and weight.";
+    return;
+  }
+
+  const result = calculateTarget({ weight, height, age, sex, activity, goal });
+
+  state.bmr = result.bmr;
+  state.tdee = result.tdee;
+  state.target = result.target;
+  state.activity = activity;
+  state.goal = goal;
+
+  saveState();
+  render();
+  console.log("Target calculated:", result);
+});
+
+foodForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const name = foodName.value.trim();
+  const calories = Number(foodCalories.value);
+
+  if (!name || !Number.isFinite(calories) || calories < 0) {
+    return;
+  }
+
+  state.foods.push({ id: Date.now(), name, calories });
+  foodForm.reset();
+  saveState();
+  render();
+});
+
+list.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-id]");
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+  state.foods = state.foods.filter((food) => food.id !== id);
+  saveState();
+  render();
+});
+
+clearButton.addEventListener("click", () => {
+  if (state.foods.length === 0) return;
+  if (!window.confirm("Clear the whole food log?")) return;
+
+  state.foods = [];
+  saveState();
+  render();
+});
+
+render();
+console.log("Loaded " + state.foods.length + " saved foods.");`}
+/>
+
+<Callout variant="tip" title="Press Run again">
+The playground's localStorage shim keeps data between runs. Add foods, press **Run**, and the list is still there. In a real browser, the same code survives a full page refresh.
+</Callout>
+
+## Read the code in this order
+
+- **State** — `let state = loadState()`. One object, loaded from storage.
+- **Helpers** — `activityMultiplier`, `calculateBMR`, `calculateTarget`, `totalCalories`. Pure functions.
+- **render()** — reads state, writes the DOM. Total and left are derived, not stored.
+- **Events** — calculator submit, food submit, remove (delegated), clear.
+- **Startup** — `render()` once, then wait for events.
+
+Every handler follows the same rhythm:
+
+```js
+// 1. prevent the default
+// 2. read and validate input
+// 3. update state
+// 4. save
+// 5. render
+```
+
+Once you notice that pattern, the app stops looking like a lot of code.
+
+<Callout variant="warn" title="No innerHTML for user data">
+Food names come from the user. We create a `<td>` and set `textContent`, rather than building an HTML string. If someone types `<img src=x onerror=alert(1)>`, it shows up as text — not code. Keep doing this.
+</Callout>
+
+<MissionBox
+  title="Extend the app"
+  body="Add a protein field to the food form, show total protein in the stats, and persist it with the rest of the state. Then add a progress bar that shows eaten vs target. Keep using textContent and derive the numbers in render()."
+  note="If the bar is wider than 100%, clamp it with Math.min(100, (eaten / target) * 100). A target of 0 should show an empty bar, not divide by zero."
+/>
+
+## The mistakes everyone makes
+
+- **Forgetting to call render.** The state changes; the screen doesn't.
+- **Forgetting to save after delete.** The page looks right until you refresh.
+- **Using innerHTML for food names.** XSS. Use textContent.
+- **Storing the total separately.** Derive it from foods.
+- **Not validating numbers.** `Number("abc")` is `NaN`; a `NaN` total poisons everything.
+- **Dividing by a zero target.** Check for 0 before calculating a percentage.
+- **One giant event handler.** Keep calculate, add, remove, and clear separate.
+- **Assuming localStorage is a database.** It's per browser and easy to clear.
+
+<RecapCards
+  points={[
+    "State is one object; the UI is rendered from it.",
+    "render() updates every dependent value, including totals.",
+    "Every handler: prevent, validate, update state, save, render.",
+    "Remove buttons use event delegation and data-id.",
+    "Derive totals; don't store duplicate copies.",
+    "Use textContent for user data; never innerHTML.",
+  ]}
+/>
+
+That's part 3. You've built a complete, working, persistent app in vanilla JavaScript — with no framework. Keep this code. In the React part, we'll rebuild the same calculator and compare the two.
+
+Next: why React exists, using the app you just built as the starting point.

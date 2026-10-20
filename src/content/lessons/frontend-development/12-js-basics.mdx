@@ -1,0 +1,157 @@
+---
+title: "JavaScript basics: values, variables, and strings"
+slug: "js-basics"
+project: "frontend-development"
+order: 12
+part: "javascript"
+summary: "JavaScript is the behavior layer. Start with the pieces you'll use every day: variables, types, strings, and the console — then make the page do something."
+duration: "7 min read"
+tags: ["JavaScript", "basics"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+HTML is structure. CSS is style. JavaScript is behavior: the thing that reacts, calculates, remembers, and updates the page.
+
+This is where the calculator stops being a picture and starts doing something. But first, the basics.
+
+## Where JavaScript goes
+
+You can put JavaScript in a `<script>` tag:
+
+```html
+<script src="script.js" defer></script>
+```
+
+Put it in the `<head>` with `defer`, or just before `</body>`. Either way, the script waits until the HTML has been parsed, so your code can find the elements it needs.
+
+You can also run JavaScript in the browser's **DevTools console**. Open DevTools (`F12` or right-click → Inspect), click **Console**, and type. It's the fastest way to test a line.
+
+<Callout variant="tip" title="The console is your friend">
+`console.log()` prints a value to the console. It's the simplest debugging tool there is, and you'll use it for the rest of your career. Don't feel bad about logging everything while you learn.
+</Callout>
+
+## Variables
+
+A variable is a named box that holds a value.
+
+```js
+const name = "Chicken and rice";
+let calories = 550;
+
+calories = 600;        // fine: let can change
+// name = "Rice";      // error: const can't be reassigned
+```
+
+- Use `const` by default. It means "this name won't point to a different value."
+- Use `let` when the value needs to change.
+- Avoid `var`. It's the old way and has confusing scoping rules.
+
+<Callout variant="note" title="const doesn't mean frozen">
+`const` stops you from reassigning the variable. It doesn't stop you from changing an object or array it points to. We'll see that in the arrays lesson.
+</Callout>
+
+## Types
+
+JavaScript has a small set of basic types:
+
+| Type | Examples | What it's for |
+| --- | --- | --- |
+| `string` | `"hello"`, `'hello'` | Text |
+| `number` | `42`, `3.14`, `-7` | Numbers (no separate int/float) |
+| `boolean` | `true`, `false` | Yes/no |
+| `null` | `null` | "Nothing, on purpose" |
+| `undefined` | `undefined` | "Nothing, not set yet" |
+| `object` | `{ name: "Rice" }`, arrays | Collections of values |
+
+`typeof` tells you what you're looking at:
+
+```js
+console.log(typeof "hello");   // "string"
+console.log(typeof 42);        // "number"
+console.log(typeof true);      // "boolean"
+console.log(typeof undefined); // "undefined"
+console.log(typeof null);      // "object" (a famous JavaScript quirk)
+```
+
+## Strings
+
+```js
+const food = "Chicken and rice";
+const calories = 550;
+
+console.log(food.length);          // 16
+console.log(food.toUpperCase());   // "CHICKEN AND RICE"
+console.log(food.includes("rice")); // true
+console.log("  padded  ".trim());  // "padded"
+```
+
+Template literals make it easy to build sentences:
+
+```js
+const message = `${food} has ${calories} kcal.`;
+console.log(message);
+```
+
+The backticks let you drop values into a string with `${...}`. It's cleaner than gluing strings together with `+`.
+
+## Try it
+
+The playground below has no HTML or CSS — just JavaScript and the console. Hit **Run**, then change the values and run it again.
+
+<Playground
+  client:visible
+  title="basics.js"
+  showHtml={false}
+  showCss={false}
+  showConsole={true}
+  showPreview={false}
+  height={260}
+  js={`const food = "Chicken and rice";
+const calories = 550;
+const isHealthy = true;
+
+console.log(food);
+console.log(calories);
+console.log(typeof food);
+console.log(typeof calories);
+console.log("This meal has " + calories + " kcal.");
+
+// Try changing the values above, then press Run again.`}
+/>
+
+<Callout variant="warn" title="Quotes and backticks">
+Strings can use single quotes, double quotes, or backticks. Pick one style and stick to it. Backticks are special: they support `${...}` interpolation. Don't mix them up.
+</Callout>
+
+<MissionBox
+  title="Your first variables"
+  body="Create variables for a meal: a name, a number of calories, and whether you enjoyed it. Log each one, then log a sentence like 'Oatmeal has 320 kcal.' using a template literal. Finally, log the typeof each variable."
+  note="If you see undefined, the variable exists but has no value yet. If you see a ReferenceError, the name doesn't exist."
+/>
+
+## The mistakes everyone makes
+
+- **Reassigning a `const`.** Use `let` when the value changes.
+- **Using `var` out of habit.** Use `const` or `let`.
+- **Forgetting quotes around text.** `const food = Chicken;` looks for a variable named `Chicken`.
+- **Confusing `null` and `undefined`.** `undefined` means "not set"; `null` means "set to nothing on purpose."
+- **Adding a string and a number.** `"5" + 1` is `"51"`, not `6`. Convert first.
+- **Typo in a variable name.** JavaScript is case-sensitive: `food` and `Food` are different.
+
+<RecapCards
+  points={[
+    "JavaScript is the behavior layer: it reacts, calculates, and updates.",
+    "Use const by default, let when the value changes, and avoid var.",
+    "The basic types are string, number, boolean, null, undefined, and object.",
+    "Template literals use backticks and ${...} to insert values.",
+    "console.log is your first debugging tool.",
+  ]}
+/>
+
+Next: conditions and functions. The calculator needs to make decisions and reuse logic.

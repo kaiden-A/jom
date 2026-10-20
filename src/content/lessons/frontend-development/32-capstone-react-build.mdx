@@ -1,0 +1,529 @@
+---
+title: "Capstone part 2: finish, deploy, and what's next"
+slug: "capstone-react-build"
+project: "frontend-development"
+order: 32
+part: "react"
+summary: "Wire the last interactions, persist the app, deploy it for free, and look back at everything you built — then choose what to learn next."
+duration: "10 min read"
+tags: ["React", "build", "deploy"]
+updated: "October 2026"
+draft: false
+nextProject: "gallery-blog"
+nextLesson: "gambaran-besar"
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import CalorieCalculator from "../../../components/react/CalorieCalculator.tsx";
+
+This is the last lesson. Let's finish the React calculator, put it online, and take stock of what you can do now.
+
+## What's left
+
+The plan from last lesson:
+
+- `App` owns the profile and foods.
+- `CalculatorForm` owns its inputs and submits a profile.
+- `ResultCard` displays the derived numbers.
+- `FoodForm` adds a food.
+- `FoodLog` renders the list or the empty state.
+- `useEffect` saves everything to localStorage.
+
+Let's write the final pieces.
+
+## App.jsx
+
+```jsx
+import { useEffect, useState } from "react";
+import Header from "./components/Header.jsx";
+import CalculatorForm from "./components/CalculatorForm.jsx";
+import ResultCard from "./components/ResultCard.jsx";
+import FoodForm from "./components/FoodForm.jsx";
+import FoodLog from "./components/FoodLog.jsx";
+import { calculateTarget, totalCalories } from "./lib/calculate.js";
+import { loadState, saveState } from "./lib/storage.js";
+
+export default function App() {
+  const [initial] = useState(loadState);
+  const [profile, setProfile] = useState(initial.profile);
+  const [foods, setFoods] = useState(initial.foods);
+
+  useEffect(() => {
+    saveState({ profile, foods });
+  }, [profile, foods]);
+
+  const result = profile ? calculateTarget(profile) : null;
+  const eaten = totalCalories(foods);
+  const left = result ? result.target - eaten : null;
+
+  function addFood(name, calories) {
+    setFoods((previous) => [
+      ...previous,
+      { id: crypto.randomUUID(), name, calories },
+    ]);
+  }
+
+  function removeFood(id) {
+    setFoods((previous) => previous.filter((food) => food.id !== id));
+  }
+
+  function clearFoods() {
+    if (foods.length === 0) return;
+    if (window.confirm("Clear the whole food log?")) {
+      setFoods([]);
+    }
+  }
+
+  return (
+    <div>
+      <Header />
+      <main className="page">
+        <section className="hero">
+          <p className="eyebrow">Daily target</p>
+          <h1>Eat with a plan.</h1>
+          <p className="lede">
+            Calculate your target, log your food, and see what's left.
+          </p>
+        </section>
+
+        <div className="layout">
+          <CalculatorForm onCalculate={setProfile} />
+          <ResultCard result={result} eaten={eaten} left={left} />
+        </div>
+
+        <FoodForm onAdd={addFood} />
+        <FoodLog
+          foods={foods}
+          onRemove={removeFood}
+          onClear={clearFoods}
+        />
+      </main>
+    </div>
+  );
+}
+```
+
+Notice what's **not** here: no `target`, `bmr`, `tdee`, `eaten`, or `left` in state. They're derived during render. That's the biggest difference from the vanilla version.
+
+## CalculatorForm.jsx
+
+```jsx
+import { useState } from "react";
+
+const initialForm = {
+  age: "25",
+  height: "170",
+  weight: "70",
+  sex: "female",
+  activity: "moderate",
+  goal: "maintain",
+};
+
+export default function CalculatorForm({ onCalculate }) {
+  const [form, setForm] = useState(initialForm);
+  const [error, setError] = useState("");
+
+  function update(field, value) {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const age = Number(form.age);
+    const height = Number(form.height);
+    const weight = Number(form.weight);
+
+    if (
+      !Number.isFinite(age) || age < 13 || age > 120 ||
+      !Number.isFinite(height) || height < 100 || height > 250 ||
+      !Number.isFinite(weight) || weight < 30 || weight > 300
+    ) {
+      setError("Please enter a valid age, height, and weight.");
+      return;
+    }
+
+    setError("");
+    onCalculate({
+      age,
+      height,
+      weight,
+      sex: form.sex,
+      activity: form.activity,
+      goal: form.goal,
+    });
+  }
+
+  return (
+    <section className="panel">
+      <h2>Your details</h2>
+
+      <form onSubmit={handleSubmit}>
+        <div className="field-grid">
+          <div className="field">
+            <label htmlFor="age">Age</label>
+            <input
+              id="age"
+              type="number"
+              value={form.age}
+              onChange={(event) => update("age", event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="height">Height (cm)</label>
+            <input
+              id="height"
+              type="number"
+              value={form.height}
+              onChange={(event) => update("height", event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="weight">Weight (kg)</label>
+            <input
+              id="weight"
+              type="number"
+              value={form.weight}
+              onChange={(event) => update("weight", event.target.value)}
+            />
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Sex</legend>
+          <label className="inline">
+            <input
+              type="radio"
+              name="sex"
+              value="female"
+              checked={form.sex === "female"}
+              onChange={(event) => update("sex", event.target.value)}
+            />
+            Female
+          </label>
+          <label className="inline">
+            <input
+              type="radio"
+              name="sex"
+              value="male"
+              checked={form.sex === "male"}
+              onChange={(event) => update("sex", event.target.value)}
+            />
+            Male
+          </label>
+        </fieldset>
+
+        <div className="field-grid">
+          <div className="field">
+            <label htmlFor="activity">Activity level</label>
+            <select
+              id="activity"
+              value={form.activity}
+              onChange={(event) => update("activity", event.target.value)}
+            >
+              <option value="sedentary">Sedentary</option>
+              <option value="light">Light</option>
+              <option value="moderate">Moderate</option>
+              <option value="active">Active</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="goal">Goal</label>
+            <select
+              id="goal"
+              value={form.goal}
+              onChange={(event) => update("goal", event.target.value)}
+            >
+              <option value="maintain">Maintain</option>
+              <option value="lose">Lose weight</option>
+              <option value="gain">Gain weight</option>
+            </select>
+          </div>
+        </div>
+
+        {error && <p className="form-error">{error}</p>}
+        <button className="btn" type="submit">Calculate</button>
+      </form>
+    </section>
+  );
+}
+```
+
+Everything is controlled: `value` comes from `form`, and `onChange` updates it. The error is local to the form.
+
+## ResultCard.jsx
+
+```jsx
+export default function ResultCard({ result, eaten, left }) {
+  return (
+    <aside className="results" aria-live="polite">
+      <p className="label">Your daily target</p>
+      <p className="value">
+        {result ? result.target.toLocaleString() : "0"}{" "}
+        <span className="unit">kcal</span>
+      </p>
+      <p className="result-note">
+        {result
+          ? "Based on your details and activity level."
+          : "Fill in your details and press Calculate."}
+      </p>
+
+      <div className="stats">
+        <div className="stat">
+          <span>BMR</span>
+          <strong>{result ? result.bmr.toLocaleString() : "—"}</strong>
+        </div>
+        <div className="stat">
+          <span>TDEE</span>
+          <strong>{result ? result.tdee.toLocaleString() : "—"}</strong>
+        </div>
+        <div className="stat">
+          <span>Eaten</span>
+          <strong>{eaten.toLocaleString()}</strong>
+        </div>
+        <div className="stat">
+          <span>Left</span>
+          <strong className={left !== null && left < 0 ? "over" : ""}>
+            {left === null ? "—" : left.toLocaleString()}
+          </strong>
+        </div>
+      </div>
+    </aside>
+  );
+}
+```
+
+## FoodForm.jsx
+
+```jsx
+import { useState } from "react";
+
+export default function FoodForm({ onAdd }) {
+  const [name, setName] = useState("");
+  const [calories, setCalories] = useState("");
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const value = Number(calories);
+    if (!name.trim() || !Number.isFinite(value) || value < 0) return;
+
+    onAdd(name.trim(), value);
+    setName("");
+    setCalories("");
+  }
+
+  return (
+    <section className="panel log-panel">
+      <h2>Add food</h2>
+
+      <form className="food-form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="food-name">Food</label>
+          <input
+            id="food-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Chicken and rice"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="food-calories">Calories</label>
+          <input
+            id="food-calories"
+            type="number"
+            value={calories}
+            onChange={(event) => setCalories(event.target.value)}
+            placeholder="550"
+          />
+        </div>
+        <button className="btn btn-ghost" type="submit">Add food</button>
+      </form>
+    </section>
+  );
+}
+```
+
+## FoodLog.jsx and FoodRow.jsx
+
+```jsx
+import FoodRow from "./FoodRow.jsx";
+
+export default function FoodLog({ foods, onRemove, onClear }) {
+  const total = foods.reduce((sum, food) => sum + food.calories, 0);
+
+  return (
+    <section className="panel log-panel">
+      <div className="panel-head">
+        <h2>Today's food</h2>
+        <span className="badge">{foods.length} items</span>
+      </div>
+
+      {foods.length === 0 ? (
+        <p className="empty">Nothing logged yet. Add your first food above.</p>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <caption>Food log for today</caption>
+            <thead>
+              <tr>
+                <th scope="col">Food</th>
+                <th scope="col">Calories</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {foods.map((food) => (
+                <FoodRow key={food.id} food={food} onRemove={onRemove} />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td>{total.toLocaleString()}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {foods.length > 0 && (
+        <button className="clear" type="button" onClick={onClear}>
+          Clear the log
+        </button>
+      )}
+    </section>
+  );
+}
+```
+
+And `FoodRow.jsx`:
+
+```jsx
+export default function FoodRow({ food, onRemove }) {
+  return (
+    <tr>
+      <td>{food.name}</td>
+      <td>{food.calories.toLocaleString()}</td>
+      <td>
+        <button
+          type="button"
+          className="remove"
+          aria-label={`Remove ${food.name}`}
+          onClick={() => onRemove(food.id)}
+        >
+          Remove
+        </button>
+      </td>
+    </tr>
+  );
+}
+```
+
+## Check it end to end
+
+1. Start the dev server: `npm run dev`.
+2. Calculate a target.
+3. Add three foods.
+4. Remove one.
+5. Refresh the page. The target and foods should still be there.
+6. Clear the log and confirm.
+7. Open the console. No errors, no key warnings.
+
+<Callout variant="tip" title="The React difference, in one sentence">
+In vanilla, you updated the DOM and remembered to keep it in sync. In React, you update state and the UI follows.
+</Callout>
+
+## Try the finished app
+
+Here's the React version running live. Calculate a target, add a few foods, remove one, then refresh the page — the log persists.
+
+<CalorieCalculator client:visible />
+
+<Callout variant="tip" title="Compare it to the vanilla version">
+Go back to lesson 21 and try that playground with the same inputs. The calculations match. The difference is in the code: this version is components and state; that one is a `render()` function and direct DOM updates.
+</Callout>
+
+## Deploy it for free
+
+Vite builds a static site — just HTML, CSS, and JavaScript. Any static host works.
+
+```bash
+npm run build
+npm run preview
+```
+
+`npm run build` creates a `dist/` folder. `npm run preview` serves that folder locally so you can check the production build.
+
+The easiest options:
+
+- **Netlify Drop** — go to `app.netlify.com/drop` and drag the `dist` folder onto the page. Done.
+- **Vercel** — import the GitHub repo, choose Vite, deploy. Every push updates the site.
+- **GitHub Pages** — works, but needs a `base` config in `vite.config.js` and a deploy action. Vercel or Netlify is less fiddling for a first deploy.
+
+<Callout variant="warn" title="Don't deploy the source folder">
+Deploy `dist/`, not `src/` or the project root. The source needs a build step; `dist/` is the finished site.
+</Callout>
+
+<MissionBox
+  title="Ship it"
+  body="Run npm run build, then npm run preview and click through the production build. Deploy the dist folder to Netlify Drop or Vercel. Open the live URL on your phone. Then make one small change, redeploy, and watch it update."
+  note="Add the live URL to your CV or portfolio. A working app is more convincing than a certificate."
+/>
+
+## What you built
+
+Three versions of the same app:
+
+1. **HTML + CSS** — a complete, accessible, responsive page. No behavior.
+2. **Vanilla JavaScript** — state, events, rendering, localStorage, fetch.
+3. **React** — components, props, state, effects, derived values.
+
+The third version isn't "better" in every way. It's a different tool. But you can now read both and understand the trade-offs.
+
+## What to learn next
+
+Pick one, not all of them:
+
+- **React Router** — multiple pages, URLs, navigation.
+- **TypeScript** — types for props and state; catches a lot of bugs.
+- **TanStack Query** — caching, retries, loading states for API data.
+- **Testing** — Vitest and React Testing Library.
+- **Next.js** — routing, server rendering, API routes.
+- **The course API** — add food search once it's live; you already know the fetch pattern.
+
+Project ideas that are one step up:
+
+- A meal planner that uses the foods API and a weekly grid.
+- An expense tracker with categories and a monthly total.
+- A habit tracker with streaks and localStorage.
+- A recipe box with search, favorites, and filters.
+- A workout log with sets, reps, and progress charts.
+
+<Callout variant="haa" title="Haa!">
+You started with a blank HTML file. You now have a deployed React app, a vanilla version, and enough understanding to read almost any frontend codebase without panicking. That's the whole game.
+</Callout>
+
+## Where to go from here
+
+The gallery blog course is the natural next step if you want to see how the data gets to the browser in the first place: Express, a database, image uploads, and a real server. You'll understand the frontend half much better now.
+
+There's also the shorter **Backend Development with ExpressJS** course if you want the API side first — requests, routes, and a real database.
+
+Or stay in the frontend and build one of the project ideas above. The third project is where it starts to stick.
+
+<RecapCards
+  points={[
+    "Store inputs, derive outputs during render.",
+    "Forms own their input state; App owns shared data.",
+    "useEffect saves to localStorage; a lazy initializer loads it.",
+    "Vite builds a static site; deploy the dist folder.",
+    "You built the same app three ways: HTML/CSS, vanilla JS, React.",
+    "Next: pick one new tool and one project. Don't collect tutorials.",
+  ]}
+/>
+
+That's the course. Go build something.

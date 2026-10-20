@@ -1,0 +1,183 @@
+---
+title: "State and events with useState"
+slug: "state-and-events"
+project: "frontend-development"
+order: 25
+part: "react"
+summary: "State is data a component remembers between renders. Learn useState, event handlers, controlled inputs, and the one rule that keeps React fast: never mutate state."
+duration: "9 min read"
+tags: ["React", "state", "events"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Props come from the parent and can't be changed. But components need their own memory: the current form values, the food list, whether something is loading.
+
+That memory is **state**.
+
+## useState
+
+```jsx
+import { useState } from "react";
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Clicked {count} times
+    </button>
+  );
+}
+```
+
+Read the line:
+
+- `useState(0)` creates a piece of state with an initial value of `0`.
+- It returns an array: the current value and a setter function.
+- `const [count, setCount]` destructures them.
+- Calling `setCount` updates the value **and re-renders the component**.
+
+That's the whole loop: render → user event → set state → re-render.
+
+<Callout variant="note" title="Hooks have rules">
+`useState` is a hook. Call it at the **top level** of a component — not inside an `if`, a loop, or a nested function. React relies on the order of hook calls between renders. Keep them at the top and the rules stay simple.
+</Callout>
+
+## Events in React
+
+React uses camelCase event props:
+
+```jsx
+<button onClick={handleClick}>Save</button>
+<input onChange={(event) => setName(event.target.value)} />
+<form onSubmit={handleSubmit}>...</form>
+```
+
+- Pass the function, don't call it: `onClick={handleClick}`, not `onClick={handleClick()}`.
+- The event object is the same one you know: `event.target.value`, `event.preventDefault()`.
+- Inline arrow functions are fine for short handlers.
+
+## Controlled inputs
+
+A **controlled input** takes its value from state and reports changes back:
+
+```jsx
+function NameField() {
+  const [name, setName] = useState("");
+
+  return (
+    <label>
+      Food
+      <input
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+    </label>
+  );
+}
+```
+
+The input doesn't keep its own secret value. State is the source of truth. If you need to clear the form, set the state to `""`; the input follows.
+
+<Callout variant="warn" title="value without onChange">
+If you pass `value` but no `onChange`, React makes the input read-only and warns you in the console. An input needs both, or neither (uncontrolled).
+</Callout>
+
+## Updating state correctly
+
+State updates can be batched. If the next value depends on the previous one, use the updater form:
+
+```jsx
+setCount(count + 1);          // fine for one update
+setCount((previous) => previous + 1); // safer when it depends on the old value
+```
+
+For objects and arrays, **never mutate**. Create a new one:
+
+```jsx
+// Array: add
+setFoods((foods) => [...foods, newFood]);
+
+// Array: remove
+setFoods((foods) => foods.filter((food) => food.id !== id));
+
+// Object: update one key
+setProfile((profile) => ({ ...profile, weight: 72 }));
+```
+
+React compares the old and new references. If you mutate the same array, the reference doesn't change, and React may not re-render.
+
+<Callout variant="tip" title="One state object or many?">
+Both work. Separate `useState` calls are simpler for independent values. One object is handy when the values always change together (a profile, a form). Group them when it reduces noise, not because you feel you should.
+</Callout>
+
+## State vs props
+
+| | Props | State |
+| --- | --- | --- |
+| Comes from | The parent | The component itself |
+| Can change? | No, read-only | Yes, with the setter |
+| Owns the data? | No | Yes |
+| Triggers a re-render? | When the parent re-renders | When the setter is called |
+
+The rule of thumb: **the component that owns the data holds the state.** If two components need the same data, lift it to their closest common parent. We'll do that in a few lessons.
+
+## The calculator's form state
+
+```jsx
+function CalculatorForm({ onCalculate }) {
+  const [age, setAge] = useState(25);
+  const [height, setHeight] = useState(170);
+  const [weight, setWeight] = useState(70);
+  const [sex, setSex] = useState("female");
+  const [activity, setActivity] = useState("moderate");
+  const [goal, setGoal] = useState("maintain");
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    onCalculate({ age, height, weight, sex, activity, goal });
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* inputs with value and onChange */}
+    </form>
+  );
+}
+```
+
+Each field has state, an input bound to it, and a submit handler that sends the values up.
+
+<MissionBox
+  title="Make the form controlled"
+  body="Build the calculator form with useState for age, height, weight, sex, activity, and goal. Bind every input with value and onChange. On submit, prevent the default and console.log the whole state object. Confirm that what you see in the console matches the form."
+  note="For the number inputs, the value is a string. Convert with Number() before doing math."
+/>
+
+## The mistakes everyone makes
+
+- **Mutating state.** `foods.push(...)` doesn't trigger a re-render. Create a new array.
+- **Calling the setter during render.** It causes an infinite loop. Call it in an event handler or effect.
+- **`value` without `onChange`.** The input is read-only.
+- **Using state for something that can be derived.** Calculate totals during render.
+- **Forgetting `event.preventDefault()` on a form.** The page reloads.
+- **`setCount(count + 1)` twice in a row.** Both read the same old `count`; use the updater form.
+- **Hooks inside conditions.** Call them at the top level.
+
+<RecapCards
+  points={[
+    "useState returns the current value and a setter.",
+    "Calling the setter updates state and re-renders the component.",
+    "React events are camelCase: onClick, onChange, onSubmit.",
+    "Controlled inputs take value from state and report changes back.",
+    "Never mutate state; create a new array or object.",
+    "The component that owns the data holds the state.",
+  ]}
+/>
+
+Next: lists, keys, and conditional rendering — turning an array of foods into rows without writing each row by hand.

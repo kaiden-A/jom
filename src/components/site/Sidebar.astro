@@ -1,6 +1,7 @@
 ---
+import LessonMenu from "./LessonMenu.astro";
 import { projects } from "../../data/projects";
-import { getPublishedLessons, lessonsOf, projectUrl } from "../../utils/lessons";
+import { getPublishedLessons, lessonsOf } from "../../utils/lessons";
 
 interface Props {
   currentProject: string;
@@ -9,17 +10,11 @@ interface Props {
 
 const { currentProject, currentSlug } = Astro.props;
 const all = await getPublishedLessons();
-
-const groups = projects.map((project) => ({
-  project,
-  published: lessonsOf(all, project.slug),
-}));
-
-const activeGroup = groups.find((g) => g.project.slug === currentProject);
-const current = activeGroup?.published.find((l) => l.data.slug === currentSlug);
+const activeProject = projects.find((project) => project.slug === currentProject);
+const activeLessons = lessonsOf(all, currentProject);
 const total =
-  (activeGroup?.published.length ?? 0) +
-  (activeGroup?.project.upcoming.length ?? 0);
+  activeLessons.length + (activeProject?.upcoming.length ?? 0);
+const current = activeLessons.find((lesson) => lesson.data.slug === currentSlug);
 const currentNumber = String(current?.data.order ?? 1).padStart(2, "0");
 const totalLabel = String(total).padStart(2, "0");
 ---
@@ -27,7 +22,7 @@ const totalLabel = String(total).padStart(2, "0");
 <div class="space-y-5 lg:sticky lg:top-24">
   <details class="clay group px-4 py-3 lg:hidden">
     <summary
-      class="font-display flex cursor-pointer items-center justify-between text-sm font-semibold"
+      class="font-display flex cursor-pointer list-none items-center justify-between text-sm font-semibold [&::-webkit-details-marker]:hidden"
     >
       <span>In this project ({currentNumber}/{totalLabel})</span>
       <svg
@@ -41,117 +36,24 @@ const totalLabel = String(total).padStart(2, "0");
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
-          stroke-linejoin="round"></path>
+          stroke-linejoin="round"
+        />
       </svg>
     </summary>
-    <ol class="mt-3 space-y-1">
-      {
-        groups.map((group) => (
-          <>
-            <li class="text-ink-soft/70 px-2.5 pt-3 pb-1 text-[11px] font-bold tracking-widest uppercase">
-              {group.project.title}
-            </li>
-            {group.published.map((l) => (
-              <li>
-                <a
-                  href={projectUrl(group.project.slug, l.data.slug)}
-                  class:list={[
-                    "flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-sm font-bold transition-colors",
-                    l.data.slug === currentSlug && l.data.project === currentProject
-                      ? "bg-brand-soft text-brand-deep"
-                      : "text-ink-soft hover:text-ink",
-                  ]}
-                >
-                  <span class="font-display">
-                    {String(l.data.order).padStart(2, "0")}
-                  </span>
-                  <span>{l.data.title}</span>
-                </a>
-              </li>
-            ))}
-            {group.project.upcoming.map((r) => (
-              <li class="flex items-start gap-2.5 px-2.5 py-2 text-sm font-bold opacity-50">
-                <span class="font-display">{String(r.order).padStart(2, "0")}</span>
-                <span>{r.title}</span>
-              </li>
-            ))}
-          </>
-        ))
-      }
-    </ol>
+    <div class="mt-3">
+      <LessonMenu currentProject={currentProject} currentSlug={currentSlug} />
+    </div>
   </details>
 
   <nav class="clay hidden p-3 lg:block" aria-label="Lesson list">
     <p
       class="font-display text-ink-soft px-2.5 pt-2 text-xs font-semibold tracking-widest uppercase"
     >
-      In this project
+      Lessons
     </p>
-    {
-      groups.map((group) => (
-        <div class="mt-2">
-          <p class="text-ink-soft/70 flex items-center justify-between px-2.5 py-1 text-[11px] font-bold tracking-widest uppercase">
-            <span>{group.project.title}</span>
-            <span class="font-display">
-              {String(group.published.length + group.project.upcoming.length).padStart(2, "0")}{" "}
-              lessons
-            </span>
-          </p>
-          <ol class="space-y-1">
-            {group.published.map((l) => (
-              <li>
-                <a
-                  href={projectUrl(group.project.slug, l.data.slug)}
-                  aria-current={
-                    l.data.slug === currentSlug && l.data.project === currentProject
-                      ? "page"
-                      : undefined
-                  }
-                  class:list={[
-                    "flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-sm font-bold transition-colors",
-                    l.data.slug === currentSlug && l.data.project === currentProject
-                      ? "bg-brand-soft text-brand-deep"
-                      : "text-ink-soft hover:bg-brand-soft/50 hover:text-ink",
-                  ]}
-                >
-                  <span class="font-display">
-                    {String(l.data.order).padStart(2, "0")}
-                  </span>
-                  <span>{l.data.title}</span>
-                </a>
-              </li>
-            ))}
-            {group.project.upcoming.map((r) => (
-              <li class="text-ink-soft/60 flex items-start gap-2.5 px-2.5 py-2 text-sm font-bold">
-                <span class="font-display">{String(r.order).padStart(2, "0")}</span>
-                <span class="flex-1">{r.title}</span>
-                <svg
-                  class="mt-0.5 size-3.5 shrink-0"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="4"
-                    y="9"
-                    width="12"
-                    height="8"
-                    rx="2"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                  />
-                  <path
-                    d="M7 9V7a3 3 0 016 0v2"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                  />
-                </svg>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))
-    }
+    <div class="mt-2">
+      <LessonMenu currentProject={currentProject} currentSlug={currentSlug} />
+    </div>
   </nav>
 
   <div class="note rounded-2xl p-4">

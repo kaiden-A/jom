@@ -1,0 +1,235 @@
+---
+import { projects } from "../../data/projects";
+import {
+  getPublishedLessons,
+  lessonsOf,
+  getProjectParts,
+  projectUrl,
+  projectOverviewUrl,
+} from "../../utils/lessons";
+
+interface Props {
+  currentProject: string;
+  currentSlug: string;
+}
+
+const { currentProject, currentSlug } = Astro.props;
+const all = await getPublishedLessons();
+
+const groups = projects.map((project) => {
+  const published = lessonsOf(all, project.slug);
+  const parts = getProjectParts(project).map((part) => {
+    const partLessons =
+      part.id === "all"
+        ? published
+        : published.filter((lesson) => lesson.data.part === part.id);
+    const partUpcoming =
+      part.id === "all"
+        ? project.upcoming
+        : project.upcoming.filter((item) => item.part === part.id);
+    return { part, lessons: partLessons, upcoming: partUpcoming };
+  });
+  return {
+    project,
+    published,
+    parts,
+    total: published.length + project.upcoming.length,
+  };
+});
+---
+
+<div class="space-y-1.5">
+  {
+    groups.map(({ project, published, parts, total }) => {
+      const isCurrentProject = project.slug === currentProject;
+      return (
+        <details class="group/project border-line mt-1 rounded-xl border-2 bg-white/60" open={isCurrentProject}>
+          <summary class="font-display text-ink hover:bg-brand-soft/50 flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+            <span class="min-w-0 leading-tight">{project.title}</span>
+            <span class="text-ink-soft/70 flex shrink-0 items-center gap-1.5 text-[10px] font-bold">
+              {published.length}/{total}
+              <svg
+                class="size-4 transition-transform group-open/project:rotate-180"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 8l5 5 5-5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </summary>
+
+          <div class="px-1 pb-2">
+            {project.parts ? (
+              parts.map(({ part, lessons, upcoming }) => {
+                const isCurrentPart =
+                  isCurrentProject &&
+                  lessons.some((lesson) => lesson.data.slug === currentSlug);
+                return (
+                  <details class="group/part mt-1" open={isCurrentPart}>
+                    <summary class="text-ink-soft hover:text-ink flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase transition-colors [&::-webkit-details-marker]:hidden">
+                      <span>{part.title}</span>
+                      <span class="flex items-center gap-1.5 text-[10px] font-bold tracking-normal">
+                        {lessons.length}/{lessons.length + upcoming.length}
+                        <svg
+                          class="size-3 transition-transform group-open/part:rotate-180"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M5 8l5 5 5-5"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </summary>
+
+                    <ol class="mt-1 space-y-1">
+                      {lessons.map((lesson) => (
+                        <li>
+                          <a
+                            href={projectUrl(project.slug, lesson.data.slug)}
+                            aria-current={
+                              lesson.data.slug === currentSlug &&
+                              project.slug === currentProject
+                                ? "page"
+                                : undefined
+                            }
+                            class:list={[
+                              "flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-sm font-bold transition-colors",
+                              lesson.data.slug === currentSlug &&
+                                project.slug === currentProject
+                                ? "bg-brand-soft text-brand-deep"
+                                : "text-ink-soft hover:bg-brand-soft/50 hover:text-ink",
+                            ]}
+                          >
+                            <span class="font-display">
+                              {String(lesson.data.order).padStart(2, "0")}
+                            </span>
+                            <span>{lesson.data.title}</span>
+                          </a>
+                        </li>
+                      ))}
+                      {upcoming.map((item) => (
+                        <li class="text-ink-soft/55 flex items-start gap-2.5 px-2.5 py-2 text-sm font-bold">
+                          <span class="font-display">
+                            {String(item.order).padStart(2, "0")}
+                          </span>
+                          <span class="flex-1">{item.title}</span>
+                          <svg
+                            class="mt-0.5 size-3.5 shrink-0"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="4"
+                              y="9"
+                              width="12"
+                              height="8"
+                              rx="2"
+                              stroke="currentColor"
+                              stroke-width="1.6"
+                            />
+                            <path
+                              d="M7 9V7a3 3 0 016 0v2"
+                              stroke="currentColor"
+                              stroke-width="1.6"
+                            />
+                          </svg>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                );
+              })
+            ) : (
+              <ol class="mt-1 space-y-1">
+                {published.map((lesson) => (
+                  <li>
+                    <a
+                      href={projectUrl(project.slug, lesson.data.slug)}
+                      aria-current={
+                        lesson.data.slug === currentSlug &&
+                        project.slug === currentProject
+                          ? "page"
+                          : undefined
+                      }
+                      class:list={[
+                        "flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-sm font-bold transition-colors",
+                        lesson.data.slug === currentSlug &&
+                          project.slug === currentProject
+                          ? "bg-brand-soft text-brand-deep"
+                          : "text-ink-soft hover:bg-brand-soft/50 hover:text-ink",
+                      ]}
+                    >
+                      <span class="font-display">
+                        {String(lesson.data.order).padStart(2, "0")}
+                      </span>
+                      <span>{lesson.data.title}</span>
+                    </a>
+                  </li>
+                ))}
+                {project.upcoming.map((item) => (
+                  <li class="text-ink-soft/55 flex items-start gap-2.5 px-2.5 py-2 text-sm font-bold">
+                    <span class="font-display">
+                      {String(item.order).padStart(2, "0")}
+                    </span>
+                    <span class="flex-1">{item.title}</span>
+                    <svg
+                      class="mt-0.5 size-3.5 shrink-0"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="4"
+                        y="9"
+                        width="12"
+                        height="8"
+                        rx="2"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      />
+                      <path
+                        d="M7 9V7a3 3 0 016 0v2"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            <a
+              href={projectOverviewUrl(project.slug)}
+              class="text-brand-deep hover:text-brand mt-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold transition-colors"
+            >
+              View overview
+              <svg class="size-3" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M4 10h11M11 5l5 5-5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+          </div>
+        </details>
+      );
+    })
+  }
+</div>

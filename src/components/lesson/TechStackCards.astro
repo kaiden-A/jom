@@ -50,7 +50,7 @@ const defaultStack: StackItem[] = [
 const { items = defaultStack } = Astro.props;
 ---
 
-<div class="not-prose my-8 grid gap-5 sm:grid-cols-2">
+<div class="not-prose my-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
   {
     items.map((item) => (
       <div class="clay flex flex-col p-5">

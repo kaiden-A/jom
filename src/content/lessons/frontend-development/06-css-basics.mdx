@@ -1,0 +1,192 @@
+---
+title: "CSS basics: selectors, cascade, and the box model"
+slug: "css-basics"
+project: "frontend-development"
+order: 6
+part: "css"
+summary: "CSS is a list of rules: pick an element, say what it should look like. Learn selectors, the cascade, and the box model — the three ideas behind every layout you'll ever build."
+duration: "7 min read"
+tags: ["CSS", "basics"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+HTML gives you structure. CSS decides what that structure looks like: colors, spacing, size, layout, and all the small details that make a page feel finished.
+
+The mental model is simple. CSS is a list of rules:
+
+```css
+selector {
+  property: value;
+}
+```
+
+Pick something, say how it should look. That's it.
+
+## Three ways to add CSS
+
+1. **An external file** — the normal way:
+
+```html
+<link rel="stylesheet" href="style.css">
+```
+
+2. **A `<style>` block** in the head — fine for a small demo or a single page.
+
+3. **Inline styles** — `style="color: red"` on an element. Avoid these. They're hard to reuse and they win fights with your stylesheet.
+
+In the playground below, the CSS panel is your external stylesheet.
+
+## Selectors
+
+```css
+p { color: #5d5680; }          /* every paragraph */
+.intro { font-size: 18px; }    /* every element with class="intro" */
+#page-title { color: #4f46e5; } /* the one element with id="page-title" */
+.card p { margin: 0; }          /* paragraphs inside .card */
+h1, h2, h3 { line-height: 1.2; } /* a group */
+```
+
+- **Element** selectors are broad. Good defaults.
+- **Class** selectors are reusable. This is what you'll use most.
+- **ID** selectors are unique. Use them for anchors and JavaScript hooks; use classes for styling.
+- **Descendant** selectors (`.card p`) target elements inside something else.
+
+## The cascade
+
+When two rules target the same element, the more specific one wins:
+
+```css
+p { color: red; }
+.intro { color: blue; }
+```
+
+An element with `class="intro"` is blue, because a class is more specific than an element. If specificity is equal, the rule that comes **later** wins.
+
+There's also `!important`, which overrides everything. Avoid it. If you need `!important`, the structure is usually fighting you.
+
+<Callout variant="note" title="Inheritance">
+Some properties inherit automatically — `color`, `font-family`, `font-size`. Set a font on `body` and most text follows. Other properties don't inherit — `margin`, `padding`, `border`, `display`. You'll get a feel for this quickly.
+</Callout>
+
+## The box model
+
+Every element is a box with four layers:
+
+| Layer | What it is |
+| --- | --- |
+| **Content** | The text or image itself |
+| **Padding** | Space inside the box, around the content |
+| **Border** | The line around the padding |
+| **Margin** | Space outside the box, pushing other elements away |
+
+By default, `width` applies to the content only. Add padding and border, and the box gets wider than you asked for. That's why almost every project starts with:
+
+```css
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+```
+
+With `border-box`, `width` includes the padding and border. What you set is what you get. It's the single most useful CSS reset line.
+
+## Try it
+
+Here's a small card using element, class, and id selectors. Change the colors, padding, and border. Watch the box model in action.
+
+<Playground
+  client:visible
+  title="css-basics.html"
+  showJs={false}
+  html={`<div class="card">
+  <h1 id="page-title">Calorie Calculator</h1>
+  <p class="intro">A small app to track what I eat.</p>
+  <p>This paragraph has no class, so it gets the element styles.</p>
+  <button class="btn">Calculate</button>
+</div>`}
+  css={`*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #faf7f2;
+  padding: 24px;
+}
+
+.card {
+  background: white;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+  border: 2px solid #e8e3f0;
+  border-radius: 16px;
+}
+
+#page-title {
+  color: #4f46e5;
+  margin-top: 0;
+}
+
+p {
+  color: #5d5680;
+  line-height: 1.6;
+}
+
+.intro {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.btn {
+  background: #4f46e5;
+  color: white;
+  border: 0;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+`}
+/>
+
+<Callout variant="tip" title="Read the CSS like a sentence">
+`.card { padding: 24px; }` reads as: "For every element with class `card`, put 24 pixels of space inside it." Once you read rules that way, CSS stops looking like magic.
+</Callout>
+
+<MissionBox
+  title="Style the skeleton"
+  body="Open your calculator page and create a style.css file. Link it in the head. Add the border-box reset, set a font and background on body, and give your sections some padding and a visible border so you can see the boxes."
+  note="Don't try to make it beautiful yet. Make it readable. We'll handle layout next."
+/>
+
+## The mistakes everyone makes
+
+- **Missing semicolon.** One missing `;` can break the next line too.
+- **Missing closing brace.** The rest of the file disappears.
+- **Specificity wars.** You add an id, then `!important`, then another id. Use classes and keep it flat.
+- **`height: 100%` doing nothing.** The parent needs a height for a percentage to work. We'll use flex/grid instead.
+- **Styling by tag when a class is clearer.** `p { color: ... }` is fine as a default; use `.intro` for exceptions.
+- **Forgetting `box-sizing`.** Your widths will lie to you.
+
+<RecapCards
+  points={[
+    "CSS is selector { property: value; }.",
+    "Use classes for reusable styles; ids for anchors and JavaScript.",
+    "The cascade picks the most specific rule; later rules win ties.",
+    "Every element is a box: content, padding, border, margin.",
+    "box-sizing: border-box makes width include padding and border.",
+  ]}
+/>
+
+Next: Flexbox — the easiest way to put things in a row, center them, and stop fighting with margins.

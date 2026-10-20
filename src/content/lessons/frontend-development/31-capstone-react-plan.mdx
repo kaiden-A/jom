@@ -1,0 +1,245 @@
+---
+title: "Capstone part 1: plan the React calculator"
+slug: "capstone-react-plan"
+project: "frontend-development"
+order: 31
+part: "react"
+summary: "Before writing the final code, plan the component tree, decide who owns each piece of state, and set up the files. A good plan makes the build boring — in the best way."
+duration: "8 min read"
+tags: ["React", "build", "planning"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+We're rebuilding the calculator in React. Same features, same CSS, same math. The only thing that changes is how the UI is organized.
+
+This lesson is the plan and the shell. The next one finishes and deploys it.
+
+## The component tree
+
+```
+App
+├── Header
+├── CalculatorForm
+├── ResultCard
+│   └── Stat
+├── FoodForm
+└── FoodLog
+    └── FoodRow
+```
+
+Keep it shallow. Each component has one job:
+
+| Component | Job |
+| --- | --- |
+| `App` | Owns the profile and foods; derives the result and totals |
+| `Header` | The page title |
+| `CalculatorForm` | Collects the profile; owns its form state |
+| `ResultCard` | Displays the target, BMR, TDEE, eaten, left |
+| `FoodForm` | Collects a food; owns its input state |
+| `FoodLog` | Renders the list or the empty state |
+| `FoodRow` | One food + a remove button |
+
+## The state map
+
+| State | Owner | Why |
+| --- | --- | --- |
+| `profile` | `App` | The result depends on it |
+| `foods` | `App` | The form, list, and totals need it |
+| Form fields | `CalculatorForm` | Only the form uses them while typing |
+| Error message | `CalculatorForm` | Only the form displays it |
+| Food inputs | `FoodForm` | Only the form uses them |
+| `result`, `eaten`, `left` | Derived in `App` | Never stored |
+
+<Callout variant="tip" title="State is input, not output">
+`profile` and `foods` are inputs. `result`, `eaten`, and `left` are outputs. Store the inputs; derive the outputs during render.
+</Callout>
+
+## The files
+
+```
+src/
+├── App.jsx
+├── components/
+│   ├── Header.jsx
+│   ├── CalculatorForm.jsx
+│   ├── ResultCard.jsx
+│   ├── Stat.jsx
+│   ├── FoodForm.jsx
+│   ├── FoodLog.jsx
+│   └── FoodRow.jsx
+├── lib/
+│   ├── calculate.js
+│   └── storage.js
+├── index.css
+└── main.jsx
+```
+
+Keeping the math and storage out of the components makes them easy to test and reuse.
+
+## Step 1: the math module
+
+`src/lib/calculate.js`:
+
+```js
+export function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+export function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return sex === "male" ? base + 5 : base - 161;
+}
+
+export function calculateTarget({ weight, height, age, sex, activity, goal }) {
+  const bmr = calculateBMR(weight, height, age, sex);
+  const tdee = bmr * activityMultiplier(activity);
+
+  let adjustment = 0;
+  if (goal === "lose") adjustment = -500;
+  if (goal === "gain") adjustment = 300;
+
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    target: Math.round(tdee + adjustment),
+  };
+}
+
+export function totalCalories(foods) {
+  return foods.reduce((sum, food) => sum + food.calories, 0);
+}
+```
+
+It's the same code from the vanilla capstone, with `export` in front. React doesn't change the math.
+
+## Step 2: the storage module
+
+`src/lib/storage.js`:
+
+```js
+const STORAGE_KEY = "calorie-calculator-react";
+
+export function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { foods: [], profile: null };
+    const parsed = JSON.parse(raw);
+    return {
+      foods: Array.isArray(parsed.foods) ? parsed.foods : [],
+      profile: parsed.profile ?? null,
+    };
+  } catch {
+    return { foods: [], profile: null };
+  }
+}
+
+export function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+```
+
+## Step 3: the App shell
+
+```jsx
+import { useEffect, useState } from "react";
+import Header from "./components/Header.jsx";
+import CalculatorForm from "./components/CalculatorForm.jsx";
+import ResultCard from "./components/ResultCard.jsx";
+import FoodForm from "./components/FoodForm.jsx";
+import FoodLog from "./components/FoodLog.jsx";
+import { calculateTarget, totalCalories } from "./lib/calculate.js";
+import { loadState, saveState } from "./lib/storage.js";
+
+export default function App() {
+  const [initial] = useState(loadState);
+  const [profile, setProfile] = useState(initial.profile);
+  const [foods, setFoods] = useState(initial.foods);
+
+  useEffect(() => {
+    saveState({ profile, foods });
+  }, [profile, foods]);
+
+  const result = profile ? calculateTarget(profile) : null;
+  const eaten = totalCalories(foods);
+  const left = result ? result.target - eaten : null;
+
+  function addFood(name, calories) {
+    setFoods((previous) => [
+      ...previous,
+      { id: crypto.randomUUID(), name, calories },
+    ]);
+  }
+
+  function removeFood(id) {
+    setFoods((previous) => previous.filter((food) => food.id !== id));
+  }
+
+  return (
+    <div>
+      <Header />
+      <main className="page">
+        <CalculatorForm onCalculate={setProfile} />
+        <ResultCard result={result} eaten={eaten} left={left} />
+        <FoodForm onAdd={addFood} />
+        <FoodLog foods={foods} onRemove={removeFood} />
+      </main>
+    </div>
+  );
+}
+```
+
+<Callout variant="warn" title="One small detail: initial state">
+`const [initial] = useState(loadState)` loads localStorage once. It's a lazy initializer; we never call the setter, so the value is stable. Then `profile` and `foods` get their own state. You can also combine them into one object; this version keeps the two concerns separate.
+</Callout>
+
+## Step 4: the static components
+
+Before adding any behavior, build the components with hard-coded props. Get the layout and CSS right. Then wire one interaction at a time:
+
+1. `CalculatorForm` submits a profile.
+2. `App` derives the result.
+3. `FoodForm` adds a food.
+4. `FoodLog` renders and removes.
+5. The effect saves everything.
+
+<Callout variant="tip" title="Build in the same order as the vanilla app">
+You already solved this problem once. Use the same order: static markup, then state, then events, then totals, then persistence. The React version is a translation, not a new puzzle.
+</Callout>
+
+<MissionBox
+  title="Build the shell"
+  body="Create the files and components. Move the CSS from part 2 into index.css. Build the static layout with hard-coded props first: a header, a form, a result card, a food form, and a food list. Then wire CalculatorForm's submit to App and display the derived result. Don't add persistence yet."
+  note="If a component won't render, check the import path and the capitalization. React errors usually name the component and the file."
+/>
+
+## The mistakes everyone makes
+
+- **Putting all state in App.** Form input state belongs to the form.
+- **Storing derived values.** Calculate the result, eaten, and left in App.
+- **Skipping the static shell.** Get the layout working before wiring events.
+- **Forgetting to move the CSS.** The page will render unstyled.
+- **A component that does two jobs.** Split it.
+- **Duplicating the math in components.** Import it from `lib/calculate.js`.
+- **Adding persistence before the app works.** Get the state flow right first.
+
+<RecapCards
+  points={[
+    "Plan the component tree and state ownership before writing code.",
+    "Keep the math and storage in plain modules.",
+    "App owns the profile and foods; forms own their inputs.",
+    "Derive the result, eaten, and left during render.",
+    "Build static first, then wire one interaction at a time.",
+    "Translate the vanilla app, don't reinvent it.",
+  ]}
+/>
+
+Next: the final build — wiring every interaction, adding persistence, and deploying the React app.

@@ -4,7 +4,13 @@ import BaseLayout from "./BaseLayout.astro";
 import Sidebar from "../components/site/Sidebar.astro";
 import NextLesson from "../components/lesson/NextLesson.astro";
 import { getProject } from "../data/projects";
-import { getPublishedLessons, lessonsOf, projectUrl } from "../utils/lessons";
+import {
+  getPartTitle,
+  getPublishedLessons,
+  lessonsOf,
+  projectOverviewUrl,
+  projectUrl,
+} from "../utils/lessons";
 
 interface Props {
   entry: CollectionEntry<"lessons">;
@@ -15,6 +21,7 @@ const { title, slug, project, order, summary, duration, tags, updated } =
   entry.data;
 const projectMeta = getProject(project);
 const projectTitle = projectMeta?.title ?? project;
+const partTitle = getPartTitle(projectMeta, entry.data.part);
 const lessonNumber = String(order).padStart(2, "0");
 
 const all = await getPublishedLessons();
@@ -23,22 +30,50 @@ const index = siblings.findIndex((l) => l.data.slug === slug);
 const prev = index > 0 ? siblings[index - 1] : undefined;
 const next = index < siblings.length - 1 ? siblings[index + 1] : undefined;
 const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
+
+const handoff =
+  !next && entry.data.nextProject && entry.data.nextLesson
+    ? all.find(
+        (lesson) =>
+          lesson.data.project === entry.data.nextProject &&
+          lesson.data.slug === entry.data.nextLesson,
+      )
+    : undefined;
 ---
 
 <BaseLayout title={`${title} · ${projectTitle} · Jom Mula`} description={summary}>
+  <script is:inline>
+    try {
+      if (localStorage.getItem("jm-sidebar") === "hidden") {
+        document.documentElement.classList.add("sidebar-hidden");
+      }
+    } catch {}
+  </script>
+
   <section class="border-line bg-brand-soft/60 border-b">
     <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
       <nav class="text-ink-soft text-sm font-bold" aria-label="Breadcrumb">
         <a href="/" class="hover:text-brand transition-colors">Home</a>
         <span class="mx-1.5" aria-hidden="true">›</span>
-        <a href="/#projek" class="hover:text-brand transition-colors">{projectTitle}</a>
+        <a
+          href={projectOverviewUrl(project)}
+          class="hover:text-brand transition-colors">{projectTitle}</a
+        >
+        {
+          partTitle && (
+            <>
+              <span class="mx-1.5" aria-hidden="true">›</span>
+              <span>{partTitle}</span>
+            </>
+          )
+        }
         <span class="mx-1.5" aria-hidden="true">›</span>
         <span class="text-ink">Lesson {lessonNumber}</span>
       </nav>
       <p
         class="font-display text-brand-deep mt-5 text-xs font-semibold tracking-widest uppercase"
       >
-        {projectTitle} · Lesson {lessonNumber}
+        {projectTitle}{partTitle ? ` · ${partTitle}` : ""} · Lesson {lessonNumber}
       </p>
       <h1
         class="font-display mt-2 max-w-3xl text-3xl leading-tight font-semibold sm:text-5xl"
@@ -85,10 +120,43 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
   </section>
 
   <div
-    class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-14"
+    class="lesson-layout mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-14"
   >
-    <Sidebar currentProject={project} currentSlug={slug} />
+    <aside id="lesson-sidebar" class="lesson-sidebar min-w-0">
+      <Sidebar currentProject={project} currentSlug={slug} />
+    </aside>
     <article class="lesson-prose min-w-0">
+      <div class="not-prose mb-8 flex justify-end">
+        <button
+          type="button"
+          data-sidebar-toggle
+          aria-controls="lesson-sidebar"
+          aria-expanded="true"
+          class="sidebar-toggle border-line text-ink-soft hover:text-brand hover:border-brand/40 hover:bg-brand-soft/40 shadow-clay-xs inline-flex cursor-pointer items-center gap-2 rounded-full border bg-white px-3.5 py-2 text-xs font-bold transition-colors"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="3"
+              y="3.5"
+              width="14"
+              height="13"
+              rx="3"
+              stroke="currentColor"
+              stroke-width="1.8"></rect>
+            <path
+              d="M8 3.5v13"
+              stroke="currentColor"
+              stroke-width="1.8"></path>
+          </svg>
+          <span data-sidebar-toggle-label>Hide sidebar</span>
+        </button>
+      </div>
+
       <slot />
 
       <div class="not-prose border-line mt-14 space-y-5 border-t-2 border-dashed pt-8">
@@ -120,6 +188,13 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
               blurb={next.data.summary}
               href={projectUrl(project, next.data.slug)}
             />
+          ) : handoff ? (
+            <NextLesson
+              number={handoff.data.order}
+              title={handoff.data.title}
+              blurb={handoff.data.summary}
+              href={projectUrl(handoff.data.project, handoff.data.slug)}
+            />
           ) : upcomingNext ? (
             <NextLesson
               number={upcomingNext.order}
@@ -135,4 +210,30 @@ const upcomingNext = !next ? projectMeta?.upcoming[0] : undefined;
       </div>
     </article>
   </div>
+
+  <script is:inline>
+    (() => {
+      const root = document.documentElement;
+      const toggle = document.querySelector("[data-sidebar-toggle]");
+      if (!toggle) return;
+
+      const label = toggle.querySelector("[data-sidebar-toggle-label]");
+
+      const sync = () => {
+        const hidden = root.classList.contains("sidebar-hidden");
+        toggle.setAttribute("aria-expanded", String(!hidden));
+        if (label) label.textContent = hidden ? "Show sidebar" : "Hide sidebar";
+      };
+
+      sync();
+
+      toggle.addEventListener("click", () => {
+        const hidden = root.classList.toggle("sidebar-hidden");
+        try {
+          localStorage.setItem("jm-sidebar", hidden ? "hidden" : "shown");
+        } catch {}
+        sync();
+      });
+    })();
+  </script>
 </BaseLayout>

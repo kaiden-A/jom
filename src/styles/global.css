@@ -356,6 +356,31 @@ body {
   box-shadow: var(--shadow-clay);
 }
 
+/* --- lesson sidebar toggle --- */
+.sidebar-hidden .lesson-sidebar {
+  display: none;
+}
+
+.sidebar-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.sidebar-hidden .sidebar-toggle svg {
+  transform: scaleX(-1);
+}
+
+@media (min-width: 64rem) {
+  .sidebar-hidden .lesson-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar-hidden .lesson-layout .lesson-prose {
+    width: 100%;
+    max-width: 52rem;
+    margin-inline: auto;
+  }
+}
+
 /* --- misc --- */
 @keyframes float-soft {
   0%,

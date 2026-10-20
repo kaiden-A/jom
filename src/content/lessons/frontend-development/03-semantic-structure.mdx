@@ -1,0 +1,158 @@
+---
+title: "Semantic structure: build the skeleton"
+slug: "semantic-structure"
+project: "frontend-development"
+order: 3
+part: "html"
+summary: "A page isn't just a pile of divs. Learn the tags that describe the parts of a page — header, nav, main, section, footer — and why they make everything easier."
+duration: "6 min read"
+tags: ["HTML", "structure", "accessibility"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+In lesson 2 we learned the tags that hold *content*. Now we need tags that describe the *shape* of a page.
+
+This is where a lot of beginners reach for `<div>` and never look back. A `<div>` is a generic box — useful, but it says nothing about what's inside. Semantic tags say something.
+
+## The page skeleton
+
+Every HTML page has the same basic shape:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calorie Calculator</title>
+  </head>
+  <body>
+    <!-- the page goes here -->
+  </body>
+</html>
+```
+
+- `<!doctype html>` tells the browser this is modern HTML.
+- `<html lang="en">` says the page is in English. Screen readers use this.
+- `<head>` holds information *about* the page: title, character set, viewport, and links to CSS.
+- `<body>` holds everything people actually see.
+- The `<title>` is the text in the browser tab, not on the page.
+
+<Callout variant="note" title="What is the viewport tag?">
+That `<meta name="viewport"...>` line makes mobile browsers use the real screen width instead of pretending to be a tiny desktop. Without it, every phone would show a zoomed-out desktop page. It's one line. Keep it.
+</Callout>
+
+## The semantic tags
+
+These are the ones you'll use most:
+
+| Tag | What it means |
+| --- | --- |
+| `<header>` | The top of a page or section — title, logo, intro |
+| `<nav>` | A group of major navigation links |
+| `<main>` | The main content of the page. One per page. |
+| `<section>` | A thematic group of content, usually with a heading |
+| `<article>` | A self-contained piece of content (a post, a card) |
+| `<aside>` | Content related to the main thing, but not part of it |
+| `<footer>` | The bottom of a page or section |
+
+You can still use `<div>` for a box that's purely for layout. The rule isn't "never use div." It's "use the tag that describes the content, and use div when nothing does."
+
+<Callout variant="haa" title="Haa!">
+A `<div>` is like a cardboard box. It's useful, but if someone asks what's inside, "a box" is not a helpful answer. `<header>` says "this is the top of the page." `<nav>` says "these are the main links." That's the whole idea.
+</Callout>
+
+## The calculator skeleton
+
+Here's the structure we'll use for our app. It has no real content yet — just the boxes:
+
+<Playground
+  client:visible
+  title="calculator-skeleton.html"
+  showJs={false}
+  html={`<header>
+  <h1>Calorie Calculator</h1>
+  <nav>
+    <a href="#calculator">Calculator</a>
+    <a href="#food-log">Food log</a>
+  </nav>
+</header>
+
+<main>
+  <section id="calculator">
+    <h2>Your details</h2>
+    <p>Age, height, weight, activity level — we'll add them next.</p>
+  </section>
+
+  <section id="food-log">
+    <h2>Today's food</h2>
+    <p>The food you add will show up here.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Built while learning HTML, CSS, and JavaScript.</p>
+</footer>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  color: #221c46;
+}
+header, main, footer { padding: 16px 24px; }
+header { background: #eef0ff; border-bottom: 2px solid #4f46e5; }
+nav a { margin-right: 14px; color: #4f46e5; font-weight: 700; }
+main { display: grid; gap: 16px; }
+section {
+  border: 2px dashed #c7c2dd;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+footer { background: #faf7f2; border-top: 2px solid #e8e3f0; }
+h1, h2 { margin: 0 0 6px; }
+`}
+/>
+
+Notice how the page reads like an outline even before you style it. That's the point.
+
+## Why semantics matter
+
+- **Accessibility.** Screen readers use landmarks like `<main>` and `<nav>` to jump around the page. A page made of divs is a maze.
+- **Readability.** Six months from now, `<header>` and `<footer>` tell you what a section is. `<div class="top-thing">` doesn't.
+- **SEO.** Search engines use headings and structure to understand the page.
+- **Consistency.** You and every other developer already know what these tags mean.
+
+<Callout variant="warn" title="One main per page">
+Use one `<main>` per page. It marks the main content. If you need multiple sections, use `<section>` inside it. A page with three `<main>` elements is confusing to assistive technology.
+</Callout>
+
+<MissionBox
+  title="Build the skeleton"
+  body="Open your index.html from lesson 1. Replace the body with the calculator skeleton: a header, a nav, a main with two sections, and a footer. Don't add form fields yet — just the structure and headings."
+  note="Check your headings: one h1, then h2s for each section. No skipping levels just because you like the size."
+/>
+
+## The mistakes everyone makes
+
+- **Using `<div>` for every section.** Try `<section>`, `<header>`, `<footer>` first.
+- **Using `<section>` without a heading.** A section is a thematic group; give it an `<h2>`.
+- **Multiple `<main>` elements.** One per page.
+- **A `<nav>` around every link.** `<nav>` is for major navigation, not a single "read more" link.
+- **Styling before structure.** If the outline doesn't make sense, no amount of CSS will fix it.
+
+<RecapCards
+  points={[
+    "The document skeleton: doctype, html, head, body.",
+    "head holds metadata; body holds what people see.",
+    "Semantic tags describe the role of a section: header, nav, main, section, footer.",
+    "One main per page; sections get headings.",
+    "div is still useful — just don't use it when a better tag exists.",
+  ]}
+/>
+
+Next: forms and inputs. This is where the calculator starts to become something you can actually interact with.

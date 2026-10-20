@@ -1,0 +1,283 @@
+---
+title: "Color, type, spacing, and design tokens"
+slug: "design-tokens"
+project: "frontend-development"
+order: 9
+part: "css"
+summary: "Good-looking pages aren't about talent — they're about consistency. Learn a small color palette, a type scale, a spacing scale, and CSS variables to keep it all together."
+duration: "7 min read"
+tags: ["CSS", "design", "custom properties"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+There's a moment when a page stops looking like a student project. It's rarely one big thing. It's consistency: the same spacing, two or three colors, a clear type hierarchy, and nothing randomly different.
+
+The tool for consistency is **design tokens** — named values stored in CSS variables.
+
+## CSS custom properties
+
+```css
+:root {
+  --color-ink: #221c46;
+  --color-brand: #4f46e5;
+  --color-paper: #faf7f2;
+  --space-4: 16px;
+  --radius: 18px;
+}
+
+body {
+  color: var(--color-ink);
+  background: var(--color-paper);
+}
+
+.card {
+  padding: var(--space-4);
+  border-radius: var(--radius);
+}
+```
+
+`--name` defines a variable. `var(--name)` uses it. Change the value once in `:root` and every use updates. That's the whole feature — and it's enough to keep a design consistent.
+
+<Callout variant="tip" title="This site does it too">
+The lesson you're reading uses the same idea: a palette, a font pairing, a spacing scale, and a handful of shadows defined once. The CSS file is basically a list of tokens and rules that use them.
+</Callout>
+
+## Color
+
+You don't need 40 colors. Start with:
+
+- **Ink** — the main text color (a dark purple-black, not pure black).
+- **Ink soft** — secondary text.
+- **Brand** — the main action color.
+- **Brand soft** — a light tint for backgrounds.
+- **Accent** — one color for highlights (use sparingly).
+- **Paper / card** — the page and surface backgrounds.
+- **Line** — borders and dividers.
+- **Mint** — success or "done" states.
+
+**Contrast matters.** Body text should have a contrast ratio of at least 4.5:1 against its background. Large text can get away with 3:1. If you're unsure, run it through a contrast checker. Low-contrast gray-on-gray looks stylish in a mockup and unreadable on a laptop in sunlight.
+
+<Callout variant="warn" title="Don't use color alone">
+If red means "over your target" and green means "under", add an icon or text too. Around 1 in 12 men has some form of color blindness. Color should reinforce meaning, not be the only carrier of it.
+</Callout>
+
+## Typography
+
+Three decisions do most of the work:
+
+1. **One font family** (or a display font + a body font). Don't use five.
+2. **A type scale.** Pick sizes and stick to them: 14, 16, 18, 24, 32, 48.
+3. **Line height.** Body text wants around 1.5–1.7. Headings want 1.1–1.3.
+
+Also keep the line length readable: around 45–75 characters. In CSS, `max-width: 65ch` is a good default for paragraphs.
+
+```css
+:root {
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+}
+
+.lede {
+  font-size: 1.125rem;
+  max-width: 60ch;
+}
+```
+
+## Spacing
+
+Pick a scale and use only those values:
+
+```css
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+}
+```
+
+Then spacing decisions become choices between a few values instead of "17px here, 19px there." The page starts to feel intentional.
+
+<Callout variant="note" title="The 8-point habit">
+Many design systems use multiples of 4 or 8. It's not a law, but it removes a hundred tiny decisions. Use `4, 8, 12, 16, 24, 32, 48` and you'll rarely go wrong.
+</Callout>
+
+## Try it
+
+This card uses tokens for everything. Change `--color-brand` in `:root` and watch the whole card update.
+
+<Playground
+  client:visible
+  title="design-tokens.html"
+  showJs={false}
+  html={`<main class="page">
+  <p class="eyebrow">Today</p>
+  <h1>Your calorie target</h1>
+  <p class="lede">
+    A calm, readable card built from a small set of colors, type sizes,
+    spacing values, and one radius.
+  </p>
+
+  <div class="card">
+    <p class="label">Daily target</p>
+    <p class="value">2,100 <span>kcal</span></p>
+    <p class="note">Based on your details and moderate activity.</p>
+    <button class="btn">Add food</button>
+  </div>
+</main>`}
+  css={`:root {
+  --color-ink: #221c46;
+  --color-ink-soft: #5d5680;
+  --color-brand: #4f46e5;
+  --color-brand-soft: #eef0ff;
+  --color-paper: #faf7f2;
+  --color-card: #ffffff;
+  --color-line: #e8e3f0;
+  --color-mint: #047857;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 10px;
+  --radius: 18px;
+
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-2xl: 32px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: var(--space-8);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+.page { max-width: 560px; margin: 0 auto; }
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-brand);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+}
+
+.lede {
+  max-width: 60ch;
+  color: var(--color-ink-soft);
+  font-size: var(--text-lg);
+}
+
+.card {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  background: var(--color-card);
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius);
+}
+
+.label {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.value {
+  margin: var(--space-2) 0;
+  color: var(--color-brand);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+}
+
+.value span {
+  color: var(--color-ink-soft);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.note {
+  margin: 0 0 var(--space-6);
+  color: var(--color-ink-soft);
+}
+
+.btn {
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+`}
+/>
+
+<MissionBox
+  title="Give the calculator a design system"
+  body="Add :root tokens to your style.css: three text colors, a brand color, a background, a line color, a spacing scale, one radius, and a font stack. Replace your hard-coded colors and spacing with var(). Then change the brand color once and confirm the whole page updates."
+  note="Check your body text contrast with a contrast checker. If it's under 4.5:1, darken the text or lighten the background."
+/>
+
+## The mistakes everyone makes
+
+- **Too many colors.** Three or four is plenty. One accent.
+- **Low contrast.** Light gray body text on white is the classic mistake.
+- **Every heading the same size.** Hierarchy comes from contrast in size and weight.
+- **Random spacing.** 13px, 17px, 21px. Pick a scale.
+- **A paragraph spanning the whole screen.** `max-width: 65ch`.
+- **Pure black on pure white.** It's harsh. A dark ink color looks better.
+- **Color as the only signal.** Add text or an icon.
+
+<RecapCards
+  points={[
+    "Design tokens are named values in CSS variables.",
+    "A small palette + one accent beats a rainbow.",
+    "Body text needs 4.5:1 contrast; large text needs 3:1.",
+    "One font family, a type scale, and a comfortable line height.",
+    "Use a spacing scale: 4, 8, 12, 16, 24, 32, 48.",
+  ]}
+/>
+
+Next: states, transitions, and polish — hover, focus, disabled, and the small details that make the page feel alive.

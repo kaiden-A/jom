@@ -9,11 +9,14 @@ const lessons = defineCollection({
     slug: z.string(),
     project: z.string(),
     order: z.number(),
+    part: z.string().optional(),
     summary: z.string(),
     duration: z.string(),
     tags: z.array(z.string()).default([]),
     updated: z.string(),
     draft: z.boolean().default(false),
+    nextProject: z.string().optional(),
+    nextLesson: z.string().optional(),
   }),
 });
 

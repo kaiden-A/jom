@@ -1,0 +1,211 @@
+---
+title: "Components and props"
+slug: "components-and-props"
+project: "frontend-development"
+order: 24
+part: "react"
+summary: "Break the page into small components, pass data with props, and compose them into a real UI. This is the core skill of every React app."
+duration: "9 min read"
+tags: ["React", "components", "props"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+A React app is not one giant file. It's a tree of small components, each responsible for one piece of the UI.
+
+The calculator gives us a natural tree:
+
+```
+App
+├── Header
+├── CalculatorForm
+│   ├── Field
+│   └── Button
+├── ResultCard
+│   └── Stat
+└── FoodLog
+    ├── FoodForm
+    └── FoodRow
+```
+
+Each box is a function that returns JSX. Data flows down through **props**.
+
+## A component is a function
+
+```jsx
+function Header() {
+  return (
+    <header className="site-header">
+      <p className="brand">Calorie Calculator</p>
+    </header>
+  );
+}
+```
+
+Use it like an HTML tag:
+
+```jsx
+<Header />
+```
+
+The name must start with a capital letter. React uses that to tell components apart from HTML elements.
+
+## Props: passing data in
+
+Props are the inputs to a component. They come in as one object:
+
+```jsx
+function Stat({ label, value }) {
+  return (
+    <div className="stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ResultCard() {
+  return (
+    <div className="stats">
+      <Stat label="Eaten" value="870" />
+      <Stat label="Left" value="1,230" />
+    </div>
+  );
+}
+```
+
+The `{ label, value }` in the parameter list is **destructuring** — the same syntax you learned in the arrays lesson. It pulls the properties out of the props object.
+
+You could also write:
+
+```jsx
+function Stat(props) {
+  return <strong>{props.value}</strong>;
+}
+```
+
+Destructuring is just cleaner.
+
+<Callout variant="warn" title="Props are read-only">
+Never assign to a prop inside a component:
+
+```jsx
+function Stat(props) {
+  props.value = 0; // don't
+}
+```
+
+Props belong to the parent. If a component needs to change something, it uses **state** (next lesson) or calls a function passed down by the parent.
+</Callout>
+
+## children
+
+`children` is a special prop: whatever you put between the opening and closing tags.
+
+```jsx
+function Panel({ title, children }) {
+  return (
+    <section className="panel">
+      <h2>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+<Panel title="Your details">
+  <form>...</form>
+</Panel>
+```
+
+This is **composition**. `Panel` doesn't need to know what's inside; it just makes a consistent container.
+
+## Default values
+
+```jsx
+function Button({ children, variant = "primary" }) {
+  return (
+    <button className={"btn " + variant}>
+      {children}
+    </button>
+  );
+}
+
+<Button>Calculate</Button>
+<Button variant="ghost">Add food</Button>
+```
+
+If `variant` isn't passed, it's `"primary"`. Defaults keep the call sites short.
+
+<Callout variant="tip" title="Components should do one thing">
+If a component takes ten props and renders three unrelated sections, split it. A good component is easy to name: `FoodRow`, `ResultCard`, `Stat`, `Button`. If you can't name it without "and", it's probably two components.
+</Callout>
+
+## Data flows down
+
+For now, the flow is one-way:
+
+```
+App (has data) → passes props → child components
+```
+
+Later, when a child needs to change the data, the parent passes a function down:
+
+```
+App (owns state) → passes onChange → child calls it → App updates state
+```
+
+That's the next few lessons. For now, focus on the shape.
+
+## The calculator tree
+
+Here's what we're aiming for:
+
+```jsx
+function App() {
+  return (
+    <div>
+      <Header />
+      <main className="page">
+        <CalculatorForm />
+        <ResultCard target={2100} bmr={1477} tdee={2289} eaten={870} />
+        <FoodLog foods={foods} />
+      </main>
+    </div>
+  );
+}
+```
+
+`App` will own the state. The children receive data and render it. When we need to add a food, `FoodLog` will call a function from `App`.
+
+<MissionBox
+  title="Split the UI"
+  body="Create a components folder. Make Header, CalculatorForm, ResultCard, FoodLog, and Button components. Render them from App with the static layout from part 2. Pass the result numbers and the food list as props instead of hard-coding them inside the components."
+  note="Keep the CSS class names from the vanilla version. React doesn't care where the CSS lives; you can import index.css once in main.jsx."
+/>
+
+## The mistakes everyone makes
+
+- **Lowercase component names.** `<header />` is an HTML tag; `<Header />` is your component.
+- **Mutating props.** Pass a callback instead.
+- **One giant App component.** Split by responsibility.
+- **Props with unclear names.** `data` and `info` say nothing. `foods` and `target` do.
+- **Forgetting `children`.** If a component wraps content, accept and render `{children}`.
+- **Duplicating markup in every component.** Make a `Button`, `Panel`, or `Stat` and reuse it.
+- **Importing a component without the file extension or correct path.** Vite is forgiving with `.jsx`, but the path still has to be right.
+
+<RecapCards
+  points={[
+    "A component is a function that returns JSX; capitalize its name.",
+    "Props are read-only inputs passed from parent to child.",
+    "Destructure props for cleaner code; use defaults when it helps.",
+    "children lets a component wrap arbitrary content.",
+    "Compose small components into a tree instead of one big file.",
+    "Data flows down; callbacks will flow up later.",
+  ]}
+/>
+
+Next: state and events with useState — the part that makes the UI change.

@@ -1,0 +1,205 @@
+---
+title: "Forms and inputs: the calculator's controls"
+slug: "forms-and-inputs"
+project: "frontend-development"
+order: 4
+part: "html"
+summary: "Forms are how the web collects information. Learn labels, input types, selects, radio buttons, and the attributes that make a form usable — then build the calculator's controls."
+duration: "7 min read"
+tags: ["HTML", "forms", "accessibility"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Every calculator, search box, login page, and checkout starts the same way: a form. Forms are how a page asks for information.
+
+The good news: HTML gives you most of the behavior for free. Validation, keyboard support, mobile keyboards, autofill — you get all of that by picking the right input type.
+
+## The form element
+
+```html
+<form action="/submit" method="post">
+  <!-- fields go here -->
+  <button type="submit">Save</button>
+</form>
+```
+
+- `action` is where the data goes when submitted.
+- `method` is how it goes: `get` puts data in the URL, `post` sends it in the request body.
+- A `<button type="submit">` submits the form.
+
+We're not sending data anywhere yet, so our form will just stay on the page. The JavaScript part will take over the submit event later.
+
+## Labels are not optional
+
+Every input needs a label. A label tells people what the field is for, and it makes the whole text clickable — click "Age" and the age field focuses.
+
+```html
+<label for="age">Age</label>
+<input id="age" name="age" type="number">
+```
+
+The `for` attribute on the label must match the input's `id`. That's the connection. If they don't match, the label is just text.
+
+<Callout variant="warn" title="Placeholder is not a label">
+A placeholder disappears as soon as you type, and screen readers don't treat it as a label. Use a real `<label>`. Placeholders are for examples, not names.
+</Callout>
+
+## The input types you'll actually use
+
+| Type | Use it for | Example |
+| --- | --- | --- |
+| `text` | Names, search, short text | `<input type="text">` |
+| `number` | Numbers with min/max | `<input type="number" min="1" max="120">` |
+| `email` | Email addresses | `<input type="email">` |
+| `password` | Hidden text | `<input type="password">` |
+| `checkbox` | On/off, multiple choices | `<input type="checkbox">` |
+| `radio` | One choice from a group | `<input type="radio">` |
+| `range` | A slider | `<input type="range" min="0" max="10">` |
+| `date` | A date picker | `<input type="date">` |
+
+Useful attributes:
+
+- `name` — the key sent with the form. Without it, the field's value is ignored.
+- `value` — the starting value.
+- `required` — the browser refuses to submit an empty field.
+- `min` / `max` / `step` — limits and increments for numbers.
+- `checked` — a radio or checkbox starts selected.
+- `disabled` — can't be used or submitted.
+
+## Groups: fieldset and legend
+
+When several inputs belong together — like a set of radio buttons — wrap them in a `<fieldset>` with a `<legend>`:
+
+```html
+<fieldset>
+  <legend>Sex</legend>
+  <label><input type="radio" name="sex" value="female"> Female</label>
+  <label><input type="radio" name="sex" value="male"> Male</label>
+</fieldset>
+```
+
+The shared `name="sex"` is what makes them a group: only one can be selected at a time. The `value` is what gets submitted.
+
+## Build the calculator form
+
+Here's the full form. Try tabbing through it — every field should be reachable and every label should make sense.
+
+<Playground
+  client:visible
+  title="calculator-form.html"
+  showJs={false}
+  html={`<h1>Calorie Calculator</h1>
+
+<form onsubmit="return false">
+  <fieldset>
+    <legend>Your details</legend>
+
+    <label for="age">Age</label>
+    <input id="age" name="age" type="number" min="13" max="120" step="1" value="25" required>
+
+    <label for="height">Height (cm)</label>
+    <input id="height" name="height" type="number" min="100" max="250" step="1" value="170" required>
+
+    <label for="weight">Weight (kg)</label>
+    <input id="weight" name="weight" type="number" min="30" max="300" step="0.1" value="70" required>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sex</legend>
+    <label><input type="radio" name="sex" value="female" checked> Female</label>
+    <label><input type="radio" name="sex" value="male"> Male</label>
+  </fieldset>
+
+  <label for="activity">Activity level</label>
+  <select id="activity" name="activity">
+    <option value="sedentary">Sedentary — mostly sitting</option>
+    <option value="light">Light — some walking</option>
+    <option value="moderate" selected>Moderate — exercise a few times a week</option>
+    <option value="active">Active — hard exercise most days</option>
+  </select>
+
+  <label for="goal">Goal</label>
+  <select id="goal" name="goal">
+    <option value="maintain" selected>Maintain weight</option>
+    <option value="lose">Lose weight</option>
+    <option value="gain">Gain weight</option>
+  </select>
+
+  <button type="submit">Calculate</button>
+</form>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  max-width: 520px;
+  margin: 36px auto;
+  padding: 0 20px;
+  color: #221c46;
+}
+fieldset {
+  border: 2px solid #e8e3f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+}
+legend { font-weight: 700; padding: 0 6px; }
+label { display: block; font-weight: 700; margin: 10px 0 4px; }
+input[type="number"], select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 2px solid #e8e3f0;
+  border-radius: 10px;
+  font: inherit;
+}
+fieldset label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+button {
+  margin-top: 8px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+`}
+/>
+
+<Callout variant="note" title="That onsubmit in the demo">
+The `onsubmit="return false"` is only there so the playground doesn't reload when you press the button. We'll remove it and handle the submit properly with JavaScript in part 3.
+</Callout>
+
+<MissionBox
+  title="Build the form"
+  body="Add the form to your calculator page, inside the first section. Include all the fields: age, height, weight, sex, activity, and goal. Use labels with matching for/id attributes, and wrap the radio buttons in a fieldset with a legend."
+  note="Test it with the keyboard: Tab should move through every field, Space should select a radio, and the labels should focus their inputs when clicked."
+/>
+
+## The mistakes everyone makes
+
+- **No label.** Placeholders don't count.
+- **`for` doesn't match `id`.** The label looks fine but does nothing.
+- **No `name` on an input.** The value won't be submitted.
+- **`type="text"` for numbers.** You lose the numeric keyboard on phones and built-in validation.
+- **Radio buttons with different `name`s.** They'll all be selectable at once.
+- **A `<div>` around every field instead of a `<label>`.** Labels are interactive; divs aren't.
+- **No `required` on fields that must be filled.** Let the browser help you.
+
+<RecapCards
+  points={[
+    "A form collects data; a submit button sends it.",
+    "Every input needs a label with a matching for/id.",
+    "Pick the input type that matches the data: number, email, date, radio, select.",
+    "name is the key; value is what gets sent.",
+    "fieldset + legend group related inputs, especially radios.",
+    "required, min, max, and step give you validation for free.",
+  ]}
+/>
+
+Next: the HTML checkpoint. We'll put everything together into one complete calculator page — no styling, no behavior, just a solid structure.

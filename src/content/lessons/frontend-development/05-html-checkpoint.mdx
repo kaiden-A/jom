@@ -1,0 +1,226 @@
+---
+title: "HTML checkpoint: build the calculator page"
+slug: "html-checkpoint"
+project: "frontend-development"
+order: 5
+part: "html"
+summary: "Time to put the whole page together: header, form, results, food log table, and footer. It will look plain — that's exactly where we want to be before CSS."
+duration: "8 min read"
+tags: ["HTML", "build"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+This is the checkpoint for part 1. No new big concepts — we're putting the pieces together into one complete page.
+
+It will look like a website from 1998. That's fine. Structure first.
+
+## The plan
+
+Our calculator page has five pieces:
+
+1. **Header** — the title and navigation.
+2. **Calculator section** — the form from lesson 4.
+3. **Results section** — a big number that will show the calorie target.
+4. **Food log section** — an "add food" form and a table of what you ate.
+5. **Footer** — a small note.
+
+The table is new. Let's cover it quickly.
+
+## Tables, the right way
+
+Tables are for data that belongs in rows and columns — not for layout. A food log is a perfect fit.
+
+```html
+<table>
+  <caption>Today's food</caption>
+  <thead>
+    <tr>
+      <th scope="col">Food</th>
+      <th scope="col">Calories</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Oatmeal</td>
+      <td>150</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <th scope="row">Total</th>
+      <td>520</td>
+    </tr>
+  </tfoot>
+</table>
+```
+
+- `<caption>` describes the table. It's not just a title; screen readers use it.
+- `<thead>`, `<tbody>`, and `<tfoot>` group the header, body, and footer rows.
+- `<th>` is a header cell. `scope="col"` says it labels a column; `scope="row"` says it labels a row.
+- `<td>` is a normal data cell.
+
+<Callout variant="note" title="Don't use tables for layout">
+In the old days people used tables to arrange entire pages. Don't. Tables are for tabular data. For layout, we'll use CSS Grid and Flexbox in the next part.
+</Callout>
+
+## The complete page
+
+Here it is — everything from part 1 in one file. Read it top to bottom and match each section to the plan above.
+
+<Playground
+  client:visible
+  title="calculator.html"
+  showCss={false}
+  showJs={false}
+  html={`<header>
+  <h1>Calorie Calculator</h1>
+  <nav>
+    <a href="#calculator">Calculator</a>
+    <a href="#food-log">Food log</a>
+  </nav>
+</header>
+
+<main>
+  <section id="calculator">
+    <h2>Your details</h2>
+    <p>Fill this in to get your daily calorie target.</p>
+
+    <form onsubmit="return false">
+      <fieldset>
+        <legend>Body</legend>
+
+        <label for="age">Age</label>
+        <input id="age" name="age" type="number" min="13" max="120" value="25" required>
+
+        <label for="height">Height (cm)</label>
+        <input id="height" name="height" type="number" min="100" max="250" value="170" required>
+
+        <label for="weight">Weight (kg)</label>
+        <input id="weight" name="weight" type="number" min="30" max="300" step="0.1" value="70" required>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sex</legend>
+        <label><input type="radio" name="sex" value="female" checked> Female</label>
+        <label><input type="radio" name="sex" value="male"> Male</label>
+      </fieldset>
+
+      <label for="activity">Activity level</label>
+      <select id="activity" name="activity">
+        <option value="sedentary">Sedentary — mostly sitting</option>
+        <option value="light">Light — some walking</option>
+        <option value="moderate" selected>Moderate — exercise a few times a week</option>
+        <option value="active">Active — hard exercise most days</option>
+      </select>
+
+      <label for="goal">Goal</label>
+      <select id="goal" name="goal">
+        <option value="maintain" selected>Maintain weight</option>
+        <option value="lose">Lose weight</option>
+        <option value="gain">Gain weight</option>
+      </select>
+
+      <button type="submit">Calculate</button>
+    </form>
+  </section>
+
+  <section id="results">
+    <h2>Your daily target</h2>
+    <p id="result" aria-live="polite">0 kcal</p>
+    <p>Your target will appear here after you calculate.</p>
+  </section>
+
+  <section id="food-log">
+    <h2>Today's food</h2>
+
+    <form onsubmit="return false">
+      <label for="food-name">Food</label>
+      <input id="food-name" name="food-name" type="text" placeholder="Chicken and rice" required>
+
+      <label for="food-calories">Calories</label>
+      <input id="food-calories" name="food-calories" type="number" min="0" max="5000" placeholder="450" required>
+
+      <button type="submit">Add food</button>
+    </form>
+
+    <table>
+      <caption>Food log for today</caption>
+      <thead>
+        <tr>
+          <th scope="col">Food</th>
+          <th scope="col">Calories</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Oatmeal with banana</td>
+          <td>320</td>
+        </tr>
+        <tr>
+          <td>Chicken and rice</td>
+          <td>550</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td>870</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+</main>
+
+<footer>
+  <p>Built while learning HTML, CSS, and JavaScript.</p>
+</footer>`}
+/>
+
+## Yes, it's ugly
+
+That's the point. You've built a page with:
+
+- A clear document structure.
+- Semantic landmarks.
+- A complete, accessible form.
+- A real data table with a caption and scoped headers.
+- A results area that's ready for JavaScript.
+
+Everything that's missing is visual. We'll fix that in part 2 with CSS.
+
+<Callout variant="tip" title="A quick sanity check">
+Open the page and press Tab repeatedly. Can you reach every input, radio, select, and button? Does the focus ring show where you are? If yes, your HTML is already more accessible than a lot of websites.
+</Callout>
+
+<MissionBox
+  title="Finish the page"
+  body="Build the full page in your index.html. Add two more food rows to the table and update the total. Then check your headings: one h1, h2 for each section, no skipped levels."
+  note="Optional: paste your file into validator.w3.org to catch unclosed tags. Don't obsess over warnings; fix errors first."
+/>
+
+## What to check before moving on
+
+- [ ] One `<h1>`, and `<h2>` for each section.
+- [ ] Header, nav, main, two or three sections, footer.
+- [ ] Every input has a label with a matching `for`/`id`.
+- [ ] Radio buttons share a `name`.
+- [ ] The table has a caption, thead, tbody, tfoot, and scoped headers.
+- [ ] The result paragraph has an id (we'll grab it with JavaScript later).
+
+<RecapCards
+  points={[
+    "A complete page is a set of semantic sections, not a pile of divs.",
+    "Tables are for data: caption, thead, tbody, tfoot, th with scope.",
+    "Every form control has a label, a name, and the right type.",
+    "The unstyled page is the skeleton; CSS comes next.",
+    "Tab through the page — if it works with a keyboard, it works.",
+  ]}
+/>
+
+That's part 1 done. You can write a complete, accessible HTML page from scratch. Next up: CSS — making it look like something you'd actually want to use.

@@ -1,0 +1,232 @@
+---
+title: "Async and fetch: talking to an API"
+slug: "async-and-fetch"
+project: "frontend-development"
+order: 19
+part: "javascript"
+summary: "An API is a server that answers questions with data. Learn async/await, fetch, JSON, loading states, and error handling — then load real data into the page."
+duration: "9 min read"
+tags: ["JavaScript", "API", "async"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Everything so far has lived in the browser. The calculator's food list is local. But real apps get data from somewhere else: a server, a database, an API.
+
+An **API** is just a set of URLs that return data. You send a request; it sends back a response, usually JSON.
+
+## Request and response
+
+```
+GET https://example.com/v1/foods?q=chicken
+```
+
+- `GET` is the method. You're asking to read something.
+- The URL is the **endpoint**.
+- `?q=chicken` is a **query parameter** — extra information for the server.
+- The response usually looks like JSON:
+
+```json
+{
+  "foods": [
+    { "id": "chicken-breast", "name": "Chicken breast", "calories": 165 }
+  ]
+}
+```
+
+JSON looks like a JavaScript object, but it's text. `response.json()` parses it into real objects.
+
+## Synchronous vs asynchronous
+
+Some code finishes immediately:
+
+```js
+const total = 2 + 2;
+```
+
+Network requests don't. The data might take 50ms or 5 seconds. JavaScript doesn't freeze the whole page waiting; it gives you a **Promise** — a placeholder for a value that will arrive later.
+
+`async` and `await` let you write asynchronous code that reads like normal code:
+
+```js
+async function loadFoods() {
+  const response = await fetch("/v1/foods");
+  const data = await response.json();
+  console.log(data);
+}
+```
+
+- `async` marks the function as asynchronous.
+- `await` pauses that function until the promise settles.
+- The rest of the page keeps working while it waits.
+
+## fetch, step by step
+
+```js
+async function loadFoods() {
+  try {
+    const response = await fetch("https://example.com/v1/foods");
+
+    if (!response.ok) {
+      throw new Error("Request failed: " + response.status);
+    }
+
+    const data = await response.json();
+    console.log(data.foods);
+  } catch (error) {
+    console.error("Something went wrong:", error);
+  }
+}
+```
+
+<Callout variant="warn" title="fetch does not throw on 404">
+A 404 or 500 is still a completed HTTP response, so `fetch` resolves normally. You have to check `response.ok` (true for 200–299) and handle the bad status yourself. Only network failures reject the promise.
+</Callout>
+
+Status codes worth knowing:
+
+- `200` — OK.
+- `400` — bad request (your input is wrong).
+- `404` — not found.
+- `500` — server error.
+
+## Loading and error states
+
+A good UI tells the user what's happening:
+
+```js
+button.disabled = true;
+status.textContent = "Loading...";
+
+try {
+  // fetch and render
+  status.textContent = "Loaded 4 foods.";
+} catch (error) {
+  status.textContent = "Could not load foods. Try again.";
+} finally {
+  button.disabled = false;
+}
+```
+
+The `finally` block runs whether it worked or not. Re-enable the button there, not inside `try`, or it stays disabled after an error.
+
+## Try it
+
+This demo loads recipes from a public API. Press the button, watch the loading state, then read the response in the console.
+
+<Playground
+  client:visible
+  title="fetch.html"
+  showConsole={true}
+  height={420}
+  html={`<h1>Recipe loader</h1>
+<button id="load" type="button">Load recipes</button>
+<p id="status">Press the button to load data.</p>
+<ul id="recipes"></ul>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  max-width: 560px;
+  margin: 32px auto;
+  padding: 0 20px;
+  color: #221c46;
+}
+h1 { margin-bottom: 16px; }
+button {
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+button:hover { background: #3730a3; }
+button:disabled { opacity: 0.5; cursor: wait; }
+#status { color: #5d5680; font-weight: 700; }
+ul { padding-left: 20px; }
+li { margin: 6px 0; line-height: 1.5; }
+`}
+  js={`const button = document.querySelector("#load");
+const status = document.querySelector("#status");
+const list = document.querySelector("#recipes");
+
+const API_URL = "https://dummyjson.com/recipes?limit=4";
+
+async function loadRecipes() {
+  button.disabled = true;
+  status.textContent = "Loading...";
+  list.replaceChildren();
+
+  try {
+    const response = await fetch(API_URL);
+
+    if (!response.ok) {
+      throw new Error("Request failed with status " + response.status);
+    }
+
+    const data = await response.json();
+    const recipes = data.recipes;
+
+    for (const recipe of recipes) {
+      const item = document.createElement("li");
+      item.textContent =
+        recipe.name + " — " + recipe.caloriesPerServing + " kcal per serving";
+      list.append(item);
+    }
+
+    status.textContent = "Loaded " + recipes.length + " recipes.";
+    console.log("API response:", data);
+  } catch (error) {
+    status.textContent = "Could not load recipes. Check the console.";
+    console.error(error);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+button.addEventListener("click", loadRecipes);`}
+/>
+
+<Callout variant="note" title="This is a placeholder API">
+The course will have its own small foods API later. Until then, this demo uses a public recipe API so the example is runnable. The code pattern is identical: `fetch`, check `response.ok`, `await response.json()`, render. When the course API is ready, we'll swap the URL and the data shape — not the lesson.
+</Callout>
+
+<Callout variant="tip" title="What is CORS?">
+Browsers block JavaScript from reading responses from another origin unless the server explicitly allows it. That's CORS. A public API sends `Access-Control-Allow-Origin: *`; your own API will allow your site. If you see a CORS error in the console, the request may have succeeded — the browser just refuses to let your code read the response.
+</Callout>
+
+<MissionBox
+  title="Search the API"
+  body="Add a text input and a search button. When the user searches for 'pizza', fetch https://dummyjson.com/recipes/search?q=pizza and render the names. Show a loading message while it runs, and a friendly error message if the request fails."
+  note="Encode the query with encodeURIComponent(input.value) so spaces and special characters don't break the URL."
+/>
+
+## The mistakes everyone makes
+
+- **Forgetting `await`.** You get a Promise instead of the data.
+- **Not checking `response.ok`.** A 404 is treated as success.
+- **Calling `.json()` twice.** The body can only be read once.
+- **Assuming the data is an array.** Many APIs wrap it: `data.recipes`, `data.foods`, `data.items`.
+- **No loading state.** The user clicks and nothing happens for two seconds.
+- **No error handling.** One failed request leaves the UI stuck.
+- **Blocking the page.** Don't use synchronous requests; they don't exist in modern fetch anyway.
+- **Storing the response in a global you never use.** Render it.
+
+<RecapCards
+  points={[
+    "An API is a URL (or set of URLs) that returns data, usually JSON.",
+    "Network requests are asynchronous; async/await makes them readable.",
+    "fetch resolves even on 404 — check response.ok.",
+    "response.json() parses the body; await it.",
+    "Handle loading, success, and error states.",
+    "CORS is the browser's rule for cross-origin responses.",
+  ]}
+/>
+
+Next: capstone time. We'll write the calculator's math as clean functions and test it before touching the UI.

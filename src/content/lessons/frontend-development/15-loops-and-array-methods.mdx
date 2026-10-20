@@ -1,0 +1,168 @@
+---
+title: "Loops and array methods"
+slug: "loops-and-array-methods"
+project: "frontend-development"
+order: 15
+part: "javascript"
+summary: "Go through a list, add up the calories, filter the high-protein meals, and find one item. Learn the loop and the four array methods that cover most of it."
+duration: "7 min read"
+tags: ["JavaScript", "loops", "arrays"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+The food log is a list. To get today's total, you need to visit every item and add up the calories. That's a loop.
+
+JavaScript gives you several ways to do it. They're not competing religions — each one fits a different job.
+
+## The classic for loop
+
+```js
+for (let i = 0; i < foods.length; i++) {
+  console.log(foods[i].name);
+}
+```
+
+Three parts: start at `0`, keep going while `i < length`, add `1` each time. It's flexible, but the index bookkeeping is noise when you just want the items.
+
+## for...of
+
+```js
+let total = 0;
+
+for (const food of foods) {
+  total += food.calories;
+}
+
+console.log(total);
+```
+
+This reads as "for each food in foods." No index, no off-by-one. Use it when you need to loop and maybe `break` early.
+
+## forEach
+
+```js
+let total = 0;
+
+foods.forEach((food) => {
+  total += food.calories;
+});
+```
+
+`forEach` runs a function for each item. It's fine for side effects like logging. It does **not** return a new array, and you can't `break` out of it.
+
+<Callout variant="note" title="forEach vs map">
+If you're building a new array, use `map`. If you're doing something for each item (logging, saving, updating a total), `forEach` or `for...of` is fine. `map` returns; `forEach` doesn't.
+</Callout>
+
+## map, filter, find
+
+You met these last lesson. Quick recap:
+
+```js
+const names = foods.map((food) => food.name);
+const highProtein = foods.filter((food) => food.protein >= 20);
+const chicken = foods.find((food) => food.name === "Chicken and rice");
+```
+
+They're the cleanest way to transform and select.
+
+## reduce: the total machine
+
+`reduce` turns an array into a single value: a total, an average, an object, anything.
+
+```js
+const totalCalories = foods.reduce((sum, food) => {
+  return sum + food.calories;
+}, 0);
+```
+
+Read it as:
+
+- `sum` is the **accumulator** — the running total.
+- `food` is the current item.
+- `0` is the starting value.
+- Whatever you return becomes the next `sum`.
+
+For a total, always pass the `0`. Without it, `reduce` starts with the first item and can behave strangely on an empty array.
+
+```js
+const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
+```
+
+That's the whole pattern. Once it clicks, you'll see it everywhere.
+
+## Try it
+
+<Playground
+  client:visible
+  title="loops.js"
+  showHtml={false}
+  showCss={false}
+  showConsole={true}
+  showPreview={false}
+  height={380}
+  js={`const foods = [
+  { name: "Oatmeal", calories: 320, protein: 12 },
+  { name: "Chicken and rice", calories: 550, protein: 35 },
+  { name: "Greek yogurt", calories: 150, protein: 15 },
+  { name: "Apple", calories: 95, protein: 0 },
+];
+
+let forTotal = 0;
+for (const food of foods) {
+  forTotal += food.calories;
+}
+console.log("for...of total: " + forTotal);
+
+let eachTotal = 0;
+foods.forEach((food) => {
+  eachTotal += food.calories;
+});
+console.log("forEach total: " + eachTotal);
+
+const reducedTotal = foods.reduce((sum, food) => sum + food.calories, 0);
+console.log("reduce total: " + reducedTotal);
+
+const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
+console.log("Total protein: " + totalProtein + " g");
+
+const under300 = foods.filter((food) => food.calories < 300);
+console.log("Under 300 kcal: " + under300.map((food) => food.name).join(", "));
+
+const names = foods.map((food) => food.name);
+console.log("All foods: " + names.join(" | "));`}
+/>
+
+<MissionBox
+  title="Add up the day"
+  body="Using the food array, calculate the total calories and total protein with reduce. Then count how many foods are over 400 calories. Finally, find the food with the most protein."
+  note="For the highest-protein food, you can sort a copy or loop through and keep track of the current winner. Don't mutate the original array."
+/>
+
+## The mistakes everyone makes
+
+- **`for...in` on an array.** It loops over keys as strings. Use `for...of` or a classic `for`.
+- **Off-by-one.** `i <= foods.length` reads one item past the end. Use `<`.
+- **Forgetting the initial value in `reduce`.** Always pass `0` for sums.
+- **Returning nothing from a `map` callback.** You'll get an array of `undefined`.
+- **Mutating the original array.** `filter` and `map` return new arrays; use them.
+- **Using `forEach` when you need a return value.** It always returns `undefined`.
+- **Nested loops for a simple lookup.** Use `find`.
+
+<RecapCards
+  points={[
+    "for...of is the readable way to loop over array items.",
+    "forEach runs a function per item but returns nothing.",
+    "map transforms, filter selects, find gets the first match.",
+    "reduce turns an array into one value; pass 0 for totals.",
+    "Don't mutate the original array when a method can return a new one.",
+  ]}
+/>
+
+Next: the DOM. We'll stop logging to the console and start changing the actual page.

@@ -1,0 +1,174 @@
+---
+title: "Arrays and objects: the data shapes"
+slug: "arrays-and-objects"
+project: "frontend-development"
+order: 14
+part: "javascript"
+summary: "A food log is a list of meals, and each meal has a name, calories, and maybe protein. That's an array of objects — the shape you'll use in almost every app."
+duration: "8 min read"
+tags: ["JavaScript", "data", "arrays"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+A single variable is fine for one value. But the calculator has a **list** of foods, and each food has several pieces of information. For that, we need arrays and objects.
+
+## Arrays
+
+An array is an ordered list:
+
+```js
+const foods = ["Oatmeal", "Chicken and rice", "Greek yogurt"];
+```
+
+- Items are separated by commas.
+- Indexes start at **0**: `foods[0]` is `"Oatmeal"`.
+- `foods.length` is `3`.
+- `foods.push("Apple")` adds to the end.
+- `foods.includes("Rice")` checks membership.
+- `foods.join(", ")` turns it into a string.
+
+```js
+console.log(foods[0]);       // "Oatmeal"
+console.log(foods.length);   // 3
+console.log(foods.at(-1));   // "Greek yogurt"
+```
+
+<Callout variant="note" title="const arrays can still change">
+`const` stops you from pointing `foods` at a different array. It doesn't stop `foods.push(...)`. The array itself is still mutable. Use `const` for arrays unless you plan to reassign the variable.
+</Callout>
+
+## Objects
+
+An object groups related values under named keys:
+
+```js
+const meal = {
+  name: "Chicken and rice",
+  calories: 550,
+  protein: 35,
+};
+```
+
+- Access with dot notation: `meal.name`, `meal.calories`.
+- Or bracket notation: `meal["calories"]` — useful when the key is in a variable.
+- Add a key: `meal.fat = 12;`.
+- Objects can nest: `{ name: "...", macros: { protein: 35, carbs: 60 } }`.
+
+## Arrays of objects
+
+This is the shape of almost every list in every app:
+
+```js
+const foods = [
+  { name: "Oatmeal", calories: 320, protein: 12 },
+  { name: "Chicken and rice", calories: 550, protein: 35 },
+  { name: "Greek yogurt", calories: 150, protein: 15 },
+];
+```
+
+Each item is an object. The array holds the list. To get the first food's calories: `foods[0].calories`.
+
+## Three methods worth knowing now
+
+```js
+const names = foods.map((food) => food.name);
+// ["Oatmeal", "Chicken and rice", "Greek yogurt"]
+
+const highProtein = foods.filter((food) => food.protein >= 20);
+// [{ name: "Chicken and rice", ... }]
+
+const chicken = foods.find((food) => food.name === "Chicken and rice");
+// the matching object, or undefined
+```
+
+- `map` transforms every item and returns a **new array**.
+- `filter` keeps the items that pass a test, as a **new array**.
+- `find` returns the **first matching item** (or `undefined`).
+
+None of them change the original array. That's a good thing.
+
+## Destructuring and spread
+
+Two shortcuts you'll see everywhere:
+
+```js
+const { name, calories } = foods[0];
+// name = "Oatmeal", calories = 320
+
+const copy = [...foods];
+// a shallow copy of the array
+```
+
+Destructuring pulls properties into variables. Spread (`...`) copies items into a new array or object. We'll use both more in React.
+
+## Try it
+
+Run this, then add a fourth food and see how the outputs change.
+
+<Playground
+  client:visible
+  title="arrays.js"
+  showHtml={false}
+  showCss={false}
+  showConsole={true}
+  showPreview={false}
+  height={340}
+  js={`const foods = [
+  { name: "Oatmeal", calories: 320, protein: 12 },
+  { name: "Chicken and rice", calories: 550, protein: 35 },
+  { name: "Greek yogurt", calories: 150, protein: 15 },
+];
+
+console.log("How many foods? " + foods.length);
+console.log("First food: " + foods[0].name);
+console.log("First food calories: " + foods[0]["calories"]);
+
+foods.push({ name: "Apple", calories: 95, protein: 0 });
+console.log("After push: " + foods.length);
+
+const names = foods.map((food) => food.name);
+console.log("Names: " + names.join(", "));
+
+const highProtein = foods.filter((food) => food.protein >= 20);
+console.log("High protein:");
+console.log(highProtein);
+
+const chicken = foods.find((food) => food.name === "Chicken and rice");
+console.log("Found: " + chicken.name + " — " + chicken.calories + " kcal");
+
+const { name, calories } = foods[0];
+console.log("Destructured: " + name + " has " + calories + " kcal");`}
+/>
+
+<MissionBox
+  title="Build the food list"
+  body="Create an array with at least three food objects. Each needs a name, calories, and protein. Log the names with map, filter the foods with at least 20g of protein, and use find to pull out one food by name."
+  note="Check the shape: foods[0].name should work. If it's undefined, the object keys are probably different."
+/>
+
+## The mistakes everyone makes
+
+- **Starting at index 1.** Arrays start at 0.
+- **Typo in a key.** `food.calorie` returns `undefined` if the key is `calories`.
+- **Forgetting that map/filter return new arrays.** They don't change the original.
+- **Using `find` when you want all matches.** `find` returns one; `filter` returns all.
+- **Mutating while filtering/mapping.** Keep the original intact; return a new value.
+- **Assuming an object is ordered.** Arrays have order; object keys mostly don't.
+
+<RecapCards
+  points={[
+    "Arrays are ordered lists; indexes start at 0.",
+    "Objects group values under named keys; access with dot or brackets.",
+    "An array of objects is the standard shape for a list of records.",
+    "map transforms, filter selects, find returns the first match.",
+    "Destructuring pulls properties out; spread copies arrays and objects.",
+  ]}
+/>
+
+Next: loops and array methods — how to go through the whole food log and add up the totals.

@@ -1,0 +1,136 @@
+---
+title: "How the web works (and your first page)"
+slug: "how-the-web-works"
+project: "frontend-development"
+order: 1
+part: "html"
+summary: "Before we write anything, let's see what actually happens when a browser opens a website — then build your first real page in about five minutes."
+duration: "6 min read"
+tags: ["HTML", "setup", "no code"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import Checklist from "../../../components/react/Checklist.tsx";
+import Playground from "../../../components/react/Playground.tsx";
+
+Welcome to the start of the whole thing.
+
+By the end of this course you'll have built a **calorie calculator** three times: once with plain HTML and CSS, once with JavaScript, and once with React. Same app, three levels of understanding. The first version won't calculate anything — it'll just look like a real page. That's on purpose.
+
+But before any of that, let's answer the question everyone skips:
+
+## What actually happens when you open a website?
+
+You type an address, hit Enter, and a page appears. Under the hood, it's a short conversation:
+
+1. **The browser asks a server for a file.** Usually that file is called `index.html`.
+2. **The server sends the HTML back.** HTML is just text with tags that describe what each piece of content *is*.
+3. **The browser reads the HTML** and builds the page structure.
+4. **It notices links to CSS and JavaScript** and asks for those too.
+5. **CSS makes it look right. JavaScript makes it do things.**
+
+That's the whole loop. Everything else — frameworks, databases, APIs — sits on top of those five steps.
+
+<Callout variant="note" title="The three languages, in one sentence each">
+**HTML** is the structure (what's on the page). **CSS** is the style (what it looks like). **JavaScript** is the behavior (what happens when you interact). You need all three, but you learn them one at a time.
+</Callout>
+
+## What you need
+
+You don't need Node, npm, or any build tools yet. For the first two parts, a browser and a text editor are enough.
+
+<Checklist
+  client:visible
+  storageKey="jom-mula-frontend-setup"
+  items={[
+    "A modern browser — Chrome, Firefox, Edge, or Safari",
+    "VS Code (or any editor you like)",
+    "A folder for this course, e.g. frontend-course",
+    "10–15 minutes for this lesson",
+  ]}
+/>
+
+## Your first page
+
+Let's make a file and open it. No server, no installation, no magic.
+
+<StepList
+  steps={[
+    {
+      title: "Create a folder",
+      body: "Make a new folder called frontend-course. This is where every file for the first two parts will live.",
+    },
+    {
+      title: "Open it in VS Code",
+      body: "File → Open Folder, then pick the folder you just made.",
+    },
+    {
+      title: "Create index.html",
+      body: "The name matters. Browsers look for index.html by default when you open a folder.",
+    },
+    {
+      title: "Paste this in",
+      body: "This is the smallest complete page you can write.",
+      code: '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8">\n    <title>My first page</title>\n  </head>\n  <body>\n    <h1>Hello, world!</h1>\n    <p>This is my first page. I made this.</p>\n  </body>\n</html>',
+    },
+    {
+      title: "Open it in the browser",
+      body: "Double-click index.html, or right-click it and choose Open with → your browser. You should see a big heading and a paragraph.",
+    },
+  ]}
+/>
+
+That's a real website. It's not online yet — it's just a file your browser can read — but the structure is exactly the same as every page you've ever visited.
+
+## Try it yourself
+
+This playground is a tiny browser. Edit the HTML on the left, press **Run**, and look at the right. Try changing the heading and adding a second paragraph.
+
+<Playground
+  client:visible
+  title="my-first-page.html"
+  showCss={false}
+  showJs={false}
+  html={`<h1>Hello, world!</h1>
+<p>This is my first page. I made this.</p>
+
+<!-- Try adding a second paragraph below this line. -->`}
+/>
+
+<Callout variant="tip" title="What is a tag, really?">
+A tag is a label in angle brackets, like `<h1>`. Most tags come in pairs: an opening tag `<h1>` and a closing tag `</h1>`. Whatever sits between them is the content. Some tags, like `<img>`, don't need a closing tag.
+</Callout>
+
+<MissionBox
+  title="Your first mission"
+  body="Change the heading to your own name. Add a paragraph that says what you want to build. Then open the page in your browser and open DevTools (right-click → Inspect) — find your heading in the Elements panel."
+  note="If the page doesn't change, save the file first (Ctrl/Cmd + S), then refresh the browser."
+/>
+
+## What we're building
+
+Here's the app we'll grow across the course:
+
+- A form for age, sex, height, weight, and activity level.
+- A daily calorie target calculated from those numbers.
+- A food log where you add meals and see the total.
+- A saved log that survives a page refresh.
+
+In this part we'll build the **HTML skeleton** only. It will look boring. That's fine — structure first, style second, behavior third.
+
+<RecapCards
+  points={[
+    "A website is just files the browser asks for and reads.",
+    "HTML is structure, CSS is style, JavaScript is behavior.",
+    "index.html is the default file a browser looks for.",
+    "You don't need any build tools to write your first page.",
+    "Tags usually come in pairs: opening, content, closing.",
+  ]}
+/>
+
+Next up: text, links, images, and lists — the tags you'll use in almost every page you ever build.

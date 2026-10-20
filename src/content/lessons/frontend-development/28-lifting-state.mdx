@@ -1,0 +1,182 @@
+---
+title: "Lifting state and designing the component tree"
+slug: "lifting-state"
+project: "frontend-development"
+order: 28
+part: "react"
+summary: "Who should own the food list? Learn the one question that answers it, then pass data down and callbacks up without duplicating state."
+duration: "9 min read"
+tags: ["React", "state", "components"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+In the vanilla app, there was one `state` object at the top. In React, every component can have state — so the question becomes: **which component should own this data?**
+
+The answer is a rule:
+
+> Put the state in the closest common parent of every component that needs it.
+
+The food list is needed by the form (to add), the list (to render), and the totals (to calculate). Their closest common parent is `App`. So `App` owns the food list.
+
+## Lifting state up
+
+Start with the state in the child:
+
+```jsx
+function FoodList() {
+  const [foods, setFoods] = useState([]);
+  // ...
+}
+```
+
+That works until another component needs `foods`. Then you move it up:
+
+```jsx
+function App() {
+  const [foods, setFoods] = useState([]);
+
+  function addFood(food) {
+    setFoods((previous) => [...previous, food]);
+  }
+
+  function removeFood(id) {
+    setFoods((previous) => previous.filter((food) => food.id !== id));
+  }
+
+  return (
+    <>
+      <FoodForm onAdd={addFood} />
+      <FoodList foods={foods} onRemove={removeFood} />
+      <Totals foods={foods} />
+    </>
+  );
+}
+```
+
+Now `App` is the single source of truth. The children receive data and callbacks.
+
+## Data down, events up
+
+- **Data** flows down through props: `foods={foods}`.
+- **Events** flow up through callbacks: `onRemove={removeFood}`.
+
+The child doesn't know how the parent stores the data. It just calls the function.
+
+```jsx
+function FoodList({ foods, onRemove }) {
+  return (
+    <ul>
+      {foods.map((food) => (
+        <FoodRow key={food.id} food={food} onRemove={onRemove} />
+      ))}
+    </ul>
+  );
+}
+
+function FoodRow({ food, onRemove }) {
+  return (
+    <li>
+      {food.name}
+      <button onClick={() => onRemove(food.id)}>Remove</button>
+    </li>
+  );
+}
+```
+
+`FoodRow` doesn't set state. It calls `onRemove(food.id)`, and `App` updates the list.
+
+<Callout variant="tip" title="Keep local state local">
+The food form's input values belong to the form. They don't need to live in `App`. Put state as low as possible, and lift it only when another component needs it.
+</Callout>
+
+## Where state should live
+
+| Data | Owner | Why |
+| --- | --- | --- |
+| Food form inputs | `FoodForm` | Only the form uses them |
+| The food list | `App` | Form, list, and totals all need it |
+| The calculated profile | `App` | Result and food totals need it |
+| Whether a row is hovered | `FoodRow` | Only that row cares |
+
+A good rule: if only one component uses a value, keep it there. If two need it, lift it.
+
+## A shallow tree is a happy tree
+
+```jsx
+App
+├── CalculatorForm
+├── ResultCard
+└── FoodLog
+    ├── FoodForm
+    └── FoodList
+        └── FoodRow
+```
+
+Keep the tree shallow. If you have to pass a prop through five layers, maybe the component in the middle doesn't need to exist, or the state belongs lower. For deeply shared data (theme, auth), React has Context — but don't reach for it before you need it.
+
+<Callout variant="warn" title="Don't duplicate state">
+If `App` owns `foods`, don't also keep a copy in `FoodLog` and sync them with an effect. Two copies mean two sources of truth, and eventually they disagree. One owner, one source.
+</Callout>
+
+## The full pattern
+
+```jsx
+function App() {
+  const [foods, setFoods] = useState([]);
+
+  function addFood(name, calories) {
+    setFoods((previous) => [
+      ...previous,
+      { id: crypto.randomUUID(), name, calories },
+    ]);
+  }
+
+  function removeFood(id) {
+    setFoods((previous) => previous.filter((food) => food.id !== id));
+  }
+
+  return (
+    <>
+      <FoodForm onAdd={addFood} />
+      <FoodList foods={foods} onRemove={removeFood} />
+      <Total foods={foods} />
+    </>
+  );
+}
+```
+
+`crypto.randomUUID()` generates a unique id in modern browsers. If you need an older browser, `Date.now()` works for a small app.
+
+<MissionBox
+  title="Lift the food state"
+  body="Move the foods array into App. Pass foods and onRemove to FoodList, and onAdd to FoodForm. Keep the form's input values local to FoodForm. Add a Total component that receives foods and derives the total. Confirm that adding and removing works without any component keeping a duplicate list."
+  note="If the list doesn't update, check that you're creating a new array with spread/filter, not mutating the old one."
+/>
+
+## The mistakes everyone makes
+
+- **State in the wrong component.** Two siblings need it? Lift it.
+- **Duplicating state.** One owner; derive the rest.
+- **Passing setters instead of named callbacks.** `onAdd` is clearer than `setFoods`.
+- **Mutating the array.** Spread to add, filter to remove.
+- **Stale state in a callback.** Use the updater form: `setFoods((previous) => ...)`.
+- **Prop drilling five levels.** Reconsider the tree or use composition.
+- **Making everything global.** Local state is simpler.
+
+<RecapCards
+  points={[
+    "Put state in the closest common parent of the components that need it.",
+    "Data flows down through props; events flow up through callbacks.",
+    "Keep local state local; lift only when needed.",
+    "One source of truth; don't duplicate state and sync it.",
+    "Use updater functions when the next state depends on the previous.",
+    "Keep the component tree shallow.",
+  ]}
+/>
+
+Next: useEffect and localStorage — persisting the React app between visits.

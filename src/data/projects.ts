@@ -3,6 +3,13 @@ export interface UpcomingLesson {
   slug: string;
   title: string;
   blurb: string;
+  part?: string;
+}
+
+export interface ProjectPart {
+  id: string;
+  title: string;
+  blurb: string;
 }
 
 export interface Project {
@@ -12,9 +19,45 @@ export interface Project {
   stack: string[];
   status: "available" | "coming";
   upcoming: UpcomingLesson[];
+  parts?: ProjectPart[];
 }
 
 export const projects: Project[] = [
+  {
+    slug: "frontend-development",
+    title: "Frontend Development: HTML to React",
+    tagline:
+      "Start with a blank file, finish with a real React app. Build a calorie calculator three ways — static HTML and CSS, vanilla JavaScript, then React.",
+    stack: ["HTML", "CSS", "JavaScript", "React"],
+    status: "available",
+    parts: [
+      {
+        id: "html",
+        title: "HTML",
+        blurb:
+          "Structure. Headings, links, forms, tables, and the skeleton of a real page.",
+      },
+      {
+        id: "css",
+        title: "CSS",
+        blurb:
+          "Style. Layout, color, type, responsive design, and the small details that make it feel finished.",
+      },
+      {
+        id: "javascript",
+        title: "JavaScript",
+        blurb:
+          "Behavior. Data, logic, the DOM, events, storage, and talking to an API.",
+      },
+      {
+        id: "react",
+        title: "React",
+        blurb:
+          "Components. State, props, effects, and the same calculator rebuilt as a modern app.",
+      },
+    ],
+    upcoming: [],
+  },
   {
     slug: "gallery-blog",
     title: "Gallery Blog",

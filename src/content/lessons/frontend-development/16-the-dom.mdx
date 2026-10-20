@@ -1,0 +1,165 @@
+---
+title: "The DOM: select, read, change"
+slug: "the-dom"
+project: "frontend-development"
+order: 16
+part: "javascript"
+summary: "The DOM is the browser's live model of your HTML. Learn to select elements, read their values, change their text and classes, and create new elements."
+duration: "8 min read"
+tags: ["JavaScript", "DOM"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Everything so far has been JavaScript talking to itself. The DOM is how it talks to the page.
+
+**DOM** stands for Document Object Model. When the browser parses your HTML, it builds a tree of objects: the `<html>` element, inside it `<body>`, inside that your sections, headings, forms, and so on. JavaScript can read and change that tree, and the browser updates the screen.
+
+## Selecting elements
+
+```js
+const title = document.querySelector("#title");
+const result = document.querySelector(".result");
+const inputs = document.querySelectorAll("input");
+```
+
+- `querySelector` returns the **first** match, or `null`.
+- `querySelectorAll` returns a NodeList of all matches.
+- The selector is the same CSS syntax you already know: `#id`, `.class`, `input`, `.card p`.
+- `document.getElementById("title")` is an older, slightly faster alternative for ids.
+
+<Callout variant="warn" title="null is not an element">
+If `querySelector` finds nothing, it returns `null`. Then `title.textContent` throws:
+
+`Cannot read properties of null (reading 'textContent')`
+
+That means your selector is wrong, or the script ran before the element existed. Check both.
+</Callout>
+
+## Reading and changing
+
+```js
+title.textContent = "Today's food";
+result.classList.add("is-good");
+result.classList.remove("is-warning");
+result.classList.toggle("is-hidden");
+
+console.log(input.value);       // for form fields
+console.log(result.dataset.role); // data-role="result"
+```
+
+- `textContent` gets or sets the text inside an element. It's safe.
+- `innerHTML` gets or sets the HTML inside an element. It's powerful, but dangerous with user input. More below.
+- `classList` adds, removes, and toggles classes without touching the rest of the class list.
+- `value` is the current value of an input, select, or textarea.
+- `dataset` reads `data-*` attributes: `data-role="result"` becomes `dataset.role`.
+
+## Creating elements
+
+```js
+const item = document.createElement("li");
+item.textContent = "Oatmeal — 320 kcal";
+document.querySelector("#food-list").append(item);
+```
+
+Create, fill, append. That's the pattern. If you need to remove an element: `item.remove()`.
+
+## innerHTML and safety
+
+```js
+// Fine if the string is yours and contains no user input:
+result.innerHTML = "<strong>870</strong> kcal";
+
+// Dangerous: a food name could contain HTML or a script.
+list.innerHTML = "<li>" + foodName + "</li>";
+```
+
+If `foodName` comes from a user and contains `<img src=x onerror=...>`, you've just injected code into your page. That's XSS. Use `textContent` for user data, or create elements and set `textContent`. We'll use that approach in the capstone.
+
+## Try it
+
+This demo selects elements, changes text, adds a class, and creates a new list item. Look at the HTML and the JS side by side.
+
+<Playground
+  client:visible
+  title="dom.html"
+  showConsole={true}
+  height={340}
+  html={`<h1 id="title">Today's total</h1>
+<p class="result" data-role="result">0 kcal</p>
+<ul id="food-list"></ul>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  padding: 24px;
+  color: #221c46;
+}
+h1 { margin: 0 0 6px; }
+.result {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #eef0ff;
+  color: #3730a3;
+  font-size: 24px;
+  font-weight: 800;
+}
+.result.is-good { background: #d1fae5; color: #047857; }
+ul { padding-left: 20px; }
+li { margin: 4px 0; }
+`}
+  js={`const title = document.querySelector("#title");
+const result = document.querySelector('[data-role="result"]');
+const list = document.querySelector("#food-list");
+
+title.textContent = "Today's food";
+result.textContent = "870 kcal";
+result.classList.add("is-good");
+
+const item = document.createElement("li");
+item.textContent = "Oatmeal — 320 kcal";
+list.append(item);
+
+const second = document.createElement("li");
+second.textContent = "Chicken and rice — 550 kcal";
+list.append(second);
+
+console.log("Title: " + title.textContent);
+console.log("Result classes: " + result.className);
+console.log("List items: " + list.children.length);`}
+/>
+
+<Callout variant="tip" title="Script order matters">
+In the playground, the JS runs after the HTML because the component puts the script at the end of the body. In your own page, use `<script src="script.js" defer></script>` or put the script just before `</body>`. If you run the script first, the elements don't exist yet.
+</Callout>
+
+<MissionBox
+  title="Talk to the page"
+  body="Open your calculator page and link a script.js file with defer. Select the result paragraph and the food list. Change the result text to '870 kcal', add a class that changes its color, and create two list items for the sample foods."
+  note="Log each selected element with console.log. If it says null, fix the selector or the script order."
+/>
+
+## The mistakes everyone makes
+
+- **Script runs before the DOM.** Use `defer` or place the script at the end.
+- **Wrong selector.** `#title` needs the id to exist; `.result` needs the class.
+- **Using `innerHTML` with user input.** XSS. Use `textContent`.
+- **Reading `.value` from a div.** It's for form fields.
+- **Replacing `className` and wiping other classes.** Use `classList`.
+- **Forgetting to append.** `document.createElement` creates an element but doesn't put it on the page until you append it.
+
+<RecapCards
+  points={[
+    "The DOM is the browser's live tree of your HTML.",
+    "querySelector gets the first match; querySelectorAll gets all.",
+    "textContent is safe for text; innerHTML is for trusted HTML only.",
+    "classList and dataset are cleaner than string manipulation.",
+    "Create with createElement, fill with textContent, add with append.",
+  ]}
+/>
+
+Next: events and forms. This is where the calculator finally calculates.

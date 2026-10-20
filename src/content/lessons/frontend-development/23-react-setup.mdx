@@ -1,0 +1,201 @@
+---
+title: "Setup: Vite, React, and your first component"
+slug: "react-setup"
+project: "frontend-development"
+order: 23
+part: "react"
+summary: "Create a real React project with Vite, understand the folder structure, learn the JSX rules, and write your first component."
+duration: "8 min read"
+tags: ["React", "setup", "Vite"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Time to leave the single HTML file behind. React projects use a build tool so JSX, imports, and modern JavaScript work in the browser.
+
+We'll use **Vite**. It's fast, it's the standard starting point, and it stays out of your way.
+
+## What you need
+
+- Node.js 20.19 or newer (22 LTS is a safe choice). Check with `node -v`.
+- npm, which comes with Node. Check with `npm -v`.
+- A terminal. VS Code has one built in (Terminal → New Terminal).
+
+<Callout variant="note" title="Why Node?">
+React itself runs in the browser. Node is needed for the development server and the build step — the tools that turn your `.jsx` files into files the browser can run. You're not writing a backend here.
+</Callout>
+
+## Create the project
+
+In your terminal, from the folder where you keep projects:
+
+```bash
+npm create vite@latest calorie-calculator -- --template react
+```
+
+Then:
+
+```bash
+cd calorie-calculator
+npm install
+npm run dev
+```
+
+Vite prints a local URL, usually `http://localhost:5173`. Open it. You should see the default Vite + React page.
+
+<Callout variant="tip" title="The two dashes matter">
+`npm create vite@latest calorie-calculator -- --template react` — the `--` passes the rest of the flags to the Vite generator. Without it, npm may swallow them. If you forget, Vite will ask you questions interactively. Both work.
+</Callout>
+
+## What got created
+
+```
+calorie-calculator/
+├── index.html
+├── package.json
+├── vite.config.js
+├── public/
+└── src/
+    ├── main.jsx
+    ├── App.jsx
+    ├── App.css
+    ├── index.css
+    └── assets/
+```
+
+The files that matter first:
+
+- **`index.html`** — the one HTML page. It has `<div id="root"></div>`.
+- **`src/main.jsx`** — finds that root and renders `<App />` into it.
+- **`src/App.jsx`** — your main component. Start here.
+- **`src/index.css`** — global styles.
+- **`vite.config.js`** — Vite settings. You can ignore it for now.
+
+`main.jsx` looks like this:
+
+```jsx
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+```
+
+<Callout variant="note" title="StrictMode">
+`StrictMode` runs some of your code twice in development to help catch bugs. It doesn't run twice in production. If an effect logs twice while you're learning, that's usually why.
+</Callout>
+
+## JSX rules
+
+JSX looks like HTML, but it's JavaScript. A few differences:
+
+```jsx
+// 1. className, not class
+<div className="card">...</div>
+
+// 2. htmlFor, not for
+<label htmlFor="age">Age</label>
+
+// 3. Self-closing tags need a slash
+<img src="food.jpg" alt="A meal" />
+<input type="number" />
+
+// 4. JavaScript goes in braces
+<p>{2 + 2}</p>
+<p>{name}</p>
+<button disabled={isLoading}>Save</button>
+
+// 5. One root element (or a fragment)
+return (
+  <>
+    <h1>Title</h1>
+    <p>Text</p>
+  </>
+);
+
+// 6. Comments
+{/* this is a comment */}
+```
+
+The `<>...</>` syntax is a **fragment**. It groups elements without adding an extra `<div>` to the page.
+
+## Your first component
+
+Open `src/App.jsx` and replace its contents:
+
+```jsx
+function Header() {
+  return (
+    <header className="site-header">
+      <p className="brand">Calorie Calculator</p>
+    </header>
+  );
+}
+
+export default function App() {
+  return (
+    <div>
+      <Header />
+      <main className="page">
+        <h1>Eat with a plan.</h1>
+        <p>Calculate your target, log your food, and see what's left.</p>
+      </main>
+    </div>
+  );
+}
+```
+
+Save the file. The browser updates automatically. That's hot reload.
+
+<Callout variant="tip" title="Component names start with a capital letter">
+`<Header />` is a component. `<header>` is an HTML element. React uses the capitalization to tell them apart. A component named `header` won't work the way you expect.
+</Callout>
+
+## Before you go further
+
+- [ ] `node -v` shows 20.19 or newer.
+- [ ] `npm install` finished without errors.
+- [ ] `npm run dev` is running and the page loads.
+- [ ] Editing `App.jsx` updates the page automatically.
+- [ ] You can explain what `main.jsx` does.
+
+<Callout variant="warn" title="Stopping the server">
+Press `Ctrl + C` in the terminal to stop the dev server. Run `npm run dev` again whenever you come back. You don't need to reinstall every time.
+</Callout>
+
+<MissionBox
+  title="Make it yours"
+  body="Change the heading and the paragraph. Create a second component called Footer that returns a small footer, and render it inside App. Then break something on purpose — remove a closing tag or use class instead of className — and read the error. React's errors are usually specific about the file and line."
+  note="Use the browser console and the terminal together. Vite shows build errors in the terminal; React shows runtime errors in the browser."
+/>
+
+## The mistakes everyone makes
+
+- **Running `npm install` in the wrong folder.** You should see `package.json` in the current directory.
+- **Forgetting to start the dev server.** `npm run dev`.
+- **Using `class` instead of `className`.** React warns about it.
+- **Returning two elements without a fragment.** Wrap them in `<>...</>`.
+- **Lowercase component names.** React treats them as HTML tags.
+- **Editing files outside `src/` and expecting hot reload.** Vite watches the project, but the React entry is `src/main.jsx`.
+- **Importing CSS that doesn't exist.** Check the path.
+
+<RecapCards
+  points={[
+    "Vite creates and runs a React project: npm create vite, npm install, npm run dev.",
+    "main.jsx renders App into the #root div.",
+    "JSX uses className, htmlFor, self-closing tags, and {expressions}.",
+    "A component is a function that returns JSX; its name starts with a capital.",
+    "Fragments group elements without an extra div.",
+  ]}
+/>
+
+Next: components and props — breaking the calculator into small, reusable pieces.

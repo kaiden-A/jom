@@ -1,0 +1,196 @@
+---
+title: "Logic: conditions, comparisons, and functions"
+slug: "logic-and-functions"
+project: "frontend-development"
+order: 13
+part: "javascript"
+summary: "Make the code decide: if this, then that. Then wrap the decisions in functions you can reuse — the building blocks of the calculator's math."
+duration: "8 min read"
+tags: ["JavaScript", "logic", "functions"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+A calculator is mostly decisions. Is the age valid? Which activity multiplier applies? Is the goal to lose, maintain, or gain? JavaScript makes those decisions with conditions, and packages the math in functions.
+
+## Comparisons
+
+A comparison produces a boolean: `true` or `false`.
+
+```js
+console.log(5 > 3);      // true
+console.log(5 < 3);      // false
+console.log(5 === 5);    // true
+console.log(5 !== 5);    // false
+console.log(5 >= 5);     // true
+```
+
+Use **`===`** and **`!==`**, not `==` and `!=`. The triple version checks type and value. The double version does surprising conversions:
+
+```js
+console.log("5" == 5);   // true  (please avoid)
+console.log("5" === 5);  // false (what you usually want)
+```
+
+<Callout variant="warn" title="The assignment trap">
+`=` assigns. `===` compares.
+
+```js
+if (age = 18) { ... }   // assigns 18, always truthy
+if (age === 18) { ... } // compares
+```
+
+The first one is a bug that can take an hour to find. Read your conditions out loud if something feels off.
+</Callout>
+
+## Combining conditions
+
+```js
+const hasAge = age >= 13 && age <= 120;
+const needsHelp = !hasAge || height <= 0;
+```
+
+- `&&` — and. Both sides must be true.
+- `||` — or. At least one side must be true.
+- `!` — not. Flips a boolean.
+
+## If, else if, else
+
+```js
+const activity = "moderate";
+
+if (activity === "sedentary") {
+  console.log("Mostly sitting");
+} else if (activity === "light") {
+  console.log("Some walking");
+} else if (activity === "moderate") {
+  console.log("Exercise a few times a week");
+} else if (activity === "active") {
+  console.log("Hard exercise most days");
+} else {
+  console.log("Unknown activity level");
+}
+```
+
+JavaScript checks from top to bottom and stops at the first true condition. The `else` is the fallback.
+
+### Truthy and falsy
+
+In a condition, some values count as `false` even if they aren't literally `false`:
+
+- **Falsy:** `false`, `0`, `""` (empty string), `null`, `undefined`, `NaN`.
+- **Truthy:** everything else, including `"0"` and `[]`.
+
+That's why `if (name)` is a quick "does this have a value?" check. Be careful with numbers: `0` is a valid calorie count but falsy in an `if`.
+
+## Functions
+
+A function is a reusable block of code with a name, some inputs, and (usually) an output.
+
+```js
+function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+console.log(activityMultiplier("moderate")); // 1.55
+```
+
+- `level` is a **parameter** — the name the function uses inside.
+- `"moderate"` is an **argument** — the actual value passed in.
+- `return` sends a value back and stops the function.
+- If a function has no `return`, it returns `undefined`.
+
+Arrow functions are a shorter syntax:
+
+```js
+const double = (number) => number * 2;
+console.log(double(21)); // 42
+
+const add = (a, b) => {
+  const total = a + b;
+  return total;
+};
+```
+
+If the body is a single expression, you can skip the braces and the `return`. If you use braces, you need the `return`.
+
+<Callout variant="note" title="Scope, in one paragraph">
+Variables declared inside a function only exist inside that function. That's called scope. It's a feature: `const total` inside one function doesn't collide with `const total` in another. Keep functions small and this stays easy.
+</Callout>
+
+## Try it
+
+This is the beginning of the calculator's math. Run it, then change the activity level and try an invalid one.
+
+<Playground
+  client:visible
+  title="logic.js"
+  showHtml={false}
+  showCss={false}
+  showConsole={true}
+  showPreview={false}
+  height={280}
+  js={`function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  if (sex === "male") return base + 5;
+  return base - 161;
+}
+
+const bmr = calculateBMR(70, 170, 25, "female");
+const tdee = bmr * activityMultiplier("moderate");
+
+console.log("BMR: " + Math.round(bmr));
+console.log("TDEE: " + Math.round(tdee));
+
+// Try a different activity level:
+console.log("Active: " + Math.round(bmr * activityMultiplier("active")));`}
+/>
+
+<Callout variant="tip" title="Math.round">
+Calorie numbers usually look better as whole numbers. `Math.round(2079.75)` gives `2080`. `Math.floor` always rounds down; `Math.ceil` always rounds up.
+</Callout>
+
+<MissionBox
+  title="Write the math"
+  body="Write a function called calculateBMR that takes weight, height, age, and sex. Use the formula above. Then write activityMultiplier. Log the BMR and TDEE for two different people and check the numbers make sense."
+  note="Test with a simple case first: a 70kg, 170cm, 25-year-old female should have a BMR around 1,480."
+/>
+
+## The mistakes everyone makes
+
+- **`=` instead of `===` inside a condition.** Assignment, not comparison.
+- **Missing `return`.** The function logs a value but returns `undefined`.
+- **Arrow function with braces but no return.** `(n) => { n * 2 }` returns `undefined`; use `(n) => n * 2` or add `return`.
+- **Case-sensitive strings.** `"Moderate"` is not `"moderate"`.
+- **Forgetting the fallback.** An unknown activity level should still return something sane.
+- **Too much in one function.** If it needs a paragraph to explain, split it.
+
+<RecapCards
+  points={[
+    "Comparisons return booleans; use === and !==, not == and !=.",
+    "&& is and, || is or, ! flips a boolean.",
+    "if / else if / else picks the first true branch.",
+    "Falsy values include false, 0, '', null, undefined, and NaN.",
+    "Functions take parameters, return a value, and keep their variables scoped.",
+    "Arrow functions are shorter, but braces need an explicit return.",
+  ]}
+/>
+
+Next: arrays and objects. A food log isn't one value — it's a list of meals, and each meal has a name and a number.

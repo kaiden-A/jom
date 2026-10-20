@@ -1,0 +1,161 @@
+---
+title: "Why React? The same calculator, a new mental model"
+slug: "why-react"
+project: "frontend-development"
+order: 22
+part: "react"
+summary: "You already built the calculator in vanilla JavaScript. Now let's look at what gets painful as it grows — and why React's component model fixes it."
+duration: "7 min read"
+tags: ["React", "concept"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+You've built a complete app with plain JavaScript. It works. So why use React?
+
+The honest answer: **for a small app, you don't have to.** Vanilla JS is fine. React earns its place when the UI has lots of state, lots of shared pieces, and lots of places that need to stay in sync.
+
+Let's look at what gets painful.
+
+## The manual DOM problem
+
+In the capstone, every change ended with `render()`:
+
+```js
+function render() {
+  targetEl.textContent = state.target;
+  eatenEl.textContent = totalCalories(state.foods);
+  leftEl.textContent = state.target - totalCalories(state.foods);
+
+  list.replaceChildren();
+  for (const food of state.foods) {
+    // create a row, set text, append
+  }
+
+  countEl.textContent = state.foods.length + " items";
+  emptyEl.hidden = state.foods.length > 0;
+}
+```
+
+That's manageable for one screen. Now imagine:
+
+- A food log on three different pages.
+- A target shown in a header, a chart, and a summary card.
+- An edit mode that has to update the same values in five places.
+- A loading state, an error state, and an empty state for every list.
+
+You end up writing a lot of code whose only job is "keep the DOM in sync with the data." And every new feature adds another line to `render()`.
+
+<Callout variant="note" title="The bug factory">
+The classic bug: you update the state but forget to update one element. The data is right; the screen is wrong. The more places you have to update by hand, the more often this happens.
+</Callout>
+
+## React's idea: describe, don't manipulate
+
+React flips the job. Instead of telling the browser *how* to change, you describe *what the UI looks like* for a given state:
+
+```jsx
+function ResultCard({ target, eaten }) {
+  const left = target - eaten;
+
+  return (
+    <div className="results">
+      <p className="label">Your daily target</p>
+      <p className="value">{target} kcal</p>
+      <p>Eaten: {eaten}</p>
+      <p>Left: {left}</p>
+    </div>
+  );
+}
+```
+
+You don't touch `textContent`. You don't create rows by hand. You return the UI for the current values, and React updates the DOM when the values change.
+
+That's **declarative** programming: describe the result, not the steps.
+
+| Vanilla JavaScript | React |
+| --- | --- |
+| Find elements with `querySelector` | Return JSX |
+| Update `textContent` by hand | Put `{value}` in the JSX |
+| Re-run `render()` after every change | Change state; React re-renders |
+| Repeat markup for every row | `.map()` over data |
+| Shared UI copied between pages | Reusable components |
+
+## Components
+
+A React app is a tree of **components** — functions that return a piece of UI.
+
+```jsx
+function Header() {
+  return <header className="site-header">Calorie Calculator</header>;
+}
+
+function App() {
+  return (
+    <div>
+      <Header />
+      <ResultCard target={2100} eaten={870} />
+    </div>
+  );
+}
+```
+
+- **Components** keep the markup and behavior together.
+- **Props** pass data in. They're read-only.
+- **State** is data a component owns and can change.
+- **JSX** is the HTML-like syntax. It compiles to JavaScript.
+
+When state changes, React re-renders the component and updates only the parts of the real DOM that changed. You don't need to know exactly how; that's the point.
+
+<Callout variant="tip" title="You're not starting over">
+Everything you learned still applies. The math functions stay the same. The CSS stays the same. The form validation stays the same. React changes *how you organize the UI*, not what the app does.
+</Callout>
+
+## When React is worth it
+
+Use React when:
+
+- The UI has several pieces that depend on the same state.
+- You're repeating the same markup in multiple places.
+- You need loading, error, and empty states for several lists.
+- Multiple people will work on the UI.
+
+Skip React when:
+
+- The page is mostly static.
+- You need a small enhancement on an existing page.
+- The app is one form and one result.
+- You want the smallest possible bundle.
+
+The calculator is small enough for vanilla JS — but it's the perfect size to **learn** React, because you already understand the problem it solves.
+
+## What we'll cover
+
+1. Setup with Vite.
+2. Components and props.
+3. State with `useState`.
+4. Lists, keys, and conditional rendering.
+5. Forms and derived values.
+6. Lifting state.
+7. `useEffect` and localStorage.
+8. Fetching data.
+9. Rebuilding the calculator.
+10. Deploying it.
+
+Same app. New mental model.
+
+<RecapCards
+  points={[
+    "Vanilla JS makes you manually keep the DOM in sync with state.",
+    "React lets you describe the UI for a state; it handles the updates.",
+    "Components are reusable functions that return UI.",
+    "Props pass data in; state is data a component owns.",
+    "React is a tool for complex UI, not a requirement for every page.",
+    "The math and CSS from the vanilla app still apply.",
+  ]}
+/>
+
+Next: setup. We'll create a real React project with Vite and write your first component.

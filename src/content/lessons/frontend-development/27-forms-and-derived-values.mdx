@@ -1,0 +1,173 @@
+---
+title: "Forms and derived values"
+slug: "forms-and-derived-values"
+project: "frontend-development"
+order: 27
+part: "react"
+summary: "Handle submit, validate input, and calculate the target during render instead of storing it. Derived values are the secret to state that never drifts."
+duration: "8 min read"
+tags: ["React", "forms", "state"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+You know how to make a controlled input. Now let's submit a form, validate it, and show a result.
+
+The important idea in this lesson: **don't store what you can derive.**
+
+## The form
+
+A form with six fields can be one state object:
+
+```jsx
+const [form, setForm] = useState({
+  age: "25",
+  height: "170",
+  weight: "70",
+  sex: "female",
+  activity: "moderate",
+  goal: "maintain",
+});
+```
+
+A single `update` helper keeps the event handlers short:
+
+```jsx
+function update(field, value) {
+  setForm((previous) => ({ ...previous, [field]: value }));
+}
+```
+
+The `[field]` syntax is a **computed property name**: it uses the value of the variable as the key. This creates a new object with one field changed.
+
+```jsx
+<input
+  value={form.age}
+  onChange={(event) => update("age", event.target.value)}
+/>
+```
+
+<Callout variant="note" title="Keep form values as strings">
+Inputs give you strings. Keep them as strings while the user is typing (so the field can be empty), then convert to numbers on submit. Converting on every keystroke makes it hard to clear a field.
+</Callout>
+
+## Submit and validate
+
+```jsx
+function handleSubmit(event) {
+  event.preventDefault();
+
+  const age = Number(form.age);
+  const height = Number(form.height);
+  const weight = Number(form.weight);
+
+  if (
+    !Number.isFinite(age) || age < 13 || age > 120 ||
+    !Number.isFinite(height) || height < 100 || height > 250 ||
+    !Number.isFinite(weight) || weight < 30 || weight > 300
+  ) {
+    setError("Please enter valid age, height, and weight.");
+    return;
+  }
+
+  setError("");
+  onCalculate({
+    age,
+    height,
+    weight,
+    sex: form.sex,
+    activity: form.activity,
+    goal: form.goal,
+  });
+}
+```
+
+- `event.preventDefault()` stops the page reload.
+- Validate before calling the parent.
+- Clear the error when the input is valid.
+- Convert to numbers once, at the boundary.
+
+## Derived values
+
+Here's the shift from the vanilla app. In vanilla, we stored `target`, `bmr`, and `tdee` in state. In React, we can store the **profile** and calculate the result during render:
+
+```jsx
+function App() {
+  const [profile, setProfile] = useState(null);
+
+  const result = profile ? calculateTarget(profile) : null;
+
+  return (
+    <main>
+      <CalculatorForm onCalculate={setProfile} />
+      {result && <ResultCard result={result} />}
+    </main>
+  );
+}
+```
+
+`result` is not state. It's a value computed from `profile` every time the component renders. There's no second copy to keep in sync, so there's no drift.
+
+<Callout variant="tip" title="Derived values are free">
+Calculating a total, formatting a number, filtering a list, or computing a percentage during render is normal React. Don't reach for `useState` just because a value is important. Reach for it when the value is **input** — something the user or an API changes.
+</Callout>
+
+## When derived values are expensive
+
+If a calculation is genuinely expensive (thousands of items, heavy math), React has `useMemo`. For this app, you don't need it. Don't add memoization before you have a performance problem.
+
+## The shape of the components
+
+```jsx
+function App() {
+  const [profile, setProfile] = useState(null);
+  const [foods, setFoods] = useState([]);
+
+  const result = profile ? calculateTarget(profile) : null;
+  const eaten = foods.reduce((sum, food) => sum + food.calories, 0);
+  const left = result ? result.target - eaten : null;
+
+  return (
+    <>
+      <CalculatorForm onCalculate={setProfile} />
+      {result && <ResultCard result={result} eaten={eaten} left={left} />}
+      <FoodLog foods={foods} onRemove={...} />
+    </>
+  );
+}
+```
+
+Every value the UI needs is either state (`profile`, `foods`) or derived from state (`result`, `eaten`, `left`).
+
+<MissionBox
+  title="Calculate on submit"
+  body="Wire the calculator form: one form state object, an update helper, validation, and an onCalculate callback. In App, store the submitted profile and derive the result with calculateTarget. Show the BMR, TDEE, and target. Then change a number, submit again, and confirm everything updates."
+  note="If the result doesn't update, check that you're storing the new profile object, not mutating the old one."
+/>
+
+## The mistakes everyone makes
+
+- **Storing the result in state.** Derive it from the profile.
+- **Forgetting `event.preventDefault()`.** The page reloads and the state resets.
+- **Not converting strings to numbers.** `"70" * 1.55` happens to work; `"70" + 5` does not.
+- **Validating with `if (age)` and letting 0 through.** Check ranges.
+- **Clearing the error only on success.** Clear it as soon as the input is valid, or the user fixes it and still sees red.
+- **One `useState` per character of the form when one object is clearer.** Group related fields.
+- **Using `value` without `onChange`.** The field becomes read-only.
+
+<RecapCards
+  points={[
+    "One form state object + an update helper keeps handlers short.",
+    "Keep form values as strings; convert on submit.",
+    "Validate with Number.isFinite and explicit ranges.",
+    "Derive results during render instead of storing them.",
+    "Store inputs as state, not computed outputs.",
+    "Use useMemo only when a calculation is actually expensive.",
+  ]}
+/>
+
+Next: lifting state — deciding which component owns the food list, and passing callbacks down.

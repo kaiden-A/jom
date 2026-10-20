@@ -1,0 +1,164 @@
+---
+title: "Text, links, images, and lists"
+slug: "text-links-images-lists"
+project: "frontend-development"
+order: 2
+part: "html"
+summary: "The small set of tags that covers most of the web: headings, paragraphs, emphasis, links, images, and lists. Learn these and you can structure almost anything."
+duration: "7 min read"
+tags: ["HTML", "basics"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Most websites are made from a surprisingly small set of tags. Headings, paragraphs, links, images, and lists. That's the bulk of it. Once you're comfortable with these, the rest of HTML is mostly details.
+
+## The tags you'll use every day
+
+### Headings
+
+There are six levels, `<h1>` through `<h6>`. They describe importance, not size:
+
+```html
+<h1>The page title</h1>
+<h2>A section</h2>
+<h3>A smaller section</h3>
+```
+
+Use **one `<h1>` per page**. It's the main title. Then use `<h2>` for sections and `<h3>` for subsections. Don't pick a heading because it "looks the right size" — that's CSS's job. Pick it because it describes the structure.
+
+### Paragraphs and emphasis
+
+```html
+<p>This is a paragraph. It holds a block of text.</p>
+<p>You can make text <strong>important</strong> or <em>emphasized</em>.</p>
+```
+
+`<strong>` means "this matters" and usually renders bold. `<em>` means "stress this word" and usually renders italic. They're not just styling shortcuts — they tell the browser (and screen readers) what the text means.
+
+### Links
+
+```html
+<a href="https://example.com">Visit example.com</a>
+<a href="/about">About this site</a>
+```
+
+The `href` is where the link goes. It can be:
+
+- **Absolute** — a full URL, like `https://example.com`.
+- **Relative** — a path inside your site, like `/about` or `contact.html`.
+- **An anchor** — a jump to a section on the same page, like `#food-log`.
+
+If the link opens in a new tab, add `target="_blank"` **and** `rel="noopener"`. The `rel` part is a small security habit worth keeping.
+
+### Images
+
+```html
+<img src="food.jpg" alt="A bowl of chicken and rice" width="480" height="320">
+```
+
+- `src` is the file path or URL.
+- `alt` is the text alternative. It's what screen readers say, and what shows if the image fails to load. **Never skip it.** If the image is purely decorative, use `alt=""`.
+- `width` and `height` help the browser reserve space while the image loads, so the page doesn't jump around.
+
+### Lists
+
+```html
+<ul>
+  <li>Chicken breast</li>
+  <li>Rice</li>
+  <li>Broccoli</li>
+</ul>
+
+<ol>
+  <li>Enter your details</li>
+  <li>Pick a goal</li>
+  <li>Add your food</li>
+</ol>
+```
+
+`<ul>` is an unordered list (bullets). `<ol>` is ordered (numbers). Each item is an `<li>`. Lists can nest — just put the nested list inside the `<li>` it belongs to.
+
+## Putting them together
+
+Here's a small "about" section using everything above. Edit it, break it, fix it:
+
+<Playground
+  client:visible
+  title="about.html"
+  showJs={false}
+  html={`<h1>My calorie calculator</h1>
+<p>
+  I'm building this to learn <strong>HTML</strong>, <strong>CSS</strong>,
+  and <strong>JavaScript</strong> — one lesson at a time.
+</p>
+
+<h2>What it will do</h2>
+<ul>
+  <li>Work out my daily calorie target</li>
+  <li>Let me add food I ate</li>
+  <li>Keep a running total</li>
+</ul>
+
+<h2>Useful links</h2>
+<p>
+  I'm learning from
+  <a href="https://developer.mozilla.org" target="_blank" rel="noopener">
+    MDN Web Docs
+  </a>.
+</p>
+
+<img
+  src="https://picsum.photos/seed/jommula/480/240"
+  alt="A placeholder photo of a meal"
+  width="480"
+  height="240"
+>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  max-width: 620px;
+  margin: 40px auto;
+  padding: 0 20px;
+  line-height: 1.6;
+  color: #221c46;
+}
+h1 { color: #4f46e5; }
+a { color: #4f46e5; }
+img { max-width: 100%; height: auto; border-radius: 12px; }
+`}
+/>
+
+<Callout variant="tip" title="Why the CSS is already there">
+Don't worry about the CSS yet — it's just there so the preview isn't ugly. We'll learn every line of it in the next part.
+</Callout>
+
+<MissionBox
+  title="Make it yours"
+  body="Change the heading, add a third item to the list, and replace the image with one you like. Then try removing the alt attribute and see what the browser shows if the image fails."
+  note="To test a broken image, change the src to a file that doesn't exist."
+/>
+
+## The mistakes everyone makes
+
+- **Forgetting the closing tag.** `<p>Hello` works until it doesn't. Close your tags.
+- **Using `<br>` to create space.** Use paragraphs, lists, and later CSS margins. `<br>` is for a line break inside a sentence, like an address.
+- **Using `<div>` for everything.** We'll cover semantic tags next lesson. They make your page easier to read and better for accessibility.
+- **Empty alt text on meaningful images.** If the image carries information, describe it.
+- **Headings picked by size.** Pick by hierarchy; style with CSS.
+
+<RecapCards
+  points={[
+    "Headings h1–h6 describe structure, not size. One h1 per page.",
+    "p is for paragraphs; strong and em add meaning, not just looks.",
+    "Links use a href; relative paths point inside your site.",
+    "Images need src and alt. Always.",
+    "ul is unordered, ol is ordered, li is an item.",
+  ]}
+/>
+
+Next: semantic structure. We'll take these pieces and arrange them into a page skeleton that actually makes sense.

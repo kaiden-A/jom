@@ -1,0 +1,206 @@
+---
+title: "Flexbox: lay things out in a row"
+slug: "flexbox"
+project: "frontend-development"
+order: 7
+part: "css"
+summary: "Flexbox is the layout tool you'll reach for most: rows, columns, spacing, centering, and wrapping. Learn the five properties that do 90% of the work."
+duration: "7 min read"
+tags: ["CSS", "layout", "flexbox"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Before Flexbox, centering something vertically in CSS was a personality test. People used floats, tables, absolute positioning, and dark magic. Flexbox made it boring.
+
+Flexbox is for laying out items in **one direction** — a row or a column. That's it. Once you get that, the properties make sense.
+
+## The five properties
+
+You put `display: flex` on the **parent**. The parent becomes a flex container, and its direct children become flex items.
+
+```css
+.row {
+  display: flex;
+  flex-direction: row;      /* row | column */
+  justify-content: center;  /* main axis */
+  align-items: center;      /* cross axis */
+  gap: 16px;
+}
+```
+
+- **`flex-direction`** — the main axis: `row` (default) or `column`.
+- **`justify-content`** — how items are distributed along the main axis.
+- **`align-items`** — how items line up on the cross axis.
+- **`gap`** — space between items. No margin hacks.
+- **`flex-wrap`** — whether items can wrap to the next line.
+
+<Callout variant="note" title="Main axis vs cross axis">
+In a row, the main axis is horizontal, so `justify-content` moves things left/right and `align-items` moves them up/down. In a column, the axes swap. This is the one thing people mix up. Say it out loud once: *justify = main, align = cross*.
+</Callout>
+
+## Common values
+
+For `justify-content`:
+
+- `flex-start` — pack at the start.
+- `center` — center.
+- `space-between` — first item at the start, last at the end, equal space between.
+- `space-around` / `space-evenly` — variations of even spacing.
+
+For `align-items`:
+
+- `stretch` — fill the cross axis (default).
+- `center` — center.
+- `flex-start` / `flex-end`.
+
+For items:
+
+- `flex: 1` — grow to fill the available space.
+- `flex: 0 0 auto` — don't grow or shrink; keep natural size.
+- `flex: 1 1 180px` — start at 180px, then grow or shrink. Great for cards.
+
+## Try it: a header and some cards
+
+This is the same pattern you'll use for the calculator's header, form rows, and results.
+
+<Playground
+  client:visible
+  title="flexbox.html"
+  showJs={false}
+  html={`<header class="topbar">
+  <p class="brand">Calorie Calculator</p>
+  <nav class="nav">
+    <a href="#calculator">Calculator</a>
+    <a href="#food-log">Food log</a>
+  </nav>
+</header>
+
+<main class="cards">
+  <div class="card">
+    <p class="label">Target</p>
+    <p class="value">2,100 kcal</p>
+  </div>
+  <div class="card">
+    <p class="label">Eaten</p>
+    <p class="value">870 kcal</p>
+  </div>
+  <div class="card">
+    <p class="label">Left</p>
+    <p class="value">1,230 kcal</p>
+  </div>
+</main>`}
+  css={`* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #faf7f2;
+  color: #221c46;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: white;
+  border-bottom: 2px solid #e8e3f0;
+}
+
+.brand {
+  margin: 0;
+  font-weight: 800;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+}
+
+.nav a {
+  color: #4f46e5;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+}
+
+.card {
+  flex: 1 1 180px;
+  background: white;
+  padding: 18px;
+  border: 2px solid #e8e3f0;
+  border-radius: 16px;
+}
+
+.label {
+  margin: 0;
+  color: #5d5680;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.value {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+`}
+/>
+
+Try resizing the preview. The cards wrap because of `flex-wrap: wrap` and the `flex: 1 1 180px` starting width.
+
+<Callout variant="tip" title="Centering, finally">
+To center one thing inside a box:
+
+```css
+.parent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+That's the trick everyone used to write blog posts about.
+</Callout>
+
+<MissionBox
+  title="Flex the calculator"
+  body="Make the page header a flex row: brand on the left, nav on the right, vertically centered. Then make a row of two result cards. Finally, put each label/input pair in a column so the label sits above the input."
+  note="If something isn't lining up, check which element is the flex parent. display: flex goes on the container, not the children."
+/>
+
+## The mistakes everyone makes
+
+- **Putting `display: flex` on the children.** It goes on the parent.
+- **Mixing up `justify-content` and `align-items`.** Main axis vs cross axis.
+- **Using margins for spacing.** Use `gap`.
+- **Forgetting `flex-wrap`.** Cards shrink into unreadable slivers instead of wrapping.
+- **Expecting flex to do a two-dimensional grid.** It can fake it, but Grid is better. Next lesson.
+- **A flex item with no width inside a row.** It may collapse or overflow; give it a `flex` value or a `min-width`.
+
+<RecapCards
+  points={[
+    "Flexbox lays out items in one direction: a row or a column.",
+    "display: flex goes on the parent.",
+    "justify-content = main axis; align-items = cross axis.",
+    "gap is the clean way to space flex items.",
+    "flex: 1 grows; flex-wrap lets items move to the next line.",
+  ]}
+/>
+
+Next: CSS Grid and responsive design — two-dimensional layouts and pages that work on a phone.

@@ -1,0 +1,262 @@
+---
+title: "Events and forms: make it react"
+slug: "events-and-forms"
+project: "frontend-development"
+order: 17
+part: "javascript"
+summary: "A form that doesn't submit anywhere, a button that listens, and a result that updates. This is the lesson where the calculator finally calculates."
+duration: "8 min read"
+tags: ["JavaScript", "events", "forms"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+The page is built. The CSS looks good. Now we need to connect the form to the math.
+
+That connection is an **event**: the browser tells you something happened, and you run a function in response.
+
+## addEventListener
+
+```js
+const button = document.querySelector("#calculate");
+
+button.addEventListener("click", () => {
+  console.log("Clicked!");
+});
+```
+
+`addEventListener(eventName, handler)` registers a function to run when the event happens on that element.
+
+Common events:
+
+- `click` — a button, link, or anything clickable.
+- `submit` — a form is submitted (button click or Enter).
+- `input` — the value changes as the user types.
+- `change` — the value changes and the field loses focus (good for selects).
+- `keydown` — a key is pressed.
+
+<Callout variant="tip" title="Use submit, not click, for forms">
+If you listen for `click` on the submit button, pressing Enter in a field won't trigger your code. Listen for `submit` on the `<form>` instead. It handles both.
+</Callout>
+
+## The event object and preventDefault
+
+```js
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  // handle the form ourselves
+});
+```
+
+By default, submitting a form sends a request and reloads the page. We don't want that — we want to calculate in the browser. `event.preventDefault()` stops the default behavior.
+
+## Reading form values
+
+```js
+const age = Number(document.querySelector("#age").value);
+const activity = document.querySelector("#activity").value;
+const sex = document.querySelector('input[name="sex"]:checked').value;
+```
+
+- `.value` is a string, always. `"25"`, not `25`.
+- `Number(...)` converts it. `Number("")` is `0`, so check for empty fields too.
+- For a radio group, select the checked one with `input[name="sex"]:checked`.
+- For a select, `.value` is the selected option's `value`.
+
+<Callout variant="warn" title="The string trap">
+```js
+const height = "170";
+const weight = "70";
+console.log(height + weight); // "17070"
+```
+If you forget to convert, JavaScript glues strings together. Convert with `Number()` before doing math. If the result is `NaN`, one of the values wasn't a number.
+</Callout>
+
+## Updating the result
+
+```js
+const result = document.querySelector("#result");
+result.textContent = "Your target is " + Math.round(target) + " kcal";
+```
+
+That's it. Select the element once, update its text when the calculation is done.
+
+## Try it
+
+This is a working BMR calculator. Change the values, press Calculate, and watch the result update.
+
+<Playground
+  client:visible
+  title="events.html"
+  showConsole={true}
+  height={520}
+  html={`<h1>BMR calculator</h1>
+
+<form id="calculator-form">
+  <div class="row">
+    <div>
+      <label for="age">Age</label>
+      <input id="age" name="age" type="number" min="13" max="120" value="25" required>
+    </div>
+    <div>
+      <label for="height">Height (cm)</label>
+      <input id="height" name="height" type="number" min="100" max="250" value="170" required>
+    </div>
+    <div>
+      <label for="weight">Weight (kg)</label>
+      <input id="weight" name="weight" type="number" min="30" max="300" step="0.1" value="70" required>
+    </div>
+  </div>
+
+  <fieldset>
+    <legend>Sex</legend>
+    <label class="inline"><input type="radio" name="sex" value="female" checked> Female</label>
+    <label class="inline"><input type="radio" name="sex" value="male"> Male</label>
+  </fieldset>
+
+  <label for="activity">Activity level</label>
+  <select id="activity" name="activity">
+    <option value="sedentary">Sedentary</option>
+    <option value="light">Light</option>
+    <option value="moderate" selected>Moderate</option>
+    <option value="active">Active</option>
+  </select>
+
+  <button type="submit">Calculate</button>
+</form>
+
+<p id="result" class="result" aria-live="polite">
+  Your BMR and daily target will appear here.
+</p>`}
+  css={`body {
+  font-family: system-ui, sans-serif;
+  max-width: 560px;
+  margin: 32px auto;
+  padding: 0 20px;
+  color: #221c46;
+}
+h1 { margin-bottom: 20px; }
+form { display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+label { display: block; margin-bottom: 4px; font-weight: 700; font-size: 14px; }
+input, select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 2px solid #e8e3f0;
+  border-radius: 10px;
+  font: inherit;
+}
+fieldset {
+  border: 2px solid #e8e3f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+legend { font-weight: 700; padding: 0 6px; }
+.inline { display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; }
+.inline input { width: auto; }
+button {
+  justify-self: start;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+button:hover { background: #3730a3; }
+.result {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #eef0ff;
+  color: #3730a3;
+  font-weight: 800;
+  line-height: 1.6;
+}
+`}
+  js={`const form = document.querySelector("#calculator-form");
+const result = document.querySelector("#result");
+
+function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return sex === "male" ? base + 5 : base - 161;
+}
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const age = Number(document.querySelector("#age").value);
+  const height = Number(document.querySelector("#height").value);
+  const weight = Number(document.querySelector("#weight").value);
+  const sex = document.querySelector('input[name="sex"]:checked').value;
+  const activity = document.querySelector("#activity").value;
+
+  if (!Number.isFinite(age) || !Number.isFinite(height) || !Number.isFinite(weight)) {
+    result.textContent = "Please fill in every field with a number.";
+    return;
+  }
+
+  const bmr = calculateBMR(weight, height, age, sex);
+  const tdee = bmr * activityMultiplier(activity);
+
+  result.textContent =
+    "BMR: " + Math.round(bmr) + " kcal · Daily target: " + Math.round(tdee) + " kcal";
+
+  console.log("Calculated for a " + age + "-year-old " + sex + ".");
+  console.log("BMR: " + Math.round(bmr) + ", TDEE: " + Math.round(tdee));
+});`}
+/>
+
+<Callout variant="note" title="What just happened?">
+1. You filled in the form and pressed Calculate.
+2. The `submit` event fired.
+3. `preventDefault()` stopped the page reload.
+4. We read the values, converted them to numbers, and called the math functions.
+5. We updated the result element with `textContent`.
+
+That's the whole loop. Every interactive app you've used does some version of this.
+</Callout>
+
+<MissionBox
+  title="Wire your own form"
+  body="Add a submit listener to your calculator form. Prevent the default, read every field, calculate BMR and TDEE, and write the result into the #result paragraph. Then add a goal select: maintain, lose, or gain, and adjust the target by -500, 0, or +300."
+  note="Test the empty form and a very large number. The browser's built-in validation should catch most of it; your code should handle the rest."
+/>
+
+## The mistakes everyone makes
+
+- **Forgetting `event.preventDefault()`.** The page reloads and your result disappears.
+- **Listening for `click` on the button instead of `submit` on the form.** Enter stops working.
+- **Not converting strings to numbers.** `"70" + 170` is not `240`.
+- **Reading values outside the submit handler.** They change as the user types.
+- **Forgetting `.value`.** You get the input element, not its value.
+- **Assuming a radio is checked.** If none is, `.value` on `null` throws.
+- **Writing the result with `innerHTML`.** Use `textContent` unless you deliberately want markup.
+
+<RecapCards
+  points={[
+    "addEventListener connects an event to a function.",
+    "Listen for submit on the form, not click on the button.",
+    "preventDefault stops the browser's default behavior.",
+    "Form values are strings; convert them with Number().",
+    "Update the page with textContent after the calculation.",
+  ]}
+/>
+
+Next: state and localStorage — keeping the food log alive when the page refreshes.

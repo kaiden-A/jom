@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from "astro:content";
-import { projects } from "../data/projects";
+import { projects, type Project, type ProjectPart, type UpcomingLesson } from "../data/projects";
 
 export type Lesson = CollectionEntry<"lessons">;
 
@@ -32,4 +32,50 @@ export function lessonUrl(lesson: Lesson): string {
 
 export function projectUrl(project: string, slug: string): string {
   return `/projek/${project}/${slug}`;
+}
+
+export function projectOverviewUrl(project: string): string {
+  return `/projek/${project}`;
+}
+
+/**
+ * Projects without explicit parts get one "all" pseudo-part so the rest of
+ * the UI can render every project the same way.
+ */
+export function getProjectParts(project: Project): ProjectPart[] {
+  return (
+    project.parts ?? [{ id: "all", title: project.title, blurb: project.tagline }]
+  );
+}
+
+export interface PartGroup {
+  part: ProjectPart;
+  lessons: Lesson[];
+  upcoming: UpcomingLesson[];
+}
+
+export function groupLessonsByPart(
+  lessons: Lesson[],
+  project: Project,
+): PartGroup[] {
+  return getProjectParts(project).map((part) => {
+    const isPseudoPart = part.id === "all";
+    return {
+      part,
+      lessons: isPseudoPart
+        ? lessons
+        : lessons.filter((l) => l.data.part === part.id),
+      upcoming: isPseudoPart
+        ? project.upcoming
+        : project.upcoming.filter((u) => u.part === part.id),
+    };
+  });
+}
+
+export function getPartTitle(
+  project: Project | undefined,
+  partId: string | undefined,
+): string | undefined {
+  if (!project || !partId) return undefined;
+  return project.parts?.find((part) => part.id === partId)?.title;
 }

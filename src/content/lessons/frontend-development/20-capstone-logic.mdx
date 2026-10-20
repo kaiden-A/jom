@@ -1,0 +1,231 @@
+---
+title: "Capstone part 1: calculator logic"
+slug: "capstone-logic"
+project: "frontend-development"
+order: 20
+part: "javascript"
+summary: "Before touching the page, write the calculator's math as small, testable functions: BMR, activity multiplier, daily target, totals, and remaining calories."
+duration: "9 min read"
+tags: ["JavaScript", "build", "functions"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+This is the first half of the JavaScript capstone. No DOM, no events, no styling — just the math.
+
+Writing the logic first is a habit worth keeping. If the functions are right, the UI is just a way to collect inputs and display outputs. If the math is tangled with the page, every bug is harder to find.
+
+## The plan
+
+The calculator needs to answer three questions:
+
+1. **How many calories does my body burn at rest?** That's BMR — basal metabolic rate.
+2. **How many does it burn with activity?** That's TDEE — total daily energy expenditure.
+3. **How many should I eat for my goal?** That's the daily target.
+
+And for the food log:
+
+4. **How many have I eaten?**
+5. **How many are left?**
+
+Five functions. Each one takes inputs and returns a number.
+
+## The formulas
+
+We'll use the **Mifflin-St Jeor** equation, a widely used estimate:
+
+```
+Male:   BMR = 10 × weight(kg) + 6.25 × height(cm) − 5 × age + 5
+Female: BMR = 10 × weight(kg) + 6.25 × height(cm) − 5 × age − 161
+```
+
+Then multiply by an activity factor:
+
+| Activity | Multiplier |
+| --- | --- |
+| Sedentary | 1.2 |
+| Light | 1.375 |
+| Moderate | 1.55 |
+| Active | 1.725 |
+
+And adjust for the goal:
+
+| Goal | Adjustment |
+| --- | --- |
+| Maintain | 0 |
+| Lose | −500 kcal |
+| Gain | +300 kcal |
+
+<Callout variant="warn" title="These are estimates">
+Calorie needs vary with muscle mass, genetics, sleep, stress, and more. This calculator is a learning project, not medical advice. If you're making significant changes to your diet, talk to a professional.
+</Callout>
+
+## Write the functions
+
+Let's start with the multiplier and BMR:
+
+```js
+function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return sex === "male" ? base + 5 : base - 161;
+}
+```
+
+Then the target, taking one object so the call site stays readable:
+
+```js
+function calculateTarget({ weight, height, age, sex, activity, goal }) {
+  const bmr = calculateBMR(weight, height, age, sex);
+  const tdee = bmr * activityMultiplier(activity);
+
+  let adjustment = 0;
+  if (goal === "lose") adjustment = -500;
+  if (goal === "gain") adjustment = 300;
+
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    target: Math.round(tdee + adjustment),
+  };
+}
+```
+
+And the food log:
+
+```js
+function totalCalories(foods) {
+  return foods.reduce((sum, food) => sum + food.calories, 0);
+}
+
+function remainingCalories(target, foods) {
+  return target - totalCalories(foods);
+}
+```
+
+That's the whole calculator. Notice:
+
+- Each function does one thing.
+- None of them touch the DOM.
+- They return values instead of logging.
+- `Math.round` happens at the end, not in the middle of the math.
+
+## Try it
+
+Run the tests below. Change the inputs and check that the numbers move in the right direction.
+
+<Playground
+  client:visible
+  title="calculator-logic.js"
+  showHtml={false}
+  showCss={false}
+  showConsole={true}
+  showPreview={false}
+  height={420}
+  js={`function activityMultiplier(level) {
+  if (level === "sedentary") return 1.2;
+  if (level === "light") return 1.375;
+  if (level === "moderate") return 1.55;
+  if (level === "active") return 1.725;
+  return 1.2;
+}
+
+function calculateBMR(weight, height, age, sex) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return sex === "male" ? base + 5 : base - 161;
+}
+
+function calculateTarget({ weight, height, age, sex, activity, goal }) {
+  const bmr = calculateBMR(weight, height, age, sex);
+  const tdee = bmr * activityMultiplier(activity);
+
+  let adjustment = 0;
+  if (goal === "lose") adjustment = -500;
+  if (goal === "gain") adjustment = 300;
+
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    target: Math.round(tdee + adjustment),
+  };
+}
+
+function totalCalories(foods) {
+  return foods.reduce((sum, food) => sum + food.calories, 0);
+}
+
+function remainingCalories(target, foods) {
+  return target - totalCalories(foods);
+}
+
+const person = {
+  weight: 70,
+  height: 170,
+  age: 25,
+  sex: "female",
+  activity: "moderate",
+  goal: "maintain",
+};
+
+const result = calculateTarget(person);
+console.log("BMR:", result.bmr);
+console.log("TDEE:", result.tdee);
+console.log("Target:", result.target);
+
+const foods = [
+  { name: "Oatmeal", calories: 320 },
+  { name: "Chicken and rice", calories: 550 },
+  { name: "Greek yogurt", calories: 150 },
+];
+
+console.log("Eaten:", totalCalories(foods));
+console.log("Left:", remainingCalories(result.target, foods));
+
+// Try changing the goal to "lose" or "gain".
+console.log("Lose:", calculateTarget({ ...person, goal: "lose" }).target);
+console.log("Gain:", calculateTarget({ ...person, goal: "gain" }).target);`}
+/>
+
+<Callout variant="tip" title="Test with known numbers">
+A 70kg, 170cm, 25-year-old female with moderate activity should land around 1,477 BMR and 2,289 TDEE. If your number is wildly different, check the formula order and the sex branch. Testing one known case catches most typos.
+</Callout>
+
+<MissionBox
+  title="Build the logic layer"
+  body="Create a calculator.js file with these functions: activityMultiplier, calculateBMR, calculateTarget, totalCalories, and remainingCalories. Test them in the console with at least two people and three foods. Then add a validateInputs function that returns an error message if age, height, or weight is out of range."
+  note="Keep these functions free of DOM code. We'll import the same logic into the UI in the next lesson."
+/>
+
+## The mistakes everyone makes
+
+- **Putting the sex adjustment on the wrong branch.** Male adds 5; female subtracts 161.
+- **Rounding too early.** Round the final display, not the intermediate BMR/TDEE.
+- **Using `+` on strings.** Convert form values to numbers before calling these functions.
+- **No default for activity.** An unknown value should still return a safe multiplier.
+- **Forgetting the initial value in `reduce`.** Pass `0`.
+- **Mixing DOM code into the math.** Keep the functions pure; the UI comes next.
+- **Treating the result as medical advice.** It's an estimate.
+
+<RecapCards
+  points={[
+    "Write the logic first: small functions with inputs and return values.",
+    "BMR uses the Mifflin-St Jeor equation; TDEE multiplies by activity.",
+    "The goal adjustment is a simple offset.",
+    "Totals come from reduce; remaining is target minus eaten.",
+    "Keep the math separate from the DOM so you can test it.",
+  ]}
+/>
+
+Next: the second half of the capstone — wiring the form, the food log, the table, and localStorage into a complete working app.

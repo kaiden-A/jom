@@ -1,0 +1,215 @@
+---
+title: "Grid and responsive design"
+slug: "grid-responsive"
+project: "frontend-development"
+order: 8
+part: "css"
+summary: "Grid handles layouts with rows and columns at the same time. Pair it with media queries and fluid sizing, and your page works on a phone, a tablet, and a laptop."
+duration: "8 min read"
+tags: ["CSS", "layout", "grid", "responsive"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import Playground from "../../../components/react/Playground.tsx";
+
+Flexbox is great at one dimension. Grid is for two: rows **and** columns at the same time.
+
+If you're building a page layout — a main area with a sidebar, a gallery of cards, a dashboard — Grid is usually the cleaner tool.
+
+## The basics
+
+```css
+.layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 24px;
+}
+```
+
+- `display: grid` makes the element a grid container.
+- `grid-template-columns` defines the columns. `1.2fr` and `0.8fr` are fractions of the available space.
+- `gap` spaces the rows and columns.
+
+You can also place items explicitly:
+
+```css
+.sidebar {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+```
+
+But most of the time you'll let the grid place things automatically.
+
+## The magic line
+
+This one line gives you a responsive card layout with no media queries:
+
+```css
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+```
+
+Read it as: "Make as many columns as fit, each at least 220px wide, and share the leftover space equally." When the container gets narrower, the number of columns drops. When it gets wider, it adds columns.
+
+<Callout variant="tip" title="minmax + auto-fit = free responsiveness">
+This pattern is everywhere: galleries, dashboards, product grids, lesson cards. Learn it once and you'll use it for years.
+</Callout>
+
+## Responsive design
+
+Responsive design means the page adapts to the screen instead of assuming a desktop. Three habits:
+
+1. **Start small.** Write the mobile layout first, then add complexity at larger widths.
+2. **Use flexible units.** `%`, `fr`, `rem`, `clamp()` — not a fixed `width: 960px`.
+3. **Use media queries for real breakpoints**, not device names.
+
+```css
+.layout {
+  display: grid;
+  grid-template-columns: 1fr; /* mobile: one column */
+  gap: 16px;
+}
+
+@media (min-width: 700px) {
+  .layout {
+    grid-template-columns: 1.2fr 0.8fr; /* desktop: two columns */
+  }
+}
+```
+
+The `@media (min-width: 700px)` block only applies when the viewport is at least 700px wide. That's mobile-first: the base styles are the small-screen styles.
+
+## Fluid type
+
+Instead of three font sizes for three breakpoints, let the browser interpolate:
+
+```css
+h1 {
+  font-size: clamp(1.8rem, 5vw, 3rem);
+}
+```
+
+`clamp(min, preferred, max)` never goes below the minimum or above the maximum. It's a small line that makes headings feel intentional on every screen.
+
+## Try it
+
+Resize the preview (or open the page on your phone later). The cards reflow, and the two-column layout collapses to one.
+
+<Playground
+  client:visible
+  title="responsive-grid.html"
+  showJs={false}
+  html={`<main class="page">
+  <section class="panel">
+    <h1>Your daily target</h1>
+    <p class="big">2,100 kcal</p>
+    <p>Based on your details and activity level.</p>
+  </section>
+
+  <aside class="panel">
+    <h2>Today</h2>
+    <p>Eaten: 870 kcal</p>
+    <p>Left: 1,230 kcal</p>
+  </aside>
+</main>
+
+<section class="cards">
+  <div class="card">Protein<br><strong>120 g</strong></div>
+  <div class="card">Carbs<br><strong>220 g</strong></div>
+  <div class="card">Fat<br><strong>65 g</strong></div>
+</section>`}
+  css={`* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 24px;
+  background: #faf7f2;
+  color: #221c46;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 520px) {
+  .page {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.panel {
+  background: white;
+  border: 2px solid #e8e3f0;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+h1, h2 { margin-top: 0; }
+
+h1 {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+.big {
+  margin: 8px 0;
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 800;
+  color: #4f46e5;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  max-width: 900px;
+  margin: 16px auto 0;
+}
+
+.card {
+  background: #eef0ff;
+  border-radius: 14px;
+  padding: 16px;
+  color: #3730a3;
+}
+`}
+/>
+
+<MissionBox
+  title="Make the calculator responsive"
+  body="Wrap the calculator form and the results section in a grid that is one column on mobile and two columns on screens wider than 700px. Then turn the three result stats into a grid with repeat(auto-fit, minmax(...)). Resize the browser and check that nothing overflows."
+  note="Test at 320px wide. If something scrolls sideways, find the element with a fixed width."
+/>
+
+## The mistakes everyone makes
+
+- **Designing only for your laptop.** Resize the browser. Use the DevTools device toolbar.
+- **Fixed widths everywhere.** `width: 960px` will break on a phone. Use `max-width` plus `width: 100%`.
+- **Horizontal scrolling.** Usually caused by a fixed width, a long unbroken word, or negative margins.
+- **Too many breakpoints.** Start with one or two. Add more only when the layout actually breaks.
+- **Forgetting `max-width: 100%` on images.** A large image will overflow its container.
+- **Using `vw` for everything.** It ignores scrollbars and can make text tiny. Use `clamp()`.
+
+<RecapCards
+  points={[
+    "Grid is for rows and columns; Flexbox is for one direction.",
+    "fr units share available space; gap spaces rows and columns.",
+    "repeat(auto-fit, minmax(220px, 1fr)) gives responsive cards for free.",
+    "Mobile-first: base styles for small screens, min-width queries for larger.",
+    "Use clamp() for fluid type and flexible units instead of fixed widths.",
+  ]}
+/>
+
+Next: color, typography, spacing, and design tokens — the difference between "it works" and "it looks like someone meant it."

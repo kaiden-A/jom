@@ -1,0 +1,184 @@
+---
+title: "Fetching data in React"
+slug: "fetching-data"
+project: "frontend-development"
+order: 30
+part: "react"
+summary: "Load data from an API with useEffect, handle loading and error states, and cancel stale requests before they overwrite newer results."
+duration: "9 min read"
+tags: ["React", "API", "effects"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Fetching in React adds one new problem to the vanilla version: **when does the request run?**
+
+In vanilla, you fetched when the user clicked a button. In React, data often needs to load when the component appears, or when a search term changes. That's a job for `useEffect`.
+
+## The state you need
+
+A data-loading component usually has four pieces of state:
+
+```jsx
+const [recipes, setRecipes] = useState([]);
+const [status, setStatus] = useState("idle"); // idle | loading | error | success
+const [error, setError] = useState("");
+const [query, setQuery] = useState("");
+```
+
+You could use separate booleans (`isLoading`, `isError`), but a single `status` string prevents impossible combinations like "loading and success at the same time."
+
+## The effect
+
+```jsx
+useEffect(() => {
+  if (!query.trim()) {
+    setRecipes([]);
+    setStatus("idle");
+    return;
+  }
+
+  const controller = new AbortController();
+
+  async function load() {
+    setStatus("loading");
+    setError("");
+
+    try {
+      const response = await fetch(
+        "https://dummyjson.com/recipes/search?q=" + encodeURIComponent(query),
+        { signal: controller.signal }
+      );
+
+      if (!response.ok) {
+        throw new Error("Request failed: " + response.status);
+      }
+
+      const data = await response.json();
+      setRecipes(data.recipes);
+      setStatus("success");
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      setError("Could not load recipes.");
+      setStatus("error");
+    }
+  }
+
+  load();
+  return () => controller.abort();
+}, [query]);
+```
+
+Four things to notice:
+
+1. **The effect callback is not `async`.** It defines an async function and calls it. An async effect callback would return a Promise, not a cleanup function.
+2. **`query` is in the dependency array.** When the submitted search changes, the effect runs again.
+3. **The cleanup aborts the previous request.** If the user searches twice quickly, the first response can't overwrite the second.
+4. **`response.ok` is checked.** A 404 is not a successful response.
+
+<Callout variant="tip" title="The race condition">
+Without cleanup, this can happen:
+
+1. Search "pizza" → slow request.
+2. Search "rice" → fast request, results render.
+3. The pizza response finally arrives and overwrites the rice results.
+
+The screen shows pizza for a rice search. `AbortController` (or an `ignore` flag) prevents it.
+</Callout>
+
+## Search on submit
+
+If you fetch on every keystroke, you'll fire a request per character. For this app, search on submit:
+
+```jsx
+function handleSubmit(event) {
+  event.preventDefault();
+  setQuery(input.trim());
+}
+```
+
+`input` is the text field. `query` is the submitted term. The effect only depends on `query`, so typing doesn't fetch.
+
+<Callout variant="note" title="Debouncing">
+If you do want search-as-you-type, debounce the value: wait ~300ms after the user stops typing before updating `query`. That's an enhancement, not required for the capstone. Search on submit is simpler and perfectly fine.
+</Callout>
+
+## Rendering the states
+
+```jsx
+return (
+  <section>
+    <form onSubmit={handleSubmit}>
+      <input value={input} onChange={(event) => setInput(event.target.value)} />
+      <button type="submit">Search</button>
+    </form>
+
+    {status === "idle" && <p>Search for a recipe.</p>}
+    {status === "loading" && <p>Loading...</p>}
+    {status === "error" && <p className="error">{error}</p>}
+    {status === "success" && recipes.length === 0 && (
+      <p>No recipes found.</p>
+    )}
+    {status === "success" && recipes.length > 0 && (
+      <ul>
+        {recipes.map((recipe) => (
+          <li key={recipe.id}>
+            {recipe.name} — {recipe.caloriesPerServing} kcal
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+);
+```
+
+Every state gets a message. That's the difference between a demo and an app.
+
+## The course API
+
+The demo uses a public recipe API so the lesson is runnable today. When the course's foods API is ready, the pattern stays the same:
+
+```js
+const response = await fetch(
+  "https://your-api.example.com/v1/foods?q=" + encodeURIComponent(query)
+);
+const data = await response.json();
+setFoods(data.foods);
+```
+
+You'll swap the URL and the property name. The loading, error, and cancellation logic doesn't change.
+
+<MissionBox
+  title="Build a search"
+  body="Create a RecipeSearch component with an input, a submit handler, and the status pattern above. Fetch from the public recipe API, render the names and calories, and show loading, error, empty, and success states. Add a Retry button that re-runs the last search."
+  note="Test the error state by changing the URL to a broken endpoint. Test the empty state with a search that returns nothing."
+/>
+
+## The mistakes everyone makes
+
+- **Making the effect callback async.** Define an inner async function and call it.
+- **No cleanup.** Stale responses overwrite fresh ones.
+- **Missing `query` in the dependency array.** The effect never re-runs.
+- **Not checking `response.ok`.** Errors look like empty data.
+- **No loading or error state.** The user sees a blank section and assumes it's broken.
+- **Setting state after unmount.** Use the abort cleanup or an ignore flag.
+- **Fetching in the render body.** That runs on every render. Use an effect or an event.
+- **Forgetting `encodeURIComponent` in query strings.** Spaces and `&` break the URL.
+- **Assuming the response is an array.** Check the API's shape.
+
+<RecapCards
+  points={[
+    "Use useEffect for data fetching; the callback itself should not be async.",
+    "Put the search term in the dependency array.",
+    "Abort stale requests with AbortController or an ignore flag.",
+    "Handle idle, loading, error, empty, and success states.",
+    "Check response.ok before parsing.",
+    "The course API will use the same pattern with a different URL and shape.",
+  ]}
+/>
+
+Next: the React capstone. We'll plan the component tree and state before writing the final code.

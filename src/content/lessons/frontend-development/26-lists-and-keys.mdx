@@ -1,0 +1,154 @@
+---
+title: "Lists, keys, and conditional UI"
+slug: "lists-and-keys"
+project: "frontend-development"
+order: 26
+part: "react"
+summary: "Turn an array into rows with map, give each row a stable key, and show the right thing when the list is empty or something is loading."
+duration: "7 min read"
+tags: ["React", "rendering", "lists"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+The food log is an array. React needs to turn it into rows. That's `map`, exactly like the vanilla version — but the result is JSX instead of DOM calls.
+
+## Rendering a list
+
+```jsx
+function FoodList({ foods }) {
+  return (
+    <ul>
+      {foods.map((food) => (
+        <li key={food.id}>
+          {food.name} — {food.calories} kcal
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Two things to notice:
+
+- The `map` callback returns JSX for each item.
+- Each item has a **`key`** prop.
+
+## Why keys matter
+
+React needs to know which row is which when the list changes. The `key` is that identity.
+
+```jsx
+<li key={food.id}>...</li>
+```
+
+Use a **stable, unique** value — usually the database id or a generated id. Not the array index if the list can reorder, because the index changes when items move, and React can attach state to the wrong row.
+
+<Callout variant="warn" title="Don't use the index as a key if the list can change">
+For a static list, `key={index}` is technically fine. For a list you add to, remove from, or sort, it causes subtle bugs: the wrong input keeps focus, animations jump, rows seem to swap. Use the item's id.
+</Callout>
+
+## Conditional rendering
+
+React has no special `if` syntax inside JSX. You use JavaScript expressions:
+
+```jsx
+// 1. Only render when true
+{isLoading && <p>Loading...</p>}
+
+// 2. Either/or
+{error ? <p className="error">{error}</p> : <Results data={data} />}
+
+// 3. Nothing
+{isLoggedIn ? <Dashboard /> : null}
+
+// 4. Early return
+if (!user) {
+  return <p>Please sign in.</p>;
+}
+```
+
+<Callout variant="warn" title="The number 0 trap">
+```jsx
+{items.length && <List items={items} />}
+```
+When `items.length` is `0`, this renders the number `0` on the page. Use `items.length > 0 && ...` or a ternary.
+</Callout>
+
+## The empty state
+
+An empty list is a real state. Design it:
+
+```jsx
+function FoodList({ foods, onRemove }) {
+  if (foods.length === 0) {
+    return (
+      <p className="empty">
+        Nothing logged yet. Add your first food above.
+      </p>
+    );
+  }
+
+  return (
+    <ul>
+      {foods.map((food) => (
+        <FoodRow key={food.id} food={food} onRemove={onRemove} />
+      ))}
+    </ul>
+  );
+}
+```
+
+The early return is easier to read than a giant ternary.
+
+## Rows with actions
+
+A row often needs a button that affects the parent's state:
+
+```jsx
+function FoodRow({ food, onRemove }) {
+  return (
+    <li>
+      <span>{food.name}</span>
+      <span>{food.calories} kcal</span>
+      <button onClick={() => onRemove(food.id)}>Remove</button>
+    </li>
+  );
+}
+```
+
+The row doesn't own the list. It calls `onRemove`, and the parent (which owns the state) decides what to do. That's the callback pattern we'll use for the capstone.
+
+<MissionBox
+  title="Render the log"
+  body="Create a FoodList component that maps over a foods array and renders a FoodRow for each item. Add an empty state. Add a Remove button that calls an onRemove function passed from the parent. Test it with a hard-coded array of three foods before wiring real state."
+  note="Every row needs key={food.id}. Check the console for the 'unique key' warning."
+/>
+
+## The mistakes everyone makes
+
+- **Missing `key`.** React warns and the list behaves unpredictably.
+- **Using the index as a key for a changing list.** Use an id.
+- **Rendering `0` with `&&`.** Check `length > 0`.
+- **Forgetting to return in `map`.** You get an array of `undefined`.
+- **Mutating the array while rendering.** Render from the data; update it in event handlers.
+- **Building one giant list component.** Split out `FoodRow` when the row has structure.
+- **Not handling the empty state.** A blank section looks broken.
+- **Using `.map` for side effects.** Use `forEach` for that; `map` is for producing JSX.
+
+<RecapCards
+  points={[
+    "Use map to turn an array into an array of JSX.",
+    "Every item in a list needs a stable, unique key.",
+    "Avoid index keys for lists that can reorder.",
+    "Use &&, ternaries, and early returns for conditional UI.",
+    "Handle the empty state explicitly.",
+    "Rows call callbacks; the parent owns the state.",
+  ]}
+/>
+
+Next: forms and derived values — validation, submit, and numbers that calculate themselves.

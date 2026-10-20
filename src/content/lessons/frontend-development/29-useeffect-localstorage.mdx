@@ -1,0 +1,176 @@
+---
+title: "useEffect and localStorage"
+slug: "useeffect-localstorage"
+project: "frontend-development"
+order: 29
+part: "react"
+summary: "Effects are for things outside rendering: saving data, fetching, timers. Learn the dependency array, persist the app, and avoid the infinite-loop traps."
+duration: "9 min read"
+tags: ["React", "effects", "localStorage"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+
+Rendering should be pure: take state and props, return JSX. But real apps also need to do things *outside* rendering — save to localStorage, fetch data, start a timer, subscribe to an event.
+
+Those are **side effects**, and React gives you `useEffect` for them.
+
+## The shape of useEffect
+
+```jsx
+import { useEffect } from "react";
+
+useEffect(() => {
+  // side effect
+}, [dependencies]);
+```
+
+The function runs **after** the render. The dependency array decides when it runs again:
+
+| Dependencies | When it runs |
+| --- | --- |
+| `[]` | Once after the first render |
+| `[foods]` | After the first render and whenever `foods` changes |
+| no array | After every render (usually a mistake) |
+
+## Saving to localStorage
+
+```jsx
+function App() {
+  const [foods, setFoods] = useState(loadFoods);
+
+  useEffect(() => {
+    localStorage.setItem("foods", JSON.stringify(foods));
+  }, [foods]);
+
+  // ...
+}
+```
+
+- The effect runs after render, so it sees the latest `foods`.
+- The dependency `[foods]` means "run again when foods changes."
+- It also runs once on mount, which writes the initial value. That's usually harmless.
+
+## Loading: use a lazy initializer
+
+For synchronous storage like localStorage, you don't need an effect to load. Pass a function to `useState`:
+
+```jsx
+function loadFoods() {
+  try {
+    const raw = localStorage.getItem("foods");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+const [foods, setFoods] = useState(loadFoods);
+```
+
+Note: `useState(loadFoods)`, not `useState(loadFoods())`. React calls the function once, on the first render. This avoids an empty first render and a second render after an effect.
+
+<Callout variant="tip" title="Lazy initializer vs effect">
+- **Synchronous data** (localStorage, a parsed URL): use a lazy initializer.
+- **Asynchronous data** (fetch): use an effect. You'll do that next lesson.
+</Callout>
+
+## Cleanup
+
+Some effects need cleanup: timers, event listeners, subscriptions. Return a function:
+
+```jsx
+useEffect(() => {
+  const id = setInterval(() => {
+    console.log("tick");
+  }, 1000);
+
+  return () => clearInterval(id);
+}, []);
+```
+
+React runs the cleanup before the effect runs again and when the component unmounts. If you forget it, timers and listeners pile up.
+
+<Callout variant="note" title="Why does my effect run twice in development?">
+`StrictMode` intentionally mounts, unmounts, and remounts components in development to surface missing cleanup. In production, it runs once. If your effect is correct, the double run is harmless. If it creates a duplicate subscription, you found a bug.
+</Callout>
+
+## Don't use effects for derived values
+
+```jsx
+// Don't:
+const [total, setTotal] = useState(0);
+useEffect(() => {
+  setTotal(foods.reduce((sum, food) => sum + food.calories, 0));
+}, [foods]);
+
+// Do:
+const total = foods.reduce((sum, food) => sum + food.calories, 0);
+```
+
+The second version has no extra render, no extra state, and no way to drift. Effects are for external systems, not for calculations.
+
+## Saving the whole app
+
+You can save the food list and the profile together:
+
+```jsx
+useEffect(() => {
+  const data = { foods, profile };
+  localStorage.setItem("calorie-calculator", JSON.stringify(data));
+}, [foods, profile]);
+```
+
+And load them with one lazy initializer:
+
+```jsx
+function loadState() {
+  try {
+    const raw = localStorage.getItem("calorie-calculator");
+    if (!raw) return { foods: [], profile: null };
+    const parsed = JSON.parse(raw);
+    return {
+      foods: Array.isArray(parsed.foods) ? parsed.foods : [],
+      profile: parsed.profile ?? null,
+    };
+  } catch {
+    return { foods: [], profile: null };
+  }
+}
+```
+
+<MissionBox
+  title="Persist the React app"
+  body="Add a useEffect that saves foods and the submitted profile to localStorage. Load them with a lazy useState initializer. Add a Clear everything button that resets both to their empty values. Refresh the page and confirm the data comes back."
+  note="If the app resets on every render, check the dependency array. If it never saves, check that the effect actually runs after the state changes."
+/>
+
+## The mistakes everyone makes
+
+- **Missing dependency array.** The effect runs after every render.
+- **Setting state in an effect that depends on that state.** Infinite loop.
+- **Using effects for derived values.** Calculate during render.
+- **Forgetting cleanup.** Timers and listeners leak.
+- **An object in the dependency array.** A new object every render triggers the effect every time. Use primitives or memoize.
+- **Assuming localStorage is available.** It can throw in private mode. Try/catch.
+- **Saving on every keystroke with no need.** It's fine for a small app, but know it's happening.
+- **Reading stale state in an effect.** Include the values you read in the dependency array.
+
+<RecapCards
+  points={[
+    "useEffect is for side effects, not calculations.",
+    "[] runs once; [value] runs when value changes; no array runs every render.",
+    "Use a lazy useState initializer for synchronous storage.",
+    "Return a cleanup function for timers and listeners.",
+    "StrictMode double-runs effects in development to catch bugs.",
+    "Derive values during render; don't store them in effects.",
+  ]}
+/>
+
+Next: fetching data in React — loading, error, and search states without the tangle.
