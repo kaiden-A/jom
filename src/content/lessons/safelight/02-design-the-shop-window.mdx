@@ -1,0 +1,205 @@
+---
+title: "Design the shop window"
+slug: "design-the-shop-window"
+project: "safelight"
+order: 2
+part: "plan"
+summary: "Before the real app, build a single-file Safelight mockup: editorial gallery, receipt-like order page, and a dark ledger for the admin."
+duration: "7 min read"
+tags: ["Design", "mockup", "opencode"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import MockupEmbed from "../../../components/lesson/MockupEmbed.astro";
+
+The order state machine is invisible in a mockup. The *flow* is not.
+
+Before we write a single migration, we want to see the whole shop: the gallery, the photograph page, the receipt, the WhatsApp handoff, and the admin ledger. If the flow feels confusing in a static HTML file, it will feel worse in a real app with auth and email.
+
+So this lesson is a design lesson, not a code lesson. We are going to build **one HTML file** that looks like Safelight and lets us click through the entire story.
+
+## The design brief
+
+Safelight should feel like a small gallery with a back room, not a generic e-commerce template.
+
+| Decision | Direction |
+| --- | --- |
+| Name | **Safelight** |
+| Promise | *See the preview. Own the original.* |
+| Mood | Quiet, editorial, a little severe. A darkroom ledger. |
+| Paper | `#F3EFE6` warm off-white |
+| Ink | `#141210` near-black |
+| Accent | `#C63B2F` safelight red |
+| Display | Instrument Serif (or Georgia as a fallback) |
+| Body | Inter |
+| Metadata | JetBrains Mono, uppercase, wide tracking |
+| Shape | Mostly square, thin hairlines, very little shadow |
+| Motion | Slow image reveal, 1.02 hover, no carousels |
+
+The contrast with Gallery Blog is deliberate. Gallery Blog is playful: clay cards, polaroids, rounded corners, Fredoka. Safelight is the opposite: large photographs, generous whitespace, serif titles, monospaced order numbers. The only loud colour is the red.
+
+## Six screens, one story
+
+The mockup needs exactly six screens. No more.
+
+<StepList
+  steps={[
+    {
+      title: "The shop",
+      body: "A hero statement and a contact-sheet grid. Each photograph has a plate number, title, place, year, and price. Every preview is watermarked.",
+    },
+    {
+      title: "The photograph",
+      body: "A large preview on the left, a sticky purchase panel on the right: title, story, price, licence note, email field, and one button.",
+    },
+    {
+      title: "The receipt",
+      body: "A paper-like order page. Reference, photo, snapshot price, status, WhatsApp button, payment instructions, and the 'I've paid' claim.",
+    },
+    {
+      title: "The download page",
+      body: "The page the email link opens. Quiet, one file row, one 'Download original' button, and an expiry note.",
+    },
+    {
+      title: "The studio ledger",
+      body: "A dark admin surface. One row per order, the customer's email, the claim badge, the email status, and the two actions that matter: mark paid, refund.",
+    },
+    {
+      title: "The empty states",
+      body: "A gallery with no published photos, and a ledger with no orders. If the empty states feel good, the real states will feel better.",
+    },
+  ]}
+/>
+
+## The prompt
+
+This is the prompt we would give opencode. Notice how much of it is *constraints*, not decoration. Constraints are what make a mockup useful.
+
+```text
+Build a single-file mockup called safelight.html using HTML, Tailwind CSS
+(browser CDN), Google Fonts, and vanilla JavaScript. No framework, no build step.
+
+PROJECT
+Safelight — a small digital photography marketplace. Visitors browse watermarked
+previews and buy a photograph with their email. Payment happens manually over
+WhatsApp. The shop verifies the payment, then emails a secure download link.
+There are no customer accounts and no cart.
+
+VISUAL DIRECTION
+- Warm paper #F3EFE6, near-black ink #141210, safelight red #C63B2F.
+- Instrument Serif for display, Inter for body, JetBrains Mono for metadata.
+- Editorial gallery, thin hairlines, square-ish images, generous whitespace.
+- A dark admin ledger that feels like the back room of a gallery.
+- Responsive. On mobile the purchase panel becomes a bottom section, not a
+  hidden sidebar.
+
+SCREENS
+1. Shop: hero + 6-photo contact sheet. Each photo has a plate number, title,
+   place, year, price, and a watermarked preview.
+2. Photograph: large watermarked preview, story, price, email field, buy button.
+3. Order receipt: reference like SF-7K3M9Q2X, photo, snapshot price, status
+   pending_payment, "Continue on WhatsApp" button, payment instructions, and an
+   "I've paid" button that records a claim but DOES NOT change the status.
+4. Download page: the page the email link opens. One file row and one
+   "Download original" button.
+5. Studio ledger: dark admin view with the order, customer email, a "Claimed"
+   badge, email status, "Mark paid & send email", and "Refund & revoke link".
+6. Empty states for the gallery and the ledger.
+
+INTERACTIONS (mockup state only)
+- Clicking a photo opens its detail.
+- Buying generates a fake order reference and opens the receipt.
+- "I've paid" shows a claim note; the status stays pending.
+- The Studio can mark the order paid. The receipt then shows a download button.
+- The Studio can refund; the receipt and download close.
+- Add a reset button so the demo can start over.
+
+RULES
+- The original photograph must never appear in the shop HTML. Only watermarked
+  previews.
+- The receipt is a receipt, not a checkout page. No card fields, no cart.
+- The admin view must clearly separate "customer claims paid" from "studio
+  confirms paid".
+- Use placeholder images (picsum.photos is fine).
+- Keep all CSS and JS in the one file.
+```
+
+<Callout variant="warn" title="Mockup is not security">
+The Tailwind CDN and the fake JavaScript state are for prototyping only. A
+mockup can show a "Paid" badge; it cannot prove a payment. The real app starts
+in lesson 4, and the real security starts with the database constraints in
+lesson 5.
+</Callout>
+
+## The reference result
+
+This is the file we built for the course. It is real HTML, not a screenshot. Click through it:
+
+<MockupEmbed
+  src="/mockup/safelight.html"
+  url="mockup/safelight.html"
+  title="Safelight marketplace mockup"
+/>
+
+Try this route, in order:
+
+1. Open a photograph from the shop and read the purchase panel.
+2. Buy it with any email address.
+3. Open the WhatsApp preview. Notice the prefilled message includes the order
+   reference, title, and price.
+4. Click **I've paid**. The receipt says the claim was recorded, but the status
+   stays **pending payment**.
+5. Open **Studio**. The ledger shows the claim badge. Click **Mark paid & send
+   email**. Watch the email status move from sending to sent.
+6. Go back to the receipt and open the download page.
+7. Return to Studio and refund the order. The download link is revoked.
+
+<Callout variant="haa" title="Haa!">
+The most important screen is not the gallery. It is the receipt. That is where
+the customer learns that a WhatsApp message is not a payment, and the shop
+learns that a claim is not a confirmation.
+</Callout>
+
+## Iterate, don't perfect
+
+A mockup is supposed to be cheap to change. Three prompts that usually improve it:
+
+```text
+Make the gallery quieter: more whitespace, smaller captions, remove most of the
+card shadows. The photographs should do the talking.
+```
+
+```text
+Add a "Claimed" state to the order receipt and the studio ledger. The customer
+can claim payment, but the order must stay pending until the studio confirms.
+Make that distinction impossible to miss.
+```
+
+```text
+On mobile, turn the purchase panel into a sticky bottom bar with the price and
+the buy button. Keep the full details above it.
+```
+
+<MissionBox
+  body="Open the mockup and click through the full visitor flow, then the studio flow. Find the single most confusing moment. Change one thing — a label, a position, a colour, a sentence — and test the flow again. Write down what you changed and why."
+  note="No real app yet. The goal is a design you can defend, not a design that looks busy."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The mockup is one HTML file: six screens, one story, no build step.",
+    "Safelight is editorial and quiet — the opposite of the Gallery Blog's playful clay.",
+    "The receipt is the most important screen: claim ≠ confirmation.",
+    "The admin ledger is a back room, not a second shop.",
+    "Iterate on the flow, not the decoration. The real app is next.",
+  ]}
+/>
+
+Next: the mockup is a drawing. The master plan is the contract we will build against.

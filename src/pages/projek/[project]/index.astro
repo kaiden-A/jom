@@ -31,12 +31,13 @@ const first = published[0];
 const progress = total === 0 ? 0 : Math.round((published.length / total) * 100);
 const isFrontend = project.slug === "frontend-development";
 
-const level = isFrontend ? "Beginner" : "Intermediate";
-const build = isFrontend
-  ? "Calorie calculator"
-  : project.slug === "gallery-blog"
-    ? "Gallery blog"
-    : "Users API";
+const requirements =
+  project.requirements ?? [
+    "A browser — Chrome, Firefox, Edge, anything modern.",
+    "A code editor. VS Code is the easy default.",
+    ...(isFrontend ? ["Node.js only when you reach the React part."] : []),
+    "Patience. The lessons are short; the practice is the work.",
+  ];
 
 const builds = [
   {
@@ -141,11 +142,11 @@ const builds = [
             </div>
             <div>
               <dt class="text-ink-soft/70 text-[11px] font-bold tracking-widest uppercase">Level</dt>
-              <dd class="font-display mt-0.5 text-lg font-semibold">{level}</dd>
+              <dd class="font-display mt-0.5 text-lg font-semibold">{project.level}</dd>
             </div>
             <div>
               <dt class="text-ink-soft/70 text-[11px] font-bold tracking-widest uppercase">Build</dt>
-              <dd class="font-display mt-0.5 text-lg font-semibold">{build}</dd>
+              <dd class="font-display mt-0.5 text-lg font-semibold">{project.build}</dd>
             </div>
           </dl>
         </div>
@@ -283,10 +284,9 @@ const builds = [
       <div class="clay p-5">
         <p class="font-display text-sm font-semibold">What you need</p>
         <ul class="text-ink-soft mt-3 space-y-2 text-sm leading-relaxed">
-          <li>• A browser — Chrome, Firefox, Edge, anything modern.</li>
-          <li>• A code editor. VS Code is the easy default.</li>
-          {isFrontend && <li>• Node.js only when you reach the React part.</li>}
-          <li>• Patience. The lessons are short; the practice is the work.</li>
+          {requirements.map((item) => (
+            <li>• {item}</li>
+          ))}
         </ul>
       </div>
 

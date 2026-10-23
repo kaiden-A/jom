@@ -306,7 +306,7 @@ const features = [
           <div class="mt-10">
             <p class="font-display text-sm font-semibold">{project.title}</p>
             <ol class="border-line mt-4 space-y-4 border-l-2 border-dashed pl-6 sm:pl-8">
-              {project.upcoming.map((item) => (
+              {project.upcoming.slice(0, 3).map((item) => (
                 <li class="relative">
                   <span class="border-line text-ink-soft font-display absolute -left-[35px] grid size-6 place-items-center rounded-full border-2 bg-white text-[10px] font-semibold sm:-left-[43px]">
                     {item.order}
@@ -324,6 +324,25 @@ const features = [
                   </div>
                 </li>
               ))}
+              {project.upcoming.length > 3 && (
+                <li class="relative">
+                  <a
+                    href={`/projek/${project.slug}#syllabus`}
+                    class="text-brand-deep hover:text-brand inline-flex items-center gap-1.5 text-sm font-bold transition-colors"
+                  >
+                    See all {project.upcoming.length} upcoming lessons
+                    <svg class="size-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M4 10h11M11 5l5 5-5 5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </a>
+                </li>
+              )}
             </ol>
           </div>
         ))

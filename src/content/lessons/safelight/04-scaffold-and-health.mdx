@@ -1,0 +1,340 @@
+---
+title: "An empty app that boots"
+slug: "scaffold-and-health"
+project: "safelight"
+order: 4
+part: "build"
+summary: "Phase 1 — create the Next.js app, validate the environment, connect to Neon, and add a health route that tells the truth."
+duration: "10 min read"
+tags: ["Phase 1", "Next.js", "setup"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import RepoTree from "../../../components/lesson/RepoTree.astro";
+
+The first phase is not a feature. It is a **floor**.
+
+If the app cannot boot without the right environment, if the database client is a mystery, or if nobody can tell whether Neon is reachable, every later bug is harder to find. So we build the smallest possible Next.js app that:
+
+1. installs and typechecks,
+2. refuses to boot with bad config,
+3. connects to Neon,
+4. answers `/api/health` honestly.
+
+No gallery yet. No auth yet. No photos. Just a floor you can stand on.
+
+## Create the app
+
+<StepList
+  steps={[
+    {
+      title: "Scaffold Next.js",
+      body: "Run create-next-app and choose TypeScript, ESLint, Tailwind, the src directory, the App Router, Turbopack, and the @/* import alias.",
+      code: "npx create-next-app@latest safelight\ncd safelight",
+      note: "As of October 2026, the current stable line is Next.js 16.4. Turbopack is the default bundler.",
+    },
+    {
+      title: "Install the real dependencies",
+      body: "Database, validation, storage, image processing, email, auth, and the server-only guard.",
+      code: "npm install drizzle-orm pg zod @aws-sdk/client-s3 @aws-sdk/s3-request-presigner sharp resend @react-email/components @node-rs/argon2 server-only\nnpm install -D drizzle-kit @types/pg dotenv tsx vitest",
+    },
+    {
+      title: "Add the scripts",
+      body: "Migrations, admin seeding, tests, and a typecheck. You will use these every phase.",
+      code: "\"db:generate\": \"drizzle-kit generate\",\n\"db:migrate\": \"drizzle-kit migrate\",\n\"db:studio\": \"drizzle-kit studio\",\n\"seed:admin\": \"tsx src/db/seed.ts\",\n\"test\": \"vitest run\",\n\"typecheck\": \"tsc --noEmit\"",
+      note: "Keep the generated lockfile. Do not hand-edit it.",
+    },
+    {
+      title: "Create the empty folders",
+      body: "They give the app a shape before the files exist.",
+      code: "src/app/(site)\nsrc/app/admin\nsrc/app/api\nsrc/components/{site,admin,ui}\nsrc/db\nsrc/lib/{auth,storage,email,orders,photos,validation}\nsrc/emails\ntests",
+    },
+  ]}
+/>
+
+## The repo map
+
+<RepoTree
+  title="Safelight repo structure"
+  tree={[
+    [{ text: "safelight/", type: "root", comment: "" }],
+    [{ text: "├─ src/", type: "folder", comment: "one Next.js app" }],
+    [{ text: "│  ├─ app/", type: "folder", comment: "routes, layouts, pages" }],
+    [{ text: "│  │  ├─ (site)/", type: "folder", comment: "public gallery + order + download" }],
+    [{ text: "│  │  ├─ admin/", type: "folder", comment: "login + protected ledger" }],
+    [{ text: "│  │  └─ api/", type: "folder", comment: "health, presign, previews, download" }],
+    [{ text: "│  ├─ components/", type: "folder", comment: "site, admin, ui" }],
+    [{ text: "│  ├─ db/", type: "folder", comment: "schema, client, migrations, seed" }],
+    [{ text: "│  ├─ lib/", type: "folder", comment: "config, auth, storage, email, orders" }],
+    [{ text: "│  ├─ emails/", type: "folder", comment: "React Email templates" }],
+    [{ text: "│  └─ proxy.ts", type: "file", comment: "Next 16 proxy (was middleware)" }],
+    [{ text: "├─ drizzle.config.ts", type: "file", comment: "drizzle-kit config" }],
+    [{ text: "├─ .env.local", type: "file", comment: "real secrets — never committed" }],
+    [{ text: "├─ .env.example", type: "file", comment: "every setting, no values" }],
+    [{ text: "├─ master-plan-safelight.md", type: "file", comment: "the blueprint" }],
+    [{ text: "└─ tests/", type: "folder", comment: "vitest + a test Neon branch" }],
+  ]}
+  tags={[
+    { code: "src/app/", label: "= routes" },
+    { code: "src/lib/", label: "= business logic" },
+    { code: "src/db/", label: "= the source of truth" },
+    { code: "src/proxy.ts", label: "= optimistic only" },
+  ]}
+/>
+
+<Callout variant="note" title="Why not put everything in app/?">
+`app/` is for routing and rendering. The order state machine, the R2 adapter, the email sender, and the auth checks live in `lib/` so they can be tested without a browser. If a file mixes “where the page is” with “how a payment is confirmed”, it will be hard to test and easy to bypass.
+</Callout>
+
+## Config that refuses to boot
+
+Create `src/lib/config.ts`. Every server module reads config through this file, never `process.env` directly.
+
+```ts
+import "server-only";
+import { z } from "zod";
+
+const EnvSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  PUBLIC_BASE_URL: z.string().url(),
+  BRAND_NAME: z.string().min(1).default("Safelight"),
+  DEFAULT_CURRENCY: z.string().length(3).default("MYR"),
+  WATERMARK_TEXT: z.string().min(1).default("© Safelight · Preview"),
+
+  R2_ACCOUNT_ID: z.string().min(1),
+  R2_ACCESS_KEY_ID: z.string().min(1),
+  R2_SECRET_ACCESS_KEY: z.string().min(1),
+  R2_BUCKET: z.string().min(1),
+
+  RESEND_API_KEY: z.string().startsWith("re_"),
+  EMAIL_FROM: z.string().min(1),
+  EMAIL_REPLY_TO: z.string().email(),
+  DISABLE_EMAIL_SENDS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+
+  WHATSAPP_NUMBER: z.string().regex(/^\d{8,15}$/),
+  PAYMENT_INSTRUCTIONS: z.string().min(1),
+
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().min(12).optional(),
+});
+
+let cached: z.infer<typeof EnvSchema> | undefined;
+
+export function getEnv() {
+  if (!cached) {
+    const parsed = EnvSchema.safeParse(process.env);
+    if (!parsed.success) {
+      console.error("Invalid environment variables", parsed.error.flatten().fieldErrors);
+      throw new Error("Invalid environment variables");
+    }
+    cached = parsed.data;
+  }
+  return cached;
+}
+```
+
+Three details matter:
+
+- **`server-only`** makes the build fail if a Client Component ever imports this file. Secrets do not belong in the browser.
+- **Lazy parsing** (`getEnv()` instead of `export const env = ...`) avoids breaking `next build` when a route is not evaluated. The app still refuses at runtime.
+- **`z.enum(["true","false"]).transform(...)`** is deliberate. `z.coerce.boolean()` would turn the string `"false"` into `true`, which is a classic environment-variable bug.
+
+<Callout variant="warn" title="Don't read process.env everywhere">
+One config module, one validation point. If a route reads `process.env.R2_BUCKET` directly, it can boot with a typo and fail later inside a request. That is the worst time to find out.
+</Callout>
+
+## The database client
+
+Create `src/db/client.ts`:
+
+```ts
+import "server-only";
+import { attachDatabasePool } from "@vercel/functions";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "@/db/schema";
+import { getEnv } from "@/lib/config";
+
+const globalForDb = globalThis as unknown as { __safelightPool?: Pool };
+
+const pool =
+  globalForDb.__safelightPool ??
+  new Pool({ connectionString: getEnv().DATABASE_URL });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.__safelightPool = pool;
+}
+
+if (process.env.VERCEL === "1") {
+  attachDatabasePool(pool);
+}
+
+export const db = drizzle({ client: pool, schema });
+```
+
+Why this shape:
+
+- **One pool, reused.** Next.js dev mode reloads modules; without the global cache you can leak connections on every edit.
+- **`attachDatabasePool`** is Vercel's helper for closing idle connections before a function suspends. It is only called on Vercel; local Postgres or Neon does not need it.
+- **Use the pooled Neon host** (`...-pooler...`) in `DATABASE_URL`. Serverless functions scale out; a direct host will run out of connections.
+- **Transactions work.** `pg` gives us the interactive transactions the order state machine needs.
+
+## The health route
+
+Create `src/app/api/health/route.ts`:
+
+```ts
+import { sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    await db.execute(sql`select 1`);
+    return Response.json({ ok: true, db: true });
+  } catch {
+    return Response.json({ ok: false, db: false }, { status: 503 });
+  }
+}
+```
+
+No stack traces, no connection string, no table names. It answers one question: **can this app reach its database right now?**
+
+## The proxy is not the lock
+
+Next.js 16 renamed Middleware to **Proxy**. Create `src/proxy.ts`:
+
+```ts
+import { NextResponse, type NextRequest } from "next/server";
+
+export function proxy(request: NextRequest) {
+  const isAdmin = request.nextUrl.pathname.startsWith("/admin");
+  const isLogin = request.nextUrl.pathname.startsWith("/admin/login");
+
+  if (isAdmin && !isLogin && !request.cookies.has("safelight_admin")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/admin/:path*"],
+};
+```
+
+This is an **optimistic redirect**, not authorization. It only checks whether a cookie exists; it cannot tell whether the session is valid, expired, or revoked. The real check is `requireAdmin()` in lesson 6, called by every admin page, Server Action, and Route Handler.
+
+<Callout variant="haa" title="Haa!">
+A cookie is just a note the browser carries. “There is a note” is not the same as “the note is genuine.” The proxy opens the front door; the session check is the bouncer.
+</Callout>
+
+## The environment file
+
+Create `.env.example` with every setting, and `.env.local` with real values. `.env.local` is gitignored; `.env.example` is committed.
+
+```env
+PUBLIC_BASE_URL=http://localhost:3000
+BRAND_NAME=Safelight
+DEFAULT_CURRENCY=MYR
+WATERMARK_TEXT=© Safelight · Preview
+
+DATABASE_URL=postgresql://...-pooler...
+TEST_DATABASE_URL=postgresql://...
+
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=change-me-12-chars
+
+RESEND_API_KEY=re_...
+EMAIL_FROM="Safelight <studio@mail.yourdomain.com>"
+EMAIL_REPLY_TO=you@example.com
+DISABLE_EMAIL_SENDS=false
+
+WHATSAPP_NUMBER=60123456789
+PAYMENT_INSTRUCTIONS=Bank transfer to ... / DuitNow QR ...
+
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=safelight
+```
+
+<Callout variant="tip" title="Two files, two jobs">
+`.env.example` is documentation. `.env.local` is the real thing. If you ever feel tempted to commit `.env.local` to “help a friend”, copy the keys into `.env.example` with fake values instead.
+</Callout>
+
+## `drizzle.config.ts`
+
+Create this now; lesson 5 uses it.
+
+```ts
+import { config } from "dotenv";
+import { defineConfig } from "drizzle-kit";
+
+config({ path: ".env.local" });
+
+export default defineConfig({
+  schema: "./src/db/schema.ts",
+  out: "./src/db/migrations",
+  dialect: "postgresql",
+  casing: "snake_case",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});
+```
+
+Drizzle Kit does not load Next.js's `.env.local` automatically. The `dotenv` call is what makes `npm run db:generate` see the same database URL the app sees.
+
+## The boot check
+
+Run these in order. Do not skip one because it “looks fine”.
+
+```bash
+npm run typecheck
+npm run dev
+```
+
+Open `http://localhost:3000/api/health`. You want:
+
+```json
+{ "ok": true, "db": true }
+```
+
+Then try to break it:
+
+1. Stop the dev server.
+2. Temporarily remove `DATABASE_URL` from `.env.local`.
+3. Start the app again and open a page that calls `getEnv()`.
+
+You should get a clear “Invalid environment variables” error, not a random `undefined` later. Put the value back.
+
+<MissionBox
+  body="Get the empty app to boot, the typecheck to pass, and /api/health to return ok:true and db:true. Then break the config on purpose and confirm the error is clear. Paste the health JSON into your notes."
+  note="No gallery, no auth, no photos. If the floor is solid, the rest of the house is easier."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Phase 1 is a floor: install, typecheck, config, database client, health route.",
+    "One config module validates the environment with Zod and refuses to boot on bad values.",
+    "The pg pool is global in dev and attached to Vercel's lifecycle in production.",
+    "proxy.ts is Next 16's renamed middleware; it is an optimistic redirect, not authorization.",
+    "The health route is the first honest signal: can the app reach Neon right now?",
+  ]}
+/>
+
+Next: the schema. The order becomes the source of truth, and the database starts enforcing the rules the UI cannot.

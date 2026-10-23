@@ -13,7 +13,7 @@ interface Props {
 const { steps } = Astro.props;
 ---
 
-<ol class="not-prose my-8">
+<ol class="not-prose my-8 list-none pl-0" data-step-list>
   {
     steps.map((step, i) => (
       <li class="relative flex gap-4 pb-7 last:pb-0">

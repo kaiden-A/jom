@@ -1,0 +1,169 @@
+---
+title: "The trust-boundary blueprint"
+slug: "trust-boundary-blueprint"
+project: "safelight"
+order: 3
+part: "plan"
+summary: "The mockup is a drawing. The master plan is the contract: ten phases, hard invariants, and one rule — no phase is done until its Verify step passes."
+duration: "9 min read"
+tags: ["Explanation", "the plan", "no code"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import SafelightRoadmap from "../../../components/react/safelight/SafelightRoadmap.tsx";
+
+The mockup is a drawing. It shows what the shop looks like. It cannot show what happens when two admin tabs click **Mark paid** at the same time, or when Resend is down, or when a customer opens an email three weeks later.
+
+That is what the **master plan** is for.
+
+It is a blueprint written for exactly one situation: a coding agent starting Safelight from an empty folder. Every remaining lesson maps to a phase inside it. The plan is the source of truth; when a lesson and the plan disagree, the plan wins.
+
+<div class="not-prose my-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-dashed border-[#d9d1c3] bg-[#f3efe6] p-5 sm:p-6">
+  <div>
+    <p class="font-display text-base font-semibold">The plan itself</p>
+    <p class="text-ink-soft mt-1 text-sm leading-relaxed font-bold">
+      Keep it open in a tab. It is written for opencode, but you should know what is inside it.
+    </p>
+  </div>
+  <a href="/downloads/master-plan-safelight.md" download class="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm">Download master-plan-safelight.md</a>
+</div>
+
+## One app, not a pile of apps
+
+Safelight is **one Next.js app** that does everything:
+
+- The public gallery and photograph pages render on the server.
+- The admin ledger is the same app, behind a session.
+- The download page and the signed-URL redirect are the same app too.
+- The database is Neon; the files are R2; the email is Resend. Those are services, not separate backends.
+
+There is no `client/` and no `server/`. One repo, one deploy, one origin. The only boundary that matters is the one inside the app: **public reads vs. admin mutations vs. a download route that anyone can hit with a token.**
+
+<Callout variant="note" title="What changed from Gallery Blog">
+Gallery Blog was Express + EJS: one server, server-rendered pages, no front-end framework. Safelight is Next.js: Server Components for reading, Server Actions for mutations, Route Handlers for streams and signed URLs. The stack changed because the lesson changed. This project is about the server/client trust boundary, and Next.js makes that boundary explicit.
+</Callout>
+
+## The ten phases
+
+This is the shape of the build. Tap a phase to see what it produces.
+
+<SafelightRoadmap client:visible />
+
+Read the order like a sentence: *get it to boot, get the data right, let yourself in, show the shop, put the files in the vault, take orders, run the ledger, send the ticket, prove the failures, ship it.*
+
+<Callout variant="warn" title="No skipping">
+Every phase ends with a **Verify:** line. You do not start the next phase until it passes. Skipping ahead feels fast; it is actually the slowest way to build, because now you are debugging three unknown layers at the same time.
+</Callout>
+
+## What the plan is strict about
+
+The plan has a section called **hard invariants** — rules it will not bend. You will meet them one at a time, but here is the flavour:
+
+- **The price comes from the database.** The browser never sends an amount.
+- **Only the admin can mark an order paid.** A customer's claim is recorded, not trusted.
+- **No email before the order is paid.** Payment status and email status are separate.
+- **The original is never public.** Only a signed, short-lived R2 GET URL can read it, after a token and a paid-order check.
+- **The raw download token is never stored or logged.** The database stores a hash.
+- **Authorization happens inside every Server Action and Route Handler.** A layout or `proxy.ts` is only a UX convenience.
+- **A photograph with orders is never hard-deleted.** Archive it; paid customers keep their access.
+- **Every state transition is conditional and audited.** Double-clicks and retries must be idempotent.
+
+These are not decoration. They become database constraints, conditional updates, and tests.
+
+## The state machine is the heart
+
+The order is the source of truth for entitlement. It only moves in a few directions:
+
+```text
+pending_payment ──admin verifies──▶ paid ──admin refunds──▶ refunded
+       │
+       └──admin cancels──▶ cancelled
+```
+
+The email is a **side effect** with its own status:
+
+```text
+not_sent ──claim──▶ sending ──Resend──▶ sent
+                        │
+                        └──failure──▶ failed ──retry──▶ sending
+```
+
+A paid order with a failed email is still paid. The customer is entitled to the file; the email is how they find out. That distinction is the difference between a shop that works and a shop that loses orders when an email bounces.
+
+## The facts only you can supply
+
+Some phases pause and ask for real values. Nothing secret ever goes into the plan document. Secrets live in `.env.local` locally and in the hosting platform's environment store in production.
+
+| Fact | Where it ends up |
+| --- | --- |
+| Shop name, promise, sending domain | `BRAND_NAME`, `EMAIL_FROM`, page copy |
+| Production domain | `PUBLIC_BASE_URL`, R2 CORS, email links |
+| WhatsApp number in E.164 without `+` | `WHATSAPP_NUMBER` |
+| Bank transfer / DuitNow instructions | `PAYMENT_INSTRUCTIONS` |
+| Your admin email and a 12+ character password | `ADMIN_EMAIL`, `ADMIN_PASSWORD` (seed only) |
+| Neon pooled connection string + a test branch | `DATABASE_URL`, `TEST_DATABASE_URL` |
+| Cloudflare account id, bucket, R2 token | `R2_*` |
+| Resend API key | `RESEND_API_KEY` |
+| Default currency | `DEFAULT_CURRENCY` (default `MYR`) |
+
+You do not need all of these today. You need each one exactly when its phase arrives, and the lesson will tell you.
+
+## How we will drive it
+
+<StepList
+  steps={[
+    {
+      title: "Read the plan once",
+      body: "Not memorize — just know its shape. Download it above and skim the table of contents. You will come back constantly.",
+      code: "master-plan-safelight.md",
+      note: "It is written for a coding agent, so you can hand it to opencode. You still need to know what is in it.",
+    },
+    {
+      title: "Collect the facts",
+      body: "The plan refuses to let anyone invent values. Section 0.2 is the list only you can supply. We will gather them as each phase needs them.",
+      code: "§0.2 — Facts to collect from the user",
+    },
+    {
+      title: "Build in order, one lesson per phase",
+      body: "Each lesson teaches the concept first — the flow, the failure, the invariant — then the files. You brief opencode, review what it produces, and run the Verify.",
+    },
+    {
+      title: "Run the mission",
+      body: "Every lesson ends with a mission box. It is the plan's Verify step in disguise. The app either does the thing or it does not; there is no partial credit.",
+    },
+  ]}
+/>
+
+<Callout variant="tip" title="Why understand if the agent writes it?">
+Because you are the reviewer, not the typist. opencode will produce the schema, the route, the email template. But when a payment is confirmed twice at 11pm, the person who understands *why* the conditional update exists is the person who fixes it. That is this course's job: making you that person.
+</Callout>
+
+## What this project is not
+
+No customer accounts. No cart. No subscriptions. No Stripe. No reviews. No search. No multi-currency. No RAW support. No print fulfillment.
+
+Every one of those is a real feature, and every one of them would make the first version harder to finish and easier to get wrong. The manual WhatsApp workflow is not a limitation we are apologising for. It is the workflow many small shops actually use. The project is about making that workflow **safe**.
+
+<MissionBox
+  body="Download the plan. Find three things: the hard invariants, the Verify line for phase 8 (email and download), and the footgun table. Then collect the facts you already know — shop name, domain, WhatsApp number, currency — and leave every secret blank."
+  note="If you can point to where the plan prevents a double payment, you are ready for the build."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The master plan is the contract: one Next.js app, ten phases, each with a Verify step.",
+    "The state machine is the heart: pending → paid, with email as a separate side effect.",
+    "The invariants become constraints, conditional updates, and tests — not comments.",
+    "Secrets live in env files and the hosting platform, never in the plan.",
+    "No skipping phases. The Verify step is the whole discipline.",
+  ]}
+/>
+
+Next: phase 1. An empty Next.js app that installs, boots, and tells the truth about its database.

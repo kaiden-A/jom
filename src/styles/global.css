@@ -248,6 +248,22 @@ body {
   margin-top: 0.6rem;
 }
 
+/* StepList renders its own numbered markers. Disable the prose counter. */
+.lesson-prose > ol[data-step-list] {
+  counter-reset: none;
+  padding-left: 0;
+}
+
+.lesson-prose > ol[data-step-list] > li {
+  counter-increment: none;
+  padding-left: 0;
+}
+
+.lesson-prose > ol[data-step-list] > li::before {
+  content: none;
+  display: none;
+}
+
 .lesson-prose > ol li::before {
   content: counter(lesson-ol);
   position: absolute;
