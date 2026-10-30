@@ -1,0 +1,461 @@
+---
+title: "The item is the unit of stock"
+slug: "the-item-is-the-unit-of-stock"
+project: "kedai"
+order: 5
+part: "build"
+summary: "Phase 2 — schema, migrations, integer money, and the constraints that make a double sale impossible."
+duration: "12 min read"
+tags: ["Phase 2", "Drizzle", "database"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+
+The database is not a bucket for the UI. It is the only place that can enforce the rules the UI cannot.
+
+A button can be hidden. A Server Action can be called directly. A buyer can refresh the page at exactly the wrong moment. The database is the one part of the system that sees every request, every retry, and every race. So the most important rules in Kedai live there, not in a React component.
+
+This phase creates four tables:
+
+1. **`items`** — what is for sale.
+2. **`item_photos`** — the photos on the shelf.
+3. **`reservations`** — the hold, the buyer, and the price snapshot.
+4. **`reservation_events`** — the append-only audit trail.
+
+The admin session tables arrive in lesson 6. For now, focus on the shop.
+
+## Money is an integer
+
+Never store a price as a float. `0.1 + 0.2` is not `0.3`, and a marketplace cannot afford that kind of surprise.
+
+Store **minor units**:
+
+- `RM 180.00` becomes `price_cents = 18000`.
+- `RM 180.50` becomes `price_cents = 18050`.
+- Format it only at the edge, with `Intl.NumberFormat`.
+
+The reservation also stores its own `currency`, copied from the item when the reservation is created. If the shop changes its default currency later, old reservations keep the currency they were made in.
+
+<Callout variant="note" title="Price is a snapshot, not a pointer">
+An item can cost RM 180 today and RM 150 next week. A reservation created today must remain RM 180 forever. The reservation row stores `price_cents` and `currency`; it never joins back to the item to ask “how much is it now?”
+</Callout>
+
+## The state machine
+
+The reservation status is deliberately small:
+
+```text
+pending ──seller confirms──▶ confirmed
+   │
+   ├──buyer or seller cancels──▶ cancelled
+   └──24 hours pass────────────▶ expired
+```
+
+The item status moves with it:
+
+```text
+draft ──publish──▶ available ──reserve──▶ reserved ──confirm──▶ sold
+                       ▲                      │
+                       └──cancel or expire────┘
+```
+
+Email status is a separate track:
+
+```text
+not_sent ──claim──▶ sending ──Resend──▶ sent
+                        │
+                        └──failure──▶ failed ──retry──▶ sending
+```
+
+Why separate? Because **confirmed** is a fact about money and handover, and **sent** is a fact about email. A confirmed sale with a failed email is still confirmed. The buyer is entitled to the item; the email is just how they find out.
+
+## The schema
+
+Create `src/db/schema.ts`. Here are the important parts.
+
+```ts
+import { sql } from "drizzle-orm";
+import {
+  bigserial,
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+export const itemConditions = [
+  "new",
+  "like_new",
+  "good",
+  "fair",
+  "for_parts",
+] as const;
+
+export const itemStatuses = [
+  "draft",
+  "available",
+  "reserved",
+  "sold",
+  "archived",
+] as const;
+
+export const reservationStatuses = [
+  "pending",
+  "confirmed",
+  "cancelled",
+  "expired",
+] as const;
+
+export const emailStatuses = ["not_sent", "sending", "sent", "failed"] as const;
+
+export const items = pgTable(
+  "items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    condition: text("condition").notNull().default("good"),
+    category: text("category").notNull().default("other"),
+
+    priceCents: integer("price_cents").notNull(),
+    currency: text("currency").notNull().default("MYR"),
+
+    status: text("status").notNull().default("draft"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    soldAt: timestamp("sold_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check("items_price_non_negative", sql`${t.priceCents} >= 0`),
+    check("items_currency_valid", sql`length(${t.currency}) = 3`),
+    check(
+      "items_condition_valid",
+      sql`${t.condition} in ('new', 'like_new', 'good', 'fair', 'for_parts')`,
+    ),
+    check(
+      "items_status_valid",
+      sql`${t.status} in ('draft', 'available', 'reserved', 'sold', 'archived')`,
+    ),
+    check(
+      "items_sold_at_required",
+      sql`${t.status} <> 'sold' or ${t.soldAt} is not null`,
+    ),
+    check(
+      "items_archived_at_required",
+      sql`${t.status} <> 'archived' or ${t.archivedAt} is not null`,
+    ),
+    index("items_status_published_idx").on(t.status, t.publishedAt),
+  ],
+);
+
+export const itemPhotos = pgTable(
+  "item_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => items.id, { onDelete: "cascade" }),
+
+    displayKey: text("display_key").notNull(),
+    cardKey: text("card_key").notNull(),
+    blurDataUrl: text("blur_data_url"),
+    alt: text("alt").notNull().default(""),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    position: integer("position").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check("item_photos_position_non_negative", sql`${t.position} >= 0`),
+    index("item_photos_item_position_idx").on(t.itemId, t.position),
+  ],
+);
+
+export const reservations = pgTable(
+  "reservations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reference: text("reference").notNull().unique(),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => items.id, { onDelete: "restrict" }),
+
+    buyerName: text("buyer_name").notNull(),
+    buyerEmail: text("buyer_email").notNull(),
+    buyerPhone: text("buyer_phone").notNull().default(""),
+    fulfilment: text("fulfilment").notNull().default("pickup"),
+    note: text("note").notNull().default(""),
+
+    // Historical snapshot. Never recalculate from the item.
+    priceCents: integer("price_cents").notNull(),
+    currency: text("currency").notNull(),
+
+    status: text("status").notNull().default("pending"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    claimedPaidAt: timestamp("claimed_paid_at", { withTimezone: true }),
+    claimNote: text("claim_note"),
+
+    emailStatus: text("email_status").notNull().default("not_sent"),
+    emailAttempts: integer("email_attempts").notNull().default(0),
+    emailLastAttemptAt: timestamp("email_last_attempt_at", {
+      withTimezone: true,
+    }),
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    emailMessageId: text("email_message_id"),
+    emailLastError: text("email_last_error"),
+
+    sellerNotifiedAt: timestamp("seller_notified_at", { withTimezone: true }),
+    sellerEmailError: text("seller_email_error"),
+
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    createdIpHash: text("created_ip_hash"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check("reservations_price_non_negative", sql`${t.priceCents} >= 0`),
+    check(
+      "reservations_email_lowercase",
+      sql`${t.buyerEmail} = lower(${t.buyerEmail})`,
+    ),
+    check(
+      "reservations_fulfilment_valid",
+      sql`${t.fulfilment} in ('pickup', 'post')`,
+    ),
+    check(
+      "reservations_status_valid",
+      sql`${t.status} in ('pending', 'confirmed', 'cancelled', 'expired')`,
+    ),
+    check(
+      "reservations_email_status_valid",
+      sql`${t.emailStatus} in ('not_sent', 'sending', 'sent', 'failed')`,
+    ),
+    check(
+      "reservations_confirmed_at_required",
+      sql`${t.status} <> 'confirmed' or ${t.confirmedAt} is not null`,
+    ),
+    check(
+      "reservations_cancelled_at_required",
+      sql`${t.status} <> 'cancelled' or ${t.cancelledAt} is not null`,
+    ),
+    check(
+      "reservations_pending_expiry",
+      sql`${t.status} <> 'pending' or ${t.expiresAt} > ${t.createdAt}`,
+    ),
+    uniqueIndex("reservations_one_pending_per_item")
+      .on(t.itemId)
+      .where(sql`${t.status} = 'pending'`),
+    index("reservations_status_expiry_idx").on(t.status, t.expiresAt),
+    index("reservations_item_created_idx").on(t.itemId, t.createdAt),
+    index("reservations_buyer_email_idx").on(t.buyerEmail),
+  ],
+);
+
+export const reservationEvents = pgTable(
+  "reservation_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => reservations.id, { onDelete: "cascade" }),
+
+    type: text("type").notNull(),
+    actor: text("actor").notNull(),
+    metadata: jsonb("metadata").notNull().default({}),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check(
+      "reservation_events_type_valid",
+      sql`${t.type} in ('created', 'payment_claimed', 'sale_confirmed', 'cancelled', 'expired', 'extended', 'email_sent', 'email_failed', 'email_retry', 'seller_notified')`,
+    ),
+    check(
+      "reservation_events_actor_valid",
+      sql`${t.actor} in ('buyer', 'admin', 'system')`,
+    ),
+    index("reservation_events_reservation_idx").on(t.reservationId, t.createdAt),
+  ],
+);
+```
+
+## The rule that makes the course
+
+Look at this line again:
+
+```sql
+create unique index reservations_one_pending_per_item
+on reservations (item_id)
+where status = 'pending';
+```
+
+That is a **partial unique index**. It says: an item may have many reservations over its life, but only **one** of them may be `pending` at a time.
+
+This is the difference between a marketplace and a wish list. Two buyers click reserve at the same time. The first transaction inserts a pending row and flips the item to `reserved`. The second transaction either waits on the row lock and sees `reserved`, or hits the unique index. Either way, it cannot create a second hold. The UI then shows “Someone just reserved this item.”
+
+<Callout variant="haa" title="Haa!">
+The index is not a suggestion. It is the rule. A hidden button can be bypassed by a direct Server Action call. A database constraint cannot.
+</Callout>
+
+## The price snapshot
+
+The reservation stores `price_cents` and `currency` at creation. It never reads them from the item again. That means:
+
+- changing the item price does not change an existing reservation;
+- the receipt always shows what the buyer agreed to;
+- an audit is possible even after the item is archived.
+
+The same idea applies to the item title and condition in the email: copy them into the email at send time, or render them from the reservation's item. The price is the important snapshot; the rest can follow the item.
+
+## Expiry is part of the state
+
+`expires_at` is not a display field. It is a guard.
+
+- A pending reservation is only valid while `expires_at > now()`.
+- Confirming a reservation after it expired must fail and release the item.
+- A batch `expireReservations()` marks stale pending rows `expired` and returns their items to `available`.
+- A cron calls the batch, and the shelf also calls it lazily. The cron is an optimization; the lazy check is the correctness path.
+
+We will write the batch in lesson 9. For now, the schema has the column and the constraint.
+
+## Migrations
+
+Generate the migration, **read the SQL**, then apply it:
+
+```bash
+npm run db:generate
+# open src/db/migrations/0000_*.sql and read it
+npm run db:migrate
+```
+
+Migrations are applied by hand, never by the deploy. If the generated SQL is wrong, fix the schema and generate again; do not hand-edit the migration unless you understand the consequence.
+
+<Callout variant="warn" title="Read the SQL">
+Drizzle is a tool, not an excuse. Check that the partial index exists, that the checks are present, and that the foreign keys use `restrict` where history matters. A migration you did not read is a bug you have not met yet.
+</Callout>
+
+## Seed the shop
+
+Seed three draft items. The items should have different conditions and prices so the shelf has something to show. Keep the photos out of the seed; uploads come in lesson 8. The admin seed waits for lesson 6, because the session tables do not exist yet.
+
+```ts
+await db.insert(items).values([
+  {
+    slug: "oak-stool",
+    title: "Oak stool",
+    description: "Solid oak, one small water mark on the seat.",
+    condition: "like_new",
+    category: "furniture",
+    priceCents: 18000,
+    currency: "MYR",
+    status: "draft",
+  },
+  {
+    slug: "film-camera",
+    title: "Film camera kit",
+    description: "Body, 40mm lens, and two extra lenses.",
+    condition: "good",
+    category: "cameras",
+    priceCents: 68000,
+    currency: "MYR",
+    status: "draft",
+  },
+  {
+    slug: "workshop-lamp",
+    title: "Workshop lamp",
+    description: "Heavy, adjustable, a few chips near the base.",
+    condition: "good",
+    category: "lighting",
+    priceCents: 9500,
+    currency: "MYR",
+    status: "draft",
+  },
+]);
+```
+
+## The database checkpoint
+
+Run the migration on a fresh Neon branch, then try to break the rules on purpose.
+
+<StepList
+  steps={[
+    {
+      title: "Fresh branch migrates from zero",
+      body: "Create a new Neon branch, point DATABASE_URL at it, and run the migration. No manual table creation.",
+      code: "npm run db:migrate",
+    },
+    {
+      title: "Invalid status is rejected",
+      body: "Try to insert an item with status = 'probably_sold'. The CHECK constraint should stop it.",
+      code: "insert into items (slug, title, price_cents, status) values ('x', 'X', 100, 'probably_sold');",
+    },
+    {
+      title: "Negative price is rejected",
+      body: "Try price_cents = -1. The CHECK constraint should stop it.",
+      code: "insert into items (slug, title, price_cents) values ('x', 'X', -1);",
+    },
+    {
+      title: "Two pending reservations are rejected",
+      body: "Insert one pending reservation for an item, then a second. The partial unique index should stop the second.",
+      code: "insert into reservations (reference, item_id, buyer_name, buyer_email, price_cents, currency, status, expires_at) values (...), (...);",
+    },
+    {
+      title: "A confirmed reservation needs confirmed_at",
+      body: "Try status = 'confirmed' without the timestamp. The CHECK constraint should stop it.",
+      code: "update reservations set status = 'confirmed' where id = '...';",
+    },
+  ]}
+/>
+
+<Callout variant="tip" title="The failure is the feature">
+Every rejected insert is a bug that will never reach a buyer. When the constraint fires in production, it is doing its job. Do not “fix” it by removing the constraint; fix the code that tried to break it.
+</Callout>
+
+<MissionBox
+  body="Migrate a fresh branch. Then prove four things: an invalid status fails, a negative price fails, two pending reservations for one item fail, and a confirmed reservation without confirmed_at fails. Write the exact error message for each. Those messages are your database's voice."
+  note="If the partial unique index is in the migration and the failures are real, you are ready for auth."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Money is integer minor units. The reservation stores its own price snapshot.",
+    "Four tables: items, item_photos, reservations, reservation_events.",
+    "The partial unique index allows one pending reservation per item — the core guarantee.",
+    "Expiry is a column and a guard, not a display detail.",
+    "Email status is separate from reservation status.",
+    "Every state change gets an append-only event.",
+  ]}
+/>
+
+Next: one admin, a real session. The back room needs a door that cannot be opened with a note that says “admin”.

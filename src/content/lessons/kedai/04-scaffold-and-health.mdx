@@ -1,7 +1,7 @@
 ---
 title: "An empty app that boots"
 slug: "scaffold-and-health"
-project: "safelight"
+project: "kedai"
 order: 4
 part: "build"
 summary: "Phase 1 — create the Next.js app, validate the environment, connect to Neon, and add a health route that tells the truth."
@@ -26,7 +26,7 @@ If the app cannot boot without the right environment, if the database client is 
 3. connects to Neon,
 4. answers `/api/health` honestly.
 
-No gallery yet. No auth yet. No photos. Just a floor you can stand on.
+No shelf yet. No auth yet. No items. Just a floor you can stand on.
 
 ## Create the app
 
@@ -35,7 +35,7 @@ No gallery yet. No auth yet. No photos. Just a floor you can stand on.
     {
       title: "Scaffold Next.js",
       body: "Run create-next-app and choose TypeScript, ESLint, Tailwind, the src directory, the App Router, Turbopack, and the @/* import alias.",
-      code: "npx create-next-app@latest safelight\ncd safelight",
+      code: "npx create-next-app@latest kedai\ncd kedai",
       note: "As of October 2026, the current stable line is Next.js 16.4. Turbopack is the default bundler.",
     },
     {
@@ -52,7 +52,12 @@ No gallery yet. No auth yet. No photos. Just a floor you can stand on.
     {
       title: "Create the empty folders",
       body: "They give the app a shape before the files exist.",
-      code: "src/app/(site)\nsrc/app/admin\nsrc/app/api\nsrc/components/{site,admin,ui}\nsrc/db\nsrc/lib/{auth,storage,email,orders,photos,validation}\nsrc/emails\ntests",
+      code: "src/app/(site)\nsrc/app/admin\nsrc/app/api\nsrc/components/{site,admin,ui}\nsrc/db\nsrc/lib/{auth,storage,email,reservations,items,validation}\nsrc/emails\ntests",
+    },
+    {
+      title: "Create an empty schema module",
+      body: "The database client imports the schema. Leave it empty for one lesson; the tables arrive in phase 2.",
+      code: "// src/db/schema.ts\nexport {};",
     },
   ]}
 />
@@ -60,23 +65,23 @@ No gallery yet. No auth yet. No photos. Just a floor you can stand on.
 ## The repo map
 
 <RepoTree
-  title="Safelight repo structure"
+  title="Kedai repo structure"
   tree={[
-    [{ text: "safelight/", type: "root", comment: "" }],
+    [{ text: "kedai/", type: "root", comment: "" }],
     [{ text: "├─ src/", type: "folder", comment: "one Next.js app" }],
     [{ text: "│  ├─ app/", type: "folder", comment: "routes, layouts, pages" }],
-    [{ text: "│  │  ├─ (site)/", type: "folder", comment: "public gallery + order + download" }],
-    [{ text: "│  │  ├─ admin/", type: "folder", comment: "login + protected ledger" }],
-    [{ text: "│  │  └─ api/", type: "folder", comment: "health, presign, previews, download" }],
+    [{ text: "│  │  ├─ (site)/", type: "folder", comment: "shelf, item, reservation receipt" }],
+    [{ text: "│  │  ├─ admin/", type: "folder", comment: "login + protected back room" }],
+    [{ text: "│  │  └─ api/", type: "folder", comment: "health, presign, expiry cron" }],
     [{ text: "│  ├─ components/", type: "folder", comment: "site, admin, ui" }],
     [{ text: "│  ├─ db/", type: "folder", comment: "schema, client, migrations, seed" }],
-    [{ text: "│  ├─ lib/", type: "folder", comment: "config, auth, storage, email, orders" }],
+    [{ text: "│  ├─ lib/", type: "folder", comment: "config, auth, storage, email, reservations" }],
     [{ text: "│  ├─ emails/", type: "folder", comment: "React Email templates" }],
     [{ text: "│  └─ proxy.ts", type: "file", comment: "Next 16 proxy (was middleware)" }],
     [{ text: "├─ drizzle.config.ts", type: "file", comment: "drizzle-kit config" }],
     [{ text: "├─ .env.local", type: "file", comment: "real secrets — never committed" }],
     [{ text: "├─ .env.example", type: "file", comment: "every setting, no values" }],
-    [{ text: "├─ master-plan-safelight.md", type: "file", comment: "the blueprint" }],
+    [{ text: "├─ master-plan-kedai.md", type: "file", comment: "the blueprint" }],
     [{ text: "└─ tests/", type: "folder", comment: "vitest + a test Neon branch" }],
   ]}
   tags={[
@@ -88,7 +93,7 @@ No gallery yet. No auth yet. No photos. Just a floor you can stand on.
 />
 
 <Callout variant="note" title="Why not put everything in app/?">
-`app/` is for routing and rendering. The order state machine, the R2 adapter, the email sender, and the auth checks live in `lib/` so they can be tested without a browser. If a file mixes “where the page is” with “how a payment is confirmed”, it will be hard to test and easy to bypass.
+`app/` is for routing and rendering. The reservation state machine, the R2 adapter, the email sender, and the auth checks live in `lib/` so they can be tested without a browser. If a file mixes “where the page is” with “how a sale is confirmed”, it will be hard to test and easy to bypass.
 </Callout>
 
 ## Config that refuses to boot
@@ -102,25 +107,30 @@ import { z } from "zod";
 const EnvSchema = z.object({
   DATABASE_URL: z.string().url(),
   PUBLIC_BASE_URL: z.string().url(),
-  BRAND_NAME: z.string().min(1).default("Safelight"),
+
+  SHOP_NAME: z.string().min(1).default("Kedai"),
+  SHOP_LOCATION: z.string().min(1),
+  PICKUP_INSTRUCTIONS: z.string().min(1),
   DEFAULT_CURRENCY: z.string().length(3).default("MYR"),
-  WATERMARK_TEXT: z.string().min(1).default("© Safelight · Preview"),
+  RESERVATION_HOURS: z.coerce.number().int().min(1).max(168).default(24),
 
   R2_ACCOUNT_ID: z.string().min(1),
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET: z.string().min(1),
+  R2_PUBLIC_BASE_URL: z.string().url(),
 
   RESEND_API_KEY: z.string().startsWith("re_"),
   EMAIL_FROM: z.string().min(1),
-  EMAIL_REPLY_TO: z.string().email(),
+  SHOP_EMAIL: z.string().email(),
   DISABLE_EMAIL_SENDS: z
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
 
   WHATSAPP_NUMBER: z.string().regex(/^\d{8,15}$/),
-  PAYMENT_INSTRUCTIONS: z.string().min(1),
+  IP_HASH_SECRET: z.string().min(32),
+  CRON_SECRET: z.string().min(16),
 
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),
@@ -163,14 +173,14 @@ import { Pool } from "pg";
 import * as schema from "@/db/schema";
 import { getEnv } from "@/lib/config";
 
-const globalForDb = globalThis as unknown as { __safelightPool?: Pool };
+const globalForDb = globalThis as unknown as { __kedaiPool?: Pool };
 
 const pool =
-  globalForDb.__safelightPool ??
+  globalForDb.__kedaiPool ??
   new Pool({ connectionString: getEnv().DATABASE_URL });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.__safelightPool = pool;
+  globalForDb.__kedaiPool = pool;
 }
 
 if (process.env.VERCEL === "1") {
@@ -185,7 +195,7 @@ Why this shape:
 - **One pool, reused.** Next.js dev mode reloads modules; without the global cache you can leak connections on every edit.
 - **`attachDatabasePool`** is Vercel's helper for closing idle connections before a function suspends. It is only called on Vercel; local Postgres or Neon does not need it.
 - **Use the pooled Neon host** (`...-pooler...`) in `DATABASE_URL`. Serverless functions scale out; a direct host will run out of connections.
-- **Transactions work.** `pg` gives us the interactive transactions the order state machine needs.
+- **Transactions work.** `pg` gives us the interactive transactions the reservation state machine needs.
 
 ## The health route
 
@@ -193,7 +203,7 @@ Create `src/app/api/health/route.ts`:
 
 ```ts
 import { sql } from "drizzle-orm";
-import { db } from "@/lib/db/client";
+import { db } from "@/db/client";
 
 export const dynamic = "force-dynamic";
 
@@ -220,7 +230,7 @@ export function proxy(request: NextRequest) {
   const isAdmin = request.nextUrl.pathname.startsWith("/admin");
   const isLogin = request.nextUrl.pathname.startsWith("/admin/login");
 
-  if (isAdmin && !isLogin && !request.cookies.has("safelight_admin")) {
+  if (isAdmin && !isLogin && !request.cookies.has("kedai_admin")) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     return NextResponse.redirect(url);
@@ -246,28 +256,32 @@ Create `.env.example` with every setting, and `.env.local` with real values. `.e
 
 ```env
 PUBLIC_BASE_URL=http://localhost:3000
-BRAND_NAME=Safelight
+SHOP_NAME=Kedai
+SHOP_LOCATION=Petaling Jaya
+PICKUP_INSTRUCTIONS=Pickup by arrangement. Postage can be quoted on WhatsApp.
 DEFAULT_CURRENCY=MYR
-WATERMARK_TEXT=© Safelight · Preview
+RESERVATION_HOURS=24
 
 DATABASE_URL=postgresql://...-pooler...
 TEST_DATABASE_URL=postgresql://...
 
 ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=change-me-12-chars
+IP_HASH_SECRET=replace-with-32-random-characters
+CRON_SECRET=replace-with-16-random-characters
 
 RESEND_API_KEY=re_...
-EMAIL_FROM="Safelight <studio@mail.yourdomain.com>"
-EMAIL_REPLY_TO=you@example.com
+EMAIL_FROM="Kedai <shop@mail.yourdomain.com>"
+SHOP_EMAIL=you@example.com
 DISABLE_EMAIL_SENDS=false
 
 WHATSAPP_NUMBER=60123456789
-PAYMENT_INSTRUCTIONS=Bank transfer to ... / DuitNow QR ...
 
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
-R2_BUCKET=safelight
+R2_BUCKET=kedai
+R2_PUBLIC_BASE_URL=https://photos.yourdomain.com
 ```
 
 <Callout variant="tip" title="Two files, two jobs">
@@ -322,7 +336,7 @@ You should get a clear “Invalid environment variables” error, not a random `
 
 <MissionBox
   body="Get the empty app to boot, the typecheck to pass, and /api/health to return ok:true and db:true. Then break the config on purpose and confirm the error is clear. Paste the health JSON into your notes."
-  note="No gallery, no auth, no photos. If the floor is solid, the rest of the house is easier."
+  note="No shelf, no auth, no photos. If the floor is solid, the rest of the house is easier."
 />
 
 ## Recap
@@ -337,4 +351,4 @@ You should get a clear “Invalid environment variables” error, not a random `
   ]}
 />
 
-Next: the schema. The order becomes the source of truth, and the database starts enforcing the rules the UI cannot.
+Next: the database. The item is the unit of stock, and the partial unique index is the rule that keeps one chair from being sold twice.

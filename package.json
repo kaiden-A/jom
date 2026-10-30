@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "sync:plan": "node -e \"const fs=require('fs');fs.mkdirSync('public/downloads',{recursive:true});for(const f of ['master-plan.md','master-plan-safelight.md']){if(fs.existsSync(f))fs.copyFileSync(f,'public/downloads/'+f)}\"",
+    "sync:plan": "node -e \"const fs=require('fs');fs.mkdirSync('public/downloads',{recursive:true});for(const f of ['master-plan.md','master-plan-kedai.md']){if(fs.existsSync(f))fs.copyFileSync(f,'public/downloads/'+f)}\"",
     "predev": "npm run sync:plan",
     "dev": "astro dev",
     "prebuild": "npm run sync:plan",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
     "@astrojs/react": "^7.0.0",
+    "@fontsource/fraunces": "^5.3.0",
     "@fontsource/fredoka": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/nunito": "^5.3.0",

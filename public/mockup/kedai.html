@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kedai — Personal Marketplace Mockup</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style type="text/tailwindcss">
+      @theme {
+        --color-paper: #f6f0e2;
+        --color-cream: #fbf7ec;
+        --color-ink: #2b1d14;
+        --color-soft: #6e5e4c;
+        --color-faint: #6f5e4b;
+        --color-line: #d8cbb4;
+        --color-chili: #d94a2b;
+        --color-chili-deep: #b83a1f;
+        --color-pandan: #2f6b4f;
+        --color-kunyit: #f2b441;
+        --color-kopi: #211710;
+        --font-display: "Fraunces", Georgia, serif;
+        --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+    </style>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--color-paper);
+      }
+      .view {
+        animation: rise 0.3s ease both;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .nav-link.active {
+        background: var(--color-cream);
+        color: var(--color-ink);
+      }
+      .nav-link-dark.active {
+        background: #b83a1f;
+        color: white;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border: 1px solid;
+        border-radius: 9999px;
+        padding: 0.12rem 0.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.5rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .pill-available {
+        border-color: rgb(47 107 79 / 0.35);
+        background: #e6efe8;
+        color: #24543d;
+      }
+      .pill-reserved,
+      .pill-pending {
+        border-color: rgb(183 121 31 / 0.4);
+        background: #f6edda;
+        color: #8a5a12;
+      }
+      .pill-sold {
+        border-color: rgb(217 74 43 / 0.4);
+        background: #f9e3dd;
+        color: #a83a21;
+      }
+      .pill-confirmed {
+        border-color: rgb(47 107 79 / 0.35);
+        background: #e6efe8;
+        color: #24543d;
+      }
+      .pill-muted {
+        border-color: #c9bca8;
+        background: #f1e9d8;
+        color: #5f5142;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border-radius: 0.5rem;
+        padding: 0.55rem 0.85rem;
+        font-family: var(--font-mono);
+        font-size: 0.55rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease,
+          transform 0.15s ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      .btn-primary {
+        background: #b83a1f;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #9e3019;
+      }
+      .btn-green {
+        background: var(--color-pandan);
+        color: white;
+      }
+      .btn-green:hover {
+        background: #24543d;
+      }
+      .btn-ghost {
+        border: 1px solid var(--color-line);
+        background: white;
+        color: var(--color-soft);
+      }
+      .btn-ghost:hover {
+        border-color: rgb(217 74 43 / 0.4);
+        color: var(--color-chili);
+      }
+      .btn-dark {
+        border: 1px solid rgb(246 240 226 / 0.2);
+        background: transparent;
+        color: rgb(246 240 226 / 0.7);
+      }
+      .btn-dark:hover {
+        border-color: rgb(242 180 65 / 0.5);
+        color: var(--color-kunyit);
+      }
+      .receipt-cut {
+        border-top: 2px dashed var(--color-line);
+      }
+      .field {
+        width: 100%;
+        border: 1px solid var(--color-line);
+        border-radius: 0.5rem;
+        background: white;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.8rem;
+        color: var(--color-ink);
+        outline: none;
+      }
+      .field:focus {
+        border-color: var(--color-chili);
+      }
+      .field-label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-family: var(--font-mono);
+        font-size: 0.45rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-faint);
+      }
+      .stamp {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        transform: rotate(-6deg);
+        border: 2px solid #d94a2b;
+        background: #f6f0e2;
+        padding: 0.1rem 0.45rem;
+        font-family: var(--font-mono);
+        font-size: 0.55rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #d94a2b;
+      }
+      .toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 60;
+        max-width: 22rem;
+        border: 1px solid rgb(43 29 20 / 0.15);
+        border-radius: 0.5rem;
+        background: var(--color-ink);
+        padding: 0.7rem 0.9rem;
+        font-family: var(--font-mono);
+        font-size: 0.55rem;
+        line-height: 1.5;
+        letter-spacing: 0.04em;
+        color: var(--color-paper);
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .view,
+        .btn,
+        .toast {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="font-sans text-ink antialiased">
+    <header
+      class="sticky top-0 z-40 border-b border-line/80 bg-paper/90 backdrop-blur-md"
+    >
+      <div
+        class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
+      >
+        <a
+          href="#"
+          onclick="showView('shop'); return false;"
+          class="flex items-center gap-3"
+        >
+          <span
+            class="grid size-9 place-items-center rounded-lg border border-kunyit/50 bg-kunyit/15"
+          >
+            <svg
+              class="size-4 text-ink"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 10h16v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-9zM3 10l2-5h14l2 5M9 20v-5h6v5"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span class="font-display text-xl tracking-[0.16em] uppercase"
+            >Kedai</span
+          >
+        </a>
+
+        <nav class="flex items-center gap-1 sm:gap-2" aria-label="Mockup navigation">
+          <button
+            class="nav-link active hidden rounded-full px-3.5 py-2 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors sm:inline-flex"
+            data-target="shop"
+            onclick="showView('shop')"
+          >
+            Shop
+          </button>
+          <button
+            class="nav-link hidden rounded-full px-3.5 py-2 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors sm:inline-flex"
+            data-target="item"
+            onclick="showView('item')"
+          >
+            Item
+          </button>
+          <button
+            id="navReceipt"
+            class="nav-link hidden rounded-full px-3.5 py-2 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors"
+            data-target="receipt"
+            onclick="showView('receipt')"
+          >
+            Receipt
+          </button>
+          <button
+            class="nav-link nav-link-dark rounded-full px-3.5 py-2 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors"
+            data-target="back"
+            onclick="showView('back')"
+          >
+            Back room
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <!-- SHOP -->
+      <section id="view-shop" class="view">
+        <div class="flex flex-wrap items-end justify-between gap-5">
+          <div class="max-w-2xl">
+            <p
+              class="font-mono text-[10px] tracking-[0.22em] text-faint uppercase"
+            >
+              A one-person shop · Petaling Jaya
+            </p>
+            <h1 class="mt-3 font-display text-5xl leading-[0.95] sm:text-7xl">
+              One seller.<br /><em class="text-chili">One of each.</em>
+            </h1>
+          </div>
+          <p class="max-w-xs text-sm leading-relaxed font-semibold text-soft">
+            Six things from one shelf. Reserve one for 24 hours, arrange payment
+            on WhatsApp, and collect it. When it's gone, it's gone.
+          </p>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-2">
+          <span class="pill pill-muted" id="shopCount">6 items</span>
+          <span class="pill pill-available" id="shopAvailable">6 available</span>
+          <span class="pill pill-pending" id="shopReserved">0 reserved</span>
+          <span class="pill pill-sold" id="shopSold">0 sold</span>
+          <span class="ml-auto font-mono text-[9px] tracking-[0.1em] text-faint uppercase"
+            >Mock data · demo only</span
+          >
+        </div>
+
+        <div
+          id="shopGrid"
+          class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        ></div>
+
+        <div
+          class="mt-5 flex items-start gap-2 rounded-lg bg-[#f1e9d8] px-3 py-2.5 text-[11px] leading-relaxed font-bold text-[#5f5142]"
+        >
+          <span class="mt-0.5"
+            ><svg
+              class="size-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              /></svg
+          ></span>
+          <span
+            >A personal shop, not a multi-vendor marketplace. One seller, one
+            shelf, one of each. No accounts, no cart, no online payment.</span
+          >
+        </div>
+      </section>
+
+      <!-- ITEM -->
+      <section id="view-item" class="view hidden">
+        <button
+          onclick="showView('shop')"
+          class="font-mono text-[9px] tracking-[0.08em] text-faint uppercase hover:text-chili"
+        >
+          ← Back to the shelf
+        </button>
+        <div id="itemBody" class="mt-3"></div>
+      </section>
+
+      <!-- RECEIPT -->
+      <section id="view-receipt" class="view hidden">
+        <button
+          onclick="showView('shop')"
+          class="font-mono text-[9px] tracking-[0.08em] text-faint uppercase hover:text-chili"
+        >
+          ← Back to the shelf
+        </button>
+        <div id="receiptBody" class="mx-auto mt-3 max-w-2xl"></div>
+      </section>
+
+      <!-- BACK ROOM -->
+      <section id="view-back" class="view hidden">
+        <div class="rounded-2xl bg-kopi p-4 text-paper sm:p-6">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p
+                class="font-mono text-[9px] tracking-[0.18em] text-kunyit/75 uppercase"
+              >
+                The back room · admin only
+              </p>
+              <h2 class="mt-1 font-display text-3xl leading-tight">
+                The ledger.
+              </h2>
+              <p
+                class="mt-1 max-w-xl text-sm leading-relaxed font-bold text-paper/65"
+              >
+                Signed in as the shop. Every action is a conditional update, not
+                a hidden button.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-dark" onclick="simulateExpiry()">
+                Simulate 24 hours
+              </button>
+              <button class="btn btn-dark" onclick="resetDemo()">
+                Reset demo
+              </button>
+            </div>
+          </div>
+
+          <div id="backStats" class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"></div>
+
+          <div class="mt-4 flex gap-2">
+            <button
+              id="tabItems"
+              class="rounded-full bg-paper px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-ink uppercase"
+              onclick="setBackTab('items')"
+            >
+              Items
+            </button>
+            <button
+              id="tabReservations"
+              class="rounded-full border border-paper/20 px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-paper/60 uppercase"
+              onclick="setBackTab('reservations')"
+            >
+              Reservations
+            </button>
+          </div>
+
+          <div id="backBody" class="mt-3"></div>
+
+          <div
+            class="mt-4 flex items-start gap-2 rounded-lg border border-paper/10 bg-paper/5 px-3 py-2.5 text-[11px] leading-relaxed font-bold text-paper/65"
+          >
+            <span
+              >The mockup skips the real login. It never lets a buyer confirm a
+              sale, never allows two pending reservations for one item, and
+              never lets the email status change the reservation status. Those
+              refusals are the project.</span
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer
+      class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-5 sm:px-6"
+    >
+      <p class="font-mono text-[8px] tracking-[0.1em] text-faint uppercase">
+        Kedai · static mockup · no real payments, no real email
+      </p>
+      <button
+        class="font-mono text-[8px] tracking-[0.08em] text-faint uppercase hover:text-chili"
+        onclick="resetDemo()"
+      >
+        Start over
+      </button>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const SEED_ITEMS = [
+        {
+          id: 1,
+          slug: "oak-stool",
+          title: "Oak stool",
+          category: "Furniture",
+          condition: "Like new",
+          priceCents: 18000,
+          photo: "../demo/kedai/chair.jpg",
+          alt: "A pale oak stool against a soft blue background",
+          note: "Bought for a home office that never happened. Solid oak, one small water mark on the seat, otherwise clean. 45cm tall.",
+          status: "available",
+        },
+        {
+          id: 2,
+          slug: "film-camera",
+          title: "Film camera kit",
+          category: "Cameras",
+          condition: "Well loved",
+          priceCents: 68000,
+          photo: "../demo/kedai/camera.jpg",
+          alt: "A black film camera and three lenses on a dark table",
+          note: "The camera that started the whole photography habit. Body, 40mm lens, and two extra lenses. Shutter tested last month.",
+          status: "available",
+        },
+        {
+          id: 3,
+          slug: "workshop-lamp",
+          title: "Workshop lamp",
+          category: "Lighting",
+          condition: "Good",
+          priceCents: 9500,
+          photo: "../demo/kedai/lamp.jpg",
+          alt: "A dark grey metal workshop floor lamp against a white wall",
+          note: "Heavy, adjustable, and impossible to knock over. The paint has a few chips near the base. Bulb included.",
+          status: "available",
+        },
+        {
+          id: 4,
+          slug: "business-books",
+          title: "Box of business books",
+          category: "Books",
+          condition: "Good",
+          priceCents: 12000,
+          photo: "../demo/kedai/books.jpg",
+          alt: "A stack of business and startup books",
+          note: "Eight books from a shelf clear-out. A few have pencil notes in the margins. The stack in the photo is the whole box.",
+          status: "available",
+        },
+        {
+          id: 5,
+          slug: "stoneware-cup",
+          title: "Stoneware coffee cup",
+          category: "Kitchen",
+          condition: "Like new",
+          priceCents: 3500,
+          photo: "../demo/kedai/cup.jpg",
+          alt: "A white stoneware cup of black coffee on a wooden table",
+          note: "A generous 300ml cup with a thick lip. Dishwasher safe. Selling because I bought four and only use one.",
+          status: "available",
+        },
+        {
+          id: 6,
+          slug: "city-bike",
+          title: "City bike",
+          category: "Outdoors",
+          condition: "Good",
+          priceCents: 85000,
+          photo: "../demo/kedai/bike.jpg",
+          alt: "A white single-speed city bike against a dark wall",
+          note: "Light, simple, and serviced in August. New brake pads and chain. Pickup only — it is a big thing to post.",
+          status: "available",
+        },
+      ];
+
+      let state = {
+        view: "shop",
+        backTab: "reservations",
+        items: clone(SEED_ITEMS),
+        reservations: [],
+        selectedId: null,
+        activeRef: null,
+        formError: "",
+      };
+
+      function clone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function money(cents) {
+        return "RM " + (cents / 100).toLocaleString("en-MY", { maximumFractionDigits: 0 });
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function reference() {
+        return "KD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      }
+
+      function maskEmail(email) {
+        const [name, domain] = String(email).split("@");
+        if (!domain) return email;
+        return name.slice(0, 1) + "***@" + domain;
+      }
+
+      function firstName(name) {
+        return String(name).trim().split(/\s+/)[0] || name;
+      }
+
+      function itemStatusPill(status) {
+        const label = status === "available" ? "Available" : status === "reserved" ? "Reserved" : "Sold";
+        return `<span class="pill pill-${status}">${label}</span>`;
+      }
+
+      function reservationStatusPill(status) {
+        return `<span class="pill pill-${status}">${status}</span>`;
+      }
+
+      function itemCard(item) {
+        return `
+          <button onclick="openItem(${item.id})" class="group overflow-hidden rounded-xl border border-line bg-cream text-left transition-all hover:-translate-y-0.5 hover:border-[#b9a88e] hover:shadow-[0_16px_30px_-22px_rgba(43,29,20,0.45)]">
+            <span class="relative block aspect-[4/3] overflow-hidden bg-[#e8decb]">
+              <img src="${item.photo}" alt="${escapeHtml(item.alt)}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              <span class="absolute left-2 top-2">${itemStatusPill(item.status)}</span>
+              <span class="absolute bottom-2 left-2 rounded bg-[#2b1d14]/75 px-1.5 py-0.5 font-mono text-[8px] tracking-[0.08em] text-[#f6f0e2] uppercase">${escapeHtml(item.category)}</span>
+              ${item.status === "sold" ? '<span class="stamp">Sold</span>' : ""}
+            </span>
+            <span class="block p-3">
+              <span class="flex items-start justify-between gap-2">
+                <span class="text-sm font-bold leading-snug">${escapeHtml(item.title)}</span>
+                <span class="shrink-0 font-mono text-sm font-bold">${money(item.priceCents)}</span>
+              </span>
+              <span class="mt-0.5 block text-[11px] font-bold text-faint">${escapeHtml(item.condition)} · one only</span>
+              <span class="mt-2 flex items-center justify-between">
+                <span class="font-mono text-[8px] tracking-[0.08em] uppercase ${item.status === "available" ? "text-pandan" : item.status === "reserved" ? "text-[#8a5a12]" : "text-chili"}">${item.status === "available" ? "Ready to reserve" : item.status === "reserved" ? "On hold" : "Found a home"}</span>
+                <span class="text-faint">→</span>
+              </span>
+            </span>
+          </button>`;
+      }
+
+      function renderShop() {
+        document.getElementById("shopGrid").innerHTML = state.items.map(itemCard).join("");
+        document.getElementById("shopCount").textContent = state.items.length + " items";
+        document.getElementById("shopAvailable").textContent =
+          state.items.filter((item) => item.status === "available").length + " available";
+        document.getElementById("shopReserved").textContent =
+          state.items.filter((item) => item.status === "reserved").length + " reserved";
+        document.getElementById("shopSold").textContent =
+          state.items.filter((item) => item.status === "sold").length + " sold";
+      }
+
+      function openItem(id) {
+        state.selectedId = id;
+        state.formError = "";
+        state.view = "item";
+        render();
+      }
+
+      function selectedItem() {
+        return state.items.find((item) => item.id === state.selectedId) || null;
+      }
+
+      function activeReservation() {
+        return state.reservations.find((entry) => entry.reference === state.activeRef) || null;
+      }
+
+      function renderItem() {
+        const item = selectedItem();
+        const body = document.getElementById("itemBody");
+        if (!item) {
+          body.innerHTML = `<div class="rounded-xl border-2 border-dashed border-line p-8 text-center"><p class="font-display text-2xl">Pick something from the shelf.</p><button class="btn btn-primary mt-3" onclick="showView('shop')">Open the shop</button></div>`;
+          return;
+        }
+
+        const form =
+          item.status === "available"
+            ? `<form onsubmit="reserveItem(event)" class="mt-4 rounded-xl border border-line bg-cream p-3.5">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-mono text-[9px] tracking-[0.14em] text-[#a83a21] uppercase">Reserve for 24 hours</p>
+                  <span class="font-mono text-[8px] tracking-[0.06em] text-faint uppercase">No payment now</span>
+                </div>
+                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label><span class="field-label">Your name</span><input class="field" id="buyerName" placeholder="Aina" required /></label>
+                  <label><span class="field-label">Email for the receipt</span><input class="field" id="buyerEmail" type="email" placeholder="you@example.com" required /></label>
+                </div>
+                <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label><span class="field-label">Phone (optional)</span><input class="field" id="buyerPhone" placeholder="012 345 6789" /></label>
+                  <label><span class="field-label">Handover</span><select class="field" id="buyerFulfilment"><option value="pickup">Pickup</option><option value="post">Post</option></select></label>
+                </div>
+                <label class="mt-2 block"><span class="field-label">Note (optional)</span><textarea class="field resize-none" id="buyerNote" rows="2" placeholder="Can collect this weekend."></textarea></label>
+                <p id="formError" class="mt-2 hidden text-[11px] font-bold text-[#a83a21]"></p>
+                <button type="submit" class="btn btn-primary mt-3 w-full">Reserve this item →</button>
+                <p class="mt-2 text-[10px] leading-relaxed font-bold text-faint">The server reads the price. The browser never sends an amount. The shop confirms the sale after payment.</p>
+              </form>`
+            : `<div class="mt-4 rounded-xl border-2 border-dashed border-line bg-cream p-4">
+                <p class="font-mono text-[9px] tracking-[0.12em] text-[#a83a21] uppercase">${item.status === "reserved" ? "On hold by another buyer" : "This one found a home"}</p>
+                <p class="mt-2 text-sm leading-relaxed font-bold text-soft">${item.status === "reserved" ? "A pending reservation is holding this item. If it expires, the item comes back to the shelf." : "The shop confirmed the sale. The item is sold, and the receipt keeps its history."}</p>
+                <button class="btn btn-ghost mt-3" onclick="showView('back')">See the back room</button>
+              </div>`;
+
+        body.innerHTML = `
+          <div class="grid grid-cols-1 gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <div class="overflow-hidden rounded-xl border border-line bg-[#e8decb]">
+                <img src="${item.photo}" alt="${escapeHtml(item.alt)}" class="aspect-[4/3] w-full object-cover" />
+              </div>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                ${itemStatusPill(item.status)}
+                <span class="pill pill-muted">${escapeHtml(item.condition)}</span>
+                <span class="pill pill-muted">${escapeHtml(item.category)}</span>
+              </div>
+              <div class="mt-3 rounded-xl border border-line bg-cream p-3">
+                <p class="font-mono text-[8px] tracking-[0.1em] text-faint uppercase">One photo, one item</p>
+                <p class="mt-1 text-[11px] font-bold leading-relaxed text-soft">No stock count. No variants. Ask on WhatsApp if you need another angle before you reserve.</p>
+              </div>
+            </div>
+            <div>
+              <p class="font-mono text-[9px] tracking-[0.18em] text-faint uppercase">Item KD-0${item.id} · one only</p>
+              <h2 class="mt-1 font-display text-3xl leading-tight">${escapeHtml(item.title)}</h2>
+              <p class="mt-1 font-mono text-lg font-bold">${money(item.priceCents)}</p>
+              <p class="mt-3 text-sm leading-relaxed font-bold text-soft">${escapeHtml(item.note)}</p>
+              <div class="mt-4 rounded-xl border border-line bg-cream p-3">
+                <p class="font-mono text-[9px] tracking-[0.14em] text-faint uppercase">The seller</p>
+                <p class="mt-1 text-sm font-bold">Kedai · Aina</p>
+                <p class="mt-1 text-[11px] leading-relaxed font-bold text-[#5f5142]">Pickup in Petaling Jaya. Postage can be arranged on WhatsApp. Every item is one of one.</p>
+              </div>
+              ${form}
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button class="btn btn-ghost" onclick="copyItemLink()">Copy item link</button>
+                <a class="btn btn-green" href="https://wa.me/60123456789?text=${encodeURIComponent(`Hi Kedai, I have a question about "${item.title}".`)}" target="_blank" rel="noreferrer">Ask on WhatsApp</a>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function reserveItem(event) {
+        event.preventDefault();
+        const item = selectedItem();
+        if (!item || item.status !== "available") return;
+        const name = document.getElementById("buyerName").value.trim();
+        const email = document.getElementById("buyerEmail").value.trim().toLowerCase();
+        const phone = document.getElementById("buyerPhone").value.trim();
+        const note = document.getElementById("buyerNote").value.trim();
+        const fulfilment = document.getElementById("buyerFulfilment").value;
+        const error = document.getElementById("formError");
+
+        if (!name) {
+          error.textContent = "A name, please — the shop needs to know who is collecting.";
+          error.classList.remove("hidden");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          error.textContent = "A real email address, please — the receipt goes there.";
+          error.classList.remove("hidden");
+          return;
+        }
+
+        const reservation = {
+          reference: reference(),
+          itemId: item.id,
+          buyerName: name,
+          buyerEmail: email,
+          buyerPhone: phone,
+          note,
+          fulfilment,
+          priceCents: item.priceCents,
+          status: "pending",
+          claimed: false,
+          emailStatus: "sending",
+          expiresInHours: 24,
+        };
+
+        state.reservations.push(reservation);
+        state.activeRef = reservation.reference;
+        item.status = "reserved";
+        state.view = "receipt";
+        render();
+        toast("Reserved for 24 hours. The price is locked to the item.");
+
+        setTimeout(() => {
+          reservation.emailStatus = "sent";
+          if (state.view === "receipt") render();
+        }, 700);
+      }
+
+      function claimPaid() {
+        const reservation = activeReservation();
+        if (!reservation || reservation.status !== "pending") return;
+        reservation.claimed = true;
+        render();
+        toast("Claim recorded. The shop still has to confirm the payment.");
+      }
+
+      function confirmSale(reference) {
+        const reservation = state.reservations.find((entry) => entry.reference === reference);
+        if (!reservation || reservation.status !== "pending") return;
+        reservation.status = "confirmed";
+        const item = state.items.find((entry) => entry.id === reservation.itemId);
+        if (item) item.status = "sold";
+        render();
+        toast("Sale confirmed. The item is sold. The receipt is live.");
+      }
+
+      function cancelReservation(reference) {
+        const reservation = state.reservations.find((entry) => entry.reference === reference);
+        if (!reservation || reservation.status !== "pending") return;
+        reservation.status = "cancelled";
+        const item = state.items.find((entry) => entry.id === reservation.itemId);
+        if (item) item.status = "available";
+        render();
+        toast("Reservation cancelled. The item is back on the shelf.");
+      }
+
+      function extendReservation(reference) {
+        const reservation = state.reservations.find((entry) => entry.reference === reference);
+        if (!reservation || reservation.status !== "pending") return;
+        reservation.expiresInHours += 24;
+        render();
+        toast("Reservation extended by 24 hours. Time is a state, not a note.");
+      }
+
+      function simulateExpiry() {
+        const reservation = state.reservations.find((entry) => entry.status === "pending");
+        if (!reservation) {
+          toast("No pending reservation to expire.");
+          return;
+        }
+        reservation.status = "expired";
+        const item = state.items.find((entry) => entry.id === reservation.itemId);
+        if (item) item.status = "available";
+        render();
+        toast("24 hours passed. The reservation expired and the item is available again.");
+      }
+
+      function renderReceipt() {
+        const body = document.getElementById("receiptBody");
+        const reservation = activeReservation();
+        if (!reservation) {
+          body.innerHTML = `<div class="rounded-xl border-2 border-dashed border-line p-8 text-center"><p class="font-display text-2xl">No receipt yet.</p><p class="mt-1 text-sm font-bold text-soft">Reserve something and the receipt appears here.</p><button class="btn btn-primary mt-3" onclick="showView('shop')">Open the shop</button></div>`;
+          return;
+        }
+        const item = state.items.find((entry) => entry.id === reservation.itemId);
+        const what =
+          reservation.status === "pending"
+            ? reservation.claimed
+              ? "Your payment claim is recorded. The shop still has to check the money and mark the item sold."
+              : "The shop is holding the item for 24 hours. Continue on WhatsApp to arrange payment and handover."
+            : reservation.status === "confirmed"
+              ? "The shop confirmed the sale. The item is sold and the receipt keeps its history."
+              : "This reservation is closed. The item went back to the shelf when the hold ended.";
+
+        const message = `Hi Kedai, I'd like to collect "${item.title}".
+Reference: ${reservation.reference}
+Price: ${money(reservation.priceCents)}
+Handover: ${reservation.fulfilment === "pickup" ? "Pickup" : "Post"}
+
+I've reserved it for 24 hours.`;
+
+        body.innerHTML = `
+          <div class="overflow-hidden rounded-xl border border-line bg-cream shadow-[0_18px_40px_-30px_rgba(43,29,20,0.4)]">
+            <div class="flex items-start justify-between gap-3 border-b-2 border-dashed border-line p-4 sm:p-5">
+              <div>
+                <p class="font-mono text-[9px] tracking-[0.18em] text-faint uppercase">Kedai · reservation receipt</p>
+                <p class="mt-1 font-display text-2xl leading-tight">${reservation.reference}</p>
+              </div>
+              ${reservationStatusPill(reservation.status)}
+            </div>
+            <div class="p-4 sm:p-5">
+              <div class="flex gap-3">
+                <img src="${item.photo}" alt="${escapeHtml(item.alt)}" class="size-20 shrink-0 rounded-lg border border-line object-cover" />
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-bold">${escapeHtml(item.title)}</p>
+                  <p class="mt-0.5 text-[11px] font-bold text-faint">${escapeHtml(item.condition)} · one only</p>
+                  <p class="mt-1 font-mono text-sm font-bold">${money(reservation.priceCents)}</p>
+                </div>
+              </div>
+              <dl class="mt-4 space-y-1.5 text-[11px]">
+                <div class="flex items-center justify-between gap-3"><dt class="font-bold text-faint">Buyer</dt><dd class="text-right font-bold">${escapeHtml(firstName(reservation.buyerName))}</dd></div>
+                <div class="flex items-center justify-between gap-3"><dt class="font-bold text-faint">Email</dt><dd class="max-w-[12rem] truncate text-right font-mono text-[10px]">${escapeHtml(maskEmail(reservation.buyerEmail))}</dd></div>
+                <div class="flex items-center justify-between gap-3"><dt class="font-bold text-faint">Handover</dt><dd class="text-right font-bold">${reservation.fulfilment === "pickup" ? "Pickup" : "Post"}</dd></div>
+                <div class="flex items-center justify-between gap-3"><dt class="font-bold text-faint">${reservation.status === "pending" ? "Held for" : "Window"}</dt><dd class="text-right font-bold">${reservation.status === "pending" ? reservation.expiresInHours + " hours" : reservation.status === "confirmed" ? "Confirmed" : "Closed"}</dd></div>
+                <div class="flex items-center justify-between gap-3"><dt class="font-bold text-faint">Receipt email</dt><dd class="font-mono text-[9px] uppercase text-faint">${reservation.emailStatus}</dd></div>
+              </dl>
+              <div class="mt-4 rounded-lg border border-line bg-[#f1e9d8] p-3">
+                <p class="font-mono text-[8px] tracking-[0.1em] text-faint uppercase">What happens now</p>
+                <p class="mt-1.5 text-xs leading-relaxed font-bold text-soft">${what}</p>
+              </div>
+              <div class="mt-4 flex flex-wrap items-center gap-2">
+                <a class="btn btn-green" href="https://wa.me/60123456789?text=${encodeURIComponent(message)}" target="_blank" rel="noreferrer">Continue on WhatsApp</a>
+                ${reservation.status === "pending" && !reservation.claimed ? `<button class="btn" style="border:1px solid rgb(183 121 31 / 0.45); background:rgb(242 180 65 / 0.2); color:#8a5a12" onclick="claimPaid()">I've paid</button>` : ""}
+                ${reservation.claimed && reservation.status === "pending" ? `<span class="pill pill-pending">Claim recorded</span>` : ""}
+                <button class="btn btn-ghost" onclick="copyReference()">Copy reference</button>
+              </div>
+              <p class="mt-3 text-[10px] leading-relaxed font-bold text-faint">A claim is not a confirmation. Only the shop can mark this sold. The receipt is a view of the database, not a separate source of truth.</p>
+            </div>
+          </div>`;
+      }
+
+      function setBackTab(tab) {
+        state.backTab = tab;
+        renderBack();
+      }
+
+      function renderBack() {
+        const stats = document.getElementById("backStats");
+        const body = document.getElementById("backBody");
+        const available = state.items.filter((item) => item.status === "available").length;
+        const reserved = state.items.filter((item) => item.status === "reserved").length;
+        const sold = state.items.filter((item) => item.status === "sold").length;
+        const pending = state.reservations.filter((entry) => entry.status === "pending").length;
+
+        stats.innerHTML = [
+          ["Available", available, "#2f6b4f"],
+          ["Reserved", reserved, "#b7791f"],
+          ["Sold", sold, "#d94a2b"],
+          ["Pending holds", pending, "#f2b441"],
+        ]
+          .map(
+            ([label, value, tone]) => `
+              <div class="rounded-xl border border-paper/10 bg-paper/5 p-3">
+                <p class="font-mono text-[8px] tracking-[0.1em] text-paper/60 uppercase">${label}</p>
+                <p class="mt-1 text-2xl font-bold leading-none" style="color:${tone}">${value}</p>
+              </div>`,
+          )
+          .join("");
+
+        document.getElementById("tabItems").className =
+          state.backTab === "items"
+            ? "rounded-full bg-paper px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-ink uppercase"
+            : "rounded-full border border-paper/20 px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-paper/60 uppercase";
+        document.getElementById("tabReservations").className =
+          state.backTab === "reservations"
+            ? "rounded-full bg-paper px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-ink uppercase"
+            : "rounded-full border border-paper/20 px-3.5 py-1.5 font-mono text-[9px] tracking-[0.08em] text-paper/60 uppercase";
+
+        if (state.backTab === "items") {
+          body.innerHTML = `<div class="grid grid-cols-1 gap-2">${state.items
+            .map((item) => {
+              const hold = state.reservations.find(
+                (entry) => entry.itemId === item.id && entry.status === "pending",
+              );
+              return `<div class="flex flex-wrap items-center gap-3 rounded-xl border border-paper/10 bg-paper/5 p-3">
+                <img src="${item.photo}" alt="${escapeHtml(item.alt)}" class="size-12 shrink-0 rounded-lg border border-paper/10 object-cover" />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-bold">${escapeHtml(item.title)}</p>
+                  <p class="mt-0.5 font-mono text-[9px] text-paper/60">${money(item.priceCents)} · ${escapeHtml(item.condition)}</p>
+                </div>
+                ${itemStatusPill(item.status)}
+                ${hold ? `<button class="btn btn-dark" onclick="openReceipt('${hold.reference}')">${hold.reference} →</button>` : `<span class="font-mono text-[8px] tracking-[0.06em] text-paper/65 uppercase">No active hold</span>`}
+              </div>`;
+            })
+            .join("")}</div>`;
+          return;
+        }
+
+        if (state.reservations.length === 0) {
+          body.innerHTML = `<div class="rounded-xl border-2 border-dashed border-paper/15 p-6 text-center">
+            <p class="text-sm font-bold text-paper/70">No reservations yet.</p>
+            <p class="mt-1 text-[11px] font-bold text-paper/65">Go to the shop, reserve something, then come back.</p>
+            <button class="btn btn-dark mt-3" onclick="showView('shop')">Open the shop</button>
+          </div>`;
+          return;
+        }
+
+        body.innerHTML = `<div class="grid grid-cols-1 gap-2">${[...state.reservations]
+          .reverse()
+          .map((reservation) => {
+            const item = state.items.find((entry) => entry.id === reservation.itemId);
+            if (!item) return "";
+            const actions =
+              reservation.status === "pending"
+                ? `<button class="btn btn-green" onclick="confirmSale('${reservation.reference}')">Confirm sale</button>
+                   <button class="btn btn-dark" onclick="extendReservation('${reservation.reference}')">+24h</button>
+                   <button class="btn btn-dark" onclick="cancelReservation('${reservation.reference}')">Cancel</button>`
+                : "";
+            return `<div class="rounded-xl border border-paper/10 bg-paper/5 p-3">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p class="font-mono text-[10px] tracking-[0.08em] text-kunyit">${reservation.reference}</p>
+                  <p class="mt-1 text-sm font-bold">${escapeHtml(item.title)}</p>
+                  <p class="mt-0.5 text-[11px] font-bold text-paper/65">${escapeHtml(reservation.buyerName)} · ${escapeHtml(reservation.buyerEmail)}</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  ${reservationStatusPill(reservation.status)}
+                  ${reservation.claimed && reservation.status === "pending" ? `<span class="pill pill-pending">Claimed paid</span>` : ""}
+                </div>
+              </div>
+              <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[9px] text-paper/60">
+                <span>${money(reservation.priceCents)}</span>
+                <span>${reservation.fulfilment === "pickup" ? "Pickup" : "Post"}</span>
+                <span>${reservation.status === "pending" ? reservation.expiresInHours + "h left" : reservation.status}</span>
+                <span>Email: ${reservation.emailStatus}</span>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                ${actions}
+                <button class="btn btn-dark" onclick="openReceipt('${reservation.reference}')">Open receipt →</button>
+              </div>
+            </div>`;
+          })
+          .join("")}</div>`;
+      }
+
+      function openReceipt(reference) {
+        state.activeRef = reference;
+        state.view = "receipt";
+        render();
+      }
+
+      function renderNav() {
+        document.getElementById("navReceipt").style.display = state.activeRef
+          ? "inline-flex"
+          : "none";
+        document.querySelectorAll(".nav-link").forEach((button) => {
+          button.classList.toggle(
+            "active",
+            button.dataset.target === state.view,
+          );
+        });
+      }
+
+      function render() {
+        document.getElementById("view-shop").classList.toggle("hidden", state.view !== "shop");
+        document.getElementById("view-item").classList.toggle("hidden", state.view !== "item");
+        document.getElementById("view-receipt").classList.toggle("hidden", state.view !== "receipt");
+        document.getElementById("view-back").classList.toggle("hidden", state.view !== "back");
+        renderNav();
+        if (state.view === "shop") renderShop();
+        if (state.view === "item") renderItem();
+        if (state.view === "receipt") renderReceipt();
+        if (state.view === "back") renderBack();
+      }
+
+      function showView(view) {
+        state.view = view;
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function copyItemLink() {
+        const item = selectedItem();
+        if (!item) return;
+        copyText("https://kedai.example/items/" + item.slug, "Item link copied (demo). Each item has a shareable public URL.");
+      }
+
+      function copyReference() {
+        const reservation = activeReservation();
+        if (!reservation) return;
+        copyText(reservation.reference, "Reference copied. The receipt page is the link the email carries.");
+      }
+
+      function copyText(text, message) {
+        if (navigator.clipboard) navigator.clipboard.writeText(text);
+        toast(message);
+      }
+
+      let toastTimer;
+      function toast(message) {
+        const node = document.getElementById("toast");
+        node.textContent = message;
+        node.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => node.classList.remove("show"), 3800);
+      }
+
+      function resetDemo() {
+        state = {
+          view: "shop",
+          backTab: "reservations",
+          items: clone(SEED_ITEMS),
+          reservations: [],
+          selectedId: null,
+          activeRef: null,
+          formError: "",
+        };
+        render();
+        toast("Demo reset. The shelf is full again.");
+      }
+
+      render();
+    </script>
+  </body>
+</html>

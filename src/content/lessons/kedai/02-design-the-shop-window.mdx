@@ -1,0 +1,214 @@
+---
+title: "Design the shop window"
+slug: "design-the-shop-window"
+project: "kedai"
+order: 2
+part: "plan"
+summary: "Before the real app, build a single-file Kedai mockup: the shelf, the item, the receipt, and the dark back room."
+duration: "7 min read"
+tags: ["Design", "mockup", "opencode"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import MockupEmbed from "../../../components/lesson/MockupEmbed.astro";
+
+The reservation state machine is invisible in a mockup. The *flow* is not.
+
+Before we write a single migration, we want to see the whole shop: the shelf, the item, the reserve form, the receipt, the WhatsApp handoff, and the back room. If the flow feels confusing in a static HTML file, it will feel worse in a real app with auth and expiry.
+
+So this lesson is a design lesson, not a code lesson. We are going to build **one HTML file** that looks like Kedai and lets us click through the entire story.
+
+## The design brief
+
+Kedai should feel like a small neighbourhood shop with a ledger, not a generic e-commerce template.
+
+| Decision | Direction |
+| --- | --- |
+| Name | **Kedai** |
+| Promise | *One seller. One of each.* |
+| Mood | Warm, practical, a little nostalgic. A shop with a back room. |
+| Paper | `#F6F0E2` cream |
+| Ink | `#2B1D14` kopi brown |
+| Accent | `#D94A2B` chili red |
+| Support | `#2F6B4F` pandan green, `#F2B441` kunyit yellow |
+| Display | Fraunces (or Georgia as a fallback) |
+| Body | Nunito |
+| Metadata | JetBrains Mono, uppercase, wide tracking |
+| Shape | Enamel-sign rectangles, shelf labels, price tags, receipt rules |
+| Motion | Stamp press, label peel, 1.02 hover, no carousels |
+
+The contrast with Gallery Blog is deliberate. Gallery Blog is playful: clay cards, polaroids, rounded corners, Fredoka. Kedai is a shop: cream paper, kopi ink, chili red, shelf labels, a dark back room. The only loud colour is the chili.
+
+Chili red is the accent. Interactive buttons use a deeper shade so white text stays readable.
+
+## Six screens, one story
+
+The mockup needs exactly six screens. No more.
+
+<StepList
+  steps={[
+    {
+      title: "The shelf",
+      body: "A hero statement and a grid of six items. Each card has a photo, title, condition, category, price, and a status tag. Sold items carry a stamp.",
+    },
+    {
+      title: "The item",
+      body: "A large photo on the left, a sticky purchase panel on the right: title, note, price, seller, and a reserve form with name, email, phone, handover, and note.",
+    },
+    {
+      title: "The receipt",
+      body: "A paper-like reservation page. Reference, item, snapshot price, status, hold window, WhatsApp button, payment note, and the “I've paid” claim.",
+    },
+    {
+      title: "The back room",
+      body: "A dark admin surface. Counts, an item list, and a reservation list with the buyer, claim badge, email status, and the three actions that matter: confirm, extend, cancel.",
+    },
+    {
+      title: "The empty room",
+      body: "A reservation list with no reservations, and a shelf with nothing published. If the empty states feel good, the real states will feel better.",
+    },
+    {
+      title: "The closed hold",
+      body: "A receipt after the hold expired or the seller cancelled. The item is back on the shelf; the receipt keeps the history.",
+    },
+  ]}
+/>
+
+## The prompt
+
+This is the prompt we would give opencode. Notice how much of it is *constraints*, not decoration. Constraints are what make a mockup useful.
+
+```text
+Build a single-file mockup called kedai.html using HTML, Tailwind CSS
+(browser CDN), Google Fonts, and vanilla JavaScript. No framework, no build step.
+
+PROJECT
+Kedai — a one-person marketplace for physical, one-of-one items. The seller
+lists an item; a visitor opens the item link, reserves it for 24 hours, and
+arranges payment and pickup on WhatsApp. The seller confirms the sale in a
+private back room. No customer accounts, no cart, no online payment.
+
+VISUAL DIRECTION
+- Cream #F6F0E2, kopi brown #2B1D14, chili red #D94A2B, pandan green #2F6B4F,
+  kunyit yellow #F2B441.
+- Fraunces for display, Nunito for body, JetBrains Mono for prices and refs.
+- A neighbourhood shop with a ledger: enamel sign, shelf labels, price tags,
+  receipt paper, rubber stamps.
+- Not a generic e-commerce template. Not a gallery.
+- Responsive. On mobile the item panel stacks below the photo.
+
+SCREENS
+1. Shelf: hero + six-item grid. Each item has a photo, status tag, title,
+   condition, category, and price.
+2. Item: large photo, title, note, price, seller, and a reserve form.
+3. Receipt: reference like KD-7K3M9Q2X, item, snapshot price, status pending,
+   hold window, "Continue on WhatsApp", "I've paid", and a copy-reference button.
+4. Back room: dark admin view with counts, items, reservations, a "Claimed paid"
+   badge, email status, "Confirm sale", "+24h", and "Cancel".
+5. Empty states for the shelf, the reservation list, and the receipt.
+6. Closed hold: a receipt after expiry or cancellation.
+
+INTERACTIONS (mockup state only)
+- Clicking an item opens its detail.
+- Reserving generates a fake reference and opens the receipt.
+- "I've paid" records a claim; the status stays pending.
+- The back room can confirm the sale. The item becomes sold and the receipt
+  shows confirmed.
+- The back room can cancel or extend a hold.
+- A "Simulate 24 hours" button expires a pending hold and returns the item to
+  the shelf.
+- Add a reset button so the demo can start over.
+
+RULES
+- The price in the receipt comes from the item, never from a field.
+- The buyer can claim "I've paid", but cannot mark the item sold.
+- Only one pending reservation per item.
+- A sold item keeps its receipt history; it is not deleted.
+- The back room is clearly admin-only.
+- Use local placeholder photos. Keep all CSS and JS in the one file.
+```
+
+<Callout variant="warn" title="Mockup is not security">
+The Tailwind CDN and the fake JavaScript state are for prototyping only. A
+mockup can show a “Sold” badge; it cannot prove a payment or stop two buyers.
+The real app starts in lesson 4, and the real guarantees start with the database
+constraints in lesson 5.
+</Callout>
+
+## The reference result
+
+This is the file we built for the course. It is real HTML, not a screenshot. Click through it:
+
+<MockupEmbed
+  src="/mockup/kedai.html"
+  url="mockup/kedai.html"
+  title="Kedai personal marketplace mockup"
+>
+  This is the real file, not a screenshot — one HTML file with the shelf, the
+  item, the receipt, and the back room. Click an item, reserve it, then open the
+  back room.
+</MockupEmbed>
+
+Try this route, in order:
+
+1. Open an item from the shelf and read the reserve form.
+2. Reserve it with any name and email.
+3. Open the WhatsApp preview. Notice the message includes the reference, title,
+   price, and handover choice.
+4. Click **I've paid**. The receipt says the claim was recorded, but the status
+   stays **pending**.
+5. Open **Back room**. The reservation shows the claim badge. Click **Confirm
+   sale**. Watch the item become sold and the receipt update to confirmed.
+6. Go back to the receipt. It now says confirmed. The shelf shows the sold stamp.
+7. Return to the back room and click **Simulate 24 hours** on a fresh pending
+   hold. The item goes back to the shelf and the receipt closes.
+
+<Callout variant="haa" title="Haa!">
+The most important screen is not the shelf. It is the receipt. That is where the
+buyer learns that a WhatsApp message is not a payment, and the seller learns
+that a claim is not a confirmation.
+</Callout>
+
+## Iterate, don't perfect
+
+A mockup is supposed to be cheap to change. Three prompts that usually improve it:
+
+```text
+Make the shelf quieter: more whitespace, smaller captions, remove most of the
+card shadows. The objects should do the talking.
+```
+
+```text
+Add a "Claimed paid" state to the receipt and the back room. The buyer can claim,
+but the reservation must stay pending until the seller confirms. Make that
+distinction impossible to miss.
+```
+
+```text
+On mobile, turn the item panel into a sticky bottom bar with the price and the
+reserve button. Keep the full details above it.
+```
+
+<MissionBox
+  body="Open the mockup and click through the full buyer flow, then the back room. Find the single most confusing moment. Change one thing — a label, a position, a colour, a sentence — and test the flow again. Write down what you changed and why."
+  note="No real app yet. The goal is a design you can defend, not a design that looks busy."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "The mockup is one HTML file: six screens, one story, no build step.",
+    "Kedai is a neighbourhood shop, not a gallery and not a generic checkout.",
+    "The receipt is the most important screen: claim ≠ confirmation.",
+    "The back room is dark on purpose: it is a different space with different permissions.",
+    "A mockup can show a state; only the database can enforce it.",
+  ]}
+/>
+
+Next: the mockup is a drawing. The master plan is the contract — ten phases, hard invariants, and one rule: no phase is done until its Verify step passes.

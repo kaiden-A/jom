@@ -1,7 +1,7 @@
 ---
-title: "The trust-boundary blueprint"
-slug: "trust-boundary-blueprint"
-project: "safelight"
+title: "The blueprint"
+slug: "the-blueprint"
+project: "kedai"
 order: 3
 part: "plan"
 summary: "The mockup is a drawing. The master plan is the contract: ten phases, hard invariants, and one rule — no phase is done until its Verify step passes."
@@ -15,46 +15,46 @@ import Callout from "../../../components/lesson/Callout.astro";
 import StepList from "../../../components/lesson/StepList.astro";
 import RecapCards from "../../../components/lesson/RecapCards.astro";
 import MissionBox from "../../../components/lesson/MissionBox.astro";
-import SafelightRoadmap from "../../../components/react/safelight/SafelightRoadmap.tsx";
+import KedaiRoadmap from "../../../components/react/kedai/KedaiRoadmap.tsx";
 
-The mockup is a drawing. It shows what the shop looks like. It cannot show what happens when two admin tabs click **Mark paid** at the same time, or when Resend is down, or when a customer opens an email three weeks later.
+The mockup is a drawing. It shows what the shop looks like. It cannot show what happens when two buyers click **Reserve** at the same time, or when a hold expires while the seller is confirming it, or when Resend is down.
 
 That is what the **master plan** is for.
 
-It is a blueprint written for exactly one situation: a coding agent starting Safelight from an empty folder. Every remaining lesson maps to a phase inside it. The plan is the source of truth; when a lesson and the plan disagree, the plan wins.
+It is a blueprint written for exactly one situation: a coding agent starting Kedai from an empty folder. Every remaining lesson maps to a phase inside it. The plan is the source of truth; when a lesson and the plan disagree, the plan wins.
 
-<div class="not-prose my-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-dashed border-[#d9d1c3] bg-[#f3efe6] p-5 sm:p-6">
+<div class="not-prose my-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-dashed border-[#d8cbb4] bg-[#f6f0e2] p-5 sm:p-6">
   <div>
     <p class="font-display text-base font-semibold">The plan itself</p>
     <p class="text-ink-soft mt-1 text-sm leading-relaxed font-bold">
       Keep it open in a tab. It is written for opencode, but you should know what is inside it.
     </p>
   </div>
-  <a href="/downloads/master-plan-safelight.md" download class="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm">Download master-plan-safelight.md</a>
+  <a href="/downloads/master-plan-kedai.md" download class="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm">Download master-plan-kedai.md</a>
 </div>
 
 ## One app, not a pile of apps
 
-Safelight is **one Next.js app** that does everything:
+Kedai is **one Next.js app** that does everything:
 
-- The public gallery and photograph pages render on the server.
-- The admin ledger is the same app, behind a session.
-- The download page and the signed-URL redirect are the same app too.
-- The database is Neon; the files are R2; the email is Resend. Those are services, not separate backends.
+- The public shelf and item pages render on the server.
+- The back room is the same app, behind a session.
+- The reservation receipt and the upload ticket are the same app too.
+- The database is Neon; the photos are R2; the email is Resend. Those are services, not separate backends.
 
-There is no `client/` and no `server/`. One repo, one deploy, one origin. The only boundary that matters is the one inside the app: **public reads vs. admin mutations vs. a download route that anyone can hit with a token.**
+There is no `client/` and no `server/`. One repo, one deploy, one origin. The only boundary that matters is the one inside the app: **public reads vs. constrained public writes vs. authorized admin writes.**
 
 <Callout variant="note" title="What changed from Gallery Blog">
-Gallery Blog was Express + EJS: one server, server-rendered pages, no front-end framework. Safelight is Next.js: Server Components for reading, Server Actions for mutations, Route Handlers for streams and signed URLs. The stack changed because the lesson changed. This project is about the server/client trust boundary, and Next.js makes that boundary explicit.
+Gallery Blog was Express + EJS: one server, server-rendered pages, no front-end framework. Kedai is Next.js: Server Components for reading, Server Actions for mutations, Route Handlers for uploads and cron. The stack changed because the lesson changed. This project is about the server/client trust boundary, and Next.js makes that boundary explicit.
 </Callout>
 
 ## The ten phases
 
 This is the shape of the build. Tap a phase to see what it produces.
 
-<SafelightRoadmap client:visible />
+<KedaiRoadmap client:visible />
 
-Read the order like a sentence: *get it to boot, get the data right, let yourself in, show the shop, put the files in the vault, take orders, run the ledger, send the ticket, prove the failures, ship it.*
+Read the order like a sentence: *get it to boot, get the data right, let yourself in, show the shelf, put the photos on it, take reservations, run the back room, send the receipt, prove the failures, ship it.*
 
 <Callout variant="warn" title="No skipping">
 Every phase ends with a **Verify:** line. You do not start the next phase until it passes. Skipping ahead feels fast; it is actually the slowest way to build, because now you are debugging three unknown layers at the same time.
@@ -65,24 +65,25 @@ Every phase ends with a **Verify:** line. You do not start the next phase until 
 The plan has a section called **hard invariants** — rules it will not bend. You will meet them one at a time, but here is the flavour:
 
 - **The price comes from the database.** The browser never sends an amount.
-- **Only the admin can mark an order paid.** A customer's claim is recorded, not trusted.
-- **No email before the order is paid.** Payment status and email status are separate.
-- **The original is never public.** Only a signed, short-lived R2 GET URL can read it, after a token and a paid-order check.
-- **The raw download token is never stored or logged.** The database stores a hash.
+- **One item has at most one pending reservation.** A partial unique index enforces it.
+- **Only the admin can confirm a sale.** A buyer's claim is recorded, not trusted.
+- **An expired reservation releases the item.** A cron and a lazy check both help.
 - **Authorization happens inside every Server Action and Route Handler.** A layout or `proxy.ts` is only a UX convenience.
-- **A photograph with orders is never hard-deleted.** Archive it; paid customers keep their access.
+- **An item with reservations is never hard-deleted.** Archive it; keep the history.
+- **Photos are public, the back room is not.** The photos are marketing; the mutations are private.
 - **Every state transition is conditional and audited.** Double-clicks and retries must be idempotent.
 
 These are not decoration. They become database constraints, conditional updates, and tests.
 
 ## The state machine is the heart
 
-The order is the source of truth for entitlement. It only moves in a few directions:
+The reservation is the source of truth for a hold. It only moves in a few directions:
 
 ```text
-pending_payment ──admin verifies──▶ paid ──admin refunds──▶ refunded
-       │
-       └──admin cancels──▶ cancelled
+pending ──seller confirms──▶ confirmed
+   │
+   ├──buyer or seller cancels──▶ cancelled
+   └──24 hours pass────────────▶ expired
 ```
 
 The email is a **side effect** with its own status:
@@ -93,7 +94,7 @@ not_sent ──claim──▶ sending ──Resend──▶ sent
                         └──failure──▶ failed ──retry──▶ sending
 ```
 
-A paid order with a failed email is still paid. The customer is entitled to the file; the email is how they find out. That distinction is the difference between a shop that works and a shop that loses orders when an email bounces.
+A confirmed sale with a failed receipt is still confirmed. The buyer is entitled to the item; the email is how they find out. That distinction is the difference between a shop that works and a shop that loses orders when an email bounces.
 
 ## The facts only you can supply
 
@@ -101,13 +102,14 @@ Some phases pause and ask for real values. Nothing secret ever goes into the pla
 
 | Fact | Where it ends up |
 | --- | --- |
-| Shop name, promise, sending domain | `BRAND_NAME`, `EMAIL_FROM`, page copy |
+| Shop name, promise, seller display name | `SHOP_NAME`, page copy, `EMAIL_FROM` |
 | Production domain | `PUBLIC_BASE_URL`, R2 CORS, email links |
 | WhatsApp number in E.164 without `+` | `WHATSAPP_NUMBER` |
-| Bank transfer / DuitNow instructions | `PAYMENT_INSTRUCTIONS` |
+| Pickup location and instructions | `SHOP_LOCATION`, `PICKUP_INSTRUCTIONS` |
+| Seller notification email | `SHOP_EMAIL` |
 | Your admin email and a 12+ character password | `ADMIN_EMAIL`, `ADMIN_PASSWORD` (seed only) |
 | Neon pooled connection string + a test branch | `DATABASE_URL`, `TEST_DATABASE_URL` |
-| Cloudflare account id, bucket, R2 token | `R2_*` |
+| Cloudflare account id, bucket, R2 token, public bucket URL | `R2_*` |
 | Resend API key | `RESEND_API_KEY` |
 | Default currency | `DEFAULT_CURRENCY` (default `MYR`) |
 
@@ -120,7 +122,7 @@ You do not need all of these today. You need each one exactly when its phase arr
     {
       title: "Read the plan once",
       body: "Not memorize — just know its shape. Download it above and skim the table of contents. You will come back constantly.",
-      code: "master-plan-safelight.md",
+      code: "master-plan-kedai.md",
       note: "It is written for a coding agent, so you can hand it to opencode. You still need to know what is in it.",
     },
     {
@@ -140,18 +142,18 @@ You do not need all of these today. You need each one exactly when its phase arr
 />
 
 <Callout variant="tip" title="Why understand if the agent writes it?">
-Because you are the reviewer, not the typist. opencode will produce the schema, the route, the email template. But when a payment is confirmed twice at 11pm, the person who understands *why* the conditional update exists is the person who fixes it. That is this course's job: making you that person.
+Because you are the reviewer, not the typist. opencode will produce the schema, the route, the email template. But when two buyers reserve the same chair at 11pm, the person who understands *why* the partial unique index exists is the person who fixes it. That is this course's job: making you that person.
 </Callout>
 
 ## What this project is not
 
-No customer accounts. No cart. No subscriptions. No Stripe. No reviews. No search. No multi-currency. No RAW support. No print fulfillment.
+No customer accounts. No cart. No multi-vendor marketplace. No subscriptions. No Stripe. No reviews. No search. No shipping calculator. No multi-currency.
 
 Every one of those is a real feature, and every one of them would make the first version harder to finish and easier to get wrong. The manual WhatsApp workflow is not a limitation we are apologising for. It is the workflow many small shops actually use. The project is about making that workflow **safe**.
 
 <MissionBox
-  body="Download the plan. Find three things: the hard invariants, the Verify line for phase 8 (email and download), and the footgun table. Then collect the facts you already know — shop name, domain, WhatsApp number, currency — and leave every secret blank."
-  note="If you can point to where the plan prevents a double payment, you are ready for the build."
+  body="Download the plan. Find three things: the hard invariants, the Verify line for phase 6 (reservations and WhatsApp), and the footgun table. Then collect the facts you already know — shop name, domain, WhatsApp number, currency — and leave every secret blank."
+  note="If you can point to where the plan prevents a double sale, you are ready for the build."
 />
 
 ## Recap
@@ -159,7 +161,7 @@ Every one of those is a real feature, and every one of them would make the first
 <RecapCards
   points={[
     "The master plan is the contract: one Next.js app, ten phases, each with a Verify step.",
-    "The state machine is the heart: pending → paid, with email as a separate side effect.",
+    "The reservation state machine is the heart: pending → confirmed, cancelled, or expired.",
     "The invariants become constraints, conditional updates, and tests — not comments.",
     "Secrets live in env files and the hosting platform, never in the plan.",
     "No skipping phases. The Verify step is the whole discipline.",

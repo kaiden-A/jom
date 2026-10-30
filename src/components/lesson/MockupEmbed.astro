@@ -54,9 +54,11 @@ const {
       class="h-[560px] w-full bg-white sm:h-[660px]"></iframe>
   </div>
   <p class="text-ink-soft mt-3 text-sm leading-relaxed font-bold">
-    This is the real file, not a screenshot — just one
-    <code class="font-mono text-xs">index.html</code>. Try clicking folders, opening
-    photos, liking and commenting. Hit the <strong>Admin</strong> button at the top
-    right inside it to upload a photo.
+    <slot>
+      This is the real file, not a screenshot — just one
+      <code class="font-mono text-xs">index.html</code>. Try clicking folders, opening
+      photos, liking and commenting. Hit the <strong>Admin</strong> button at the top
+      right inside it to upload a photo.
+    </slot>
   </p>
 </div>

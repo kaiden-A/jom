@@ -1,0 +1,283 @@
+---
+title: "One seller, one of each"
+slug: "one-seller-one-of-one"
+project: "kedai"
+order: 1
+part: "plan"
+summary: "A personal marketplace is not a tiny Amazon. Meet the one-of-one item, the three spaces, and the reservation that cannot be double-sold."
+duration: "8 min read"
+tags: ["Explanation", "no code", "Next.js"]
+updated: "October 2026"
+draft: false
+---
+
+import Callout from "../../../components/lesson/Callout.astro";
+import StepList from "../../../components/lesson/StepList.astro";
+import RecapCards from "../../../components/lesson/RecapCards.astro";
+import MissionBox from "../../../components/lesson/MissionBox.astro";
+import TechStackCards from "../../../components/lesson/TechStackCards.astro";
+import KedaiDemo from "../../../components/react/kedai/KedaiDemo.tsx";
+import ThreeSpaces from "../../../components/react/kedai/ThreeSpaces.tsx";
+
+You have one chair. Two people want it. Who gets it?
+
+That is the whole project. Not a catalog with infinite stock — a shelf with **one of each**. The moment you accept that, a different set of problems appears. A normal shop subtracts from a quantity. A personal shop has to decide who is holding the only chair, for how long, and what happens when they disappear.
+
+Kedai is a one-person marketplace for exactly that: the things you are ready to let go. You list an item, share its link, a buyer reserves it, and you arrange payment and pickup on WhatsApp. No customer accounts. No cart. No online payment. One seller, one shelf, one of each.
+
+## Why "Kedai"?
+
+A kedai is a small neighbourhood shop. It has a window, a counter, and a back room. That is the entire architecture of this project:
+
+- **The shop window** is public. Anyone can look at the shelf and open an item link.
+- **The counter** is where a buyer reserves one item. It is public too, but it is constrained.
+- **The back room** is yours. Publish, price, confirm, cancel, archive. Nobody else gets in.
+
+The name is not decoration. It is the mental model. Every screen in the app belongs to one of those three spaces, and each space has a different permission.
+
+## The two people
+
+There is one seller and many visitors. They never see the same screen.
+
+### The visitor
+
+<StepList
+  steps={[
+    {
+      title: "Open the shop link",
+      body: "The shelf shows what is available, what is on hold, and what has already found a home. No login, no account, no cart.",
+    },
+    {
+      title: "Open an item",
+      body: "Photos, condition, price, the seller's note, and one reserve form. The item has its own shareable URL.",
+    },
+    {
+      title: "Reserve it for 24 hours",
+      body: "Name, email, optional phone, pickup or post, and a note. The server reads the price from the item and snapshots it into the reservation.",
+    },
+    {
+      title: "Continue on WhatsApp",
+      body: "The receipt opens a prefilled message: reference, item, price, handover. Payment and pickup are arranged there.",
+    },
+    {
+      title: "Wait for confirmation",
+      body: "The buyer may click “I've paid”, but that is a claim. The item stays pending until the seller confirms the money arrived.",
+    },
+    {
+      title: "Collect the item",
+      body: "Once the seller confirms, the item is sold. The receipt keeps the history, and the shelf shows the stamp.",
+    },
+  ]}
+/>
+
+### The seller
+
+<StepList
+  steps={[
+    {
+      title: "Log in",
+      body: "One admin, a real session, a rate-limited login. There are no customer accounts anywhere in the system.",
+    },
+    {
+      title: "Create an item",
+      body: "Write the title and note, choose the condition, set the price, and upload the photos. It starts as a draft.",
+    },
+    {
+      title: "Publish it",
+      body: "A draft is invisible. Publishing makes the item and its shareable link appear on the shelf.",
+    },
+    {
+      title: "Watch the reservations",
+      body: "The back room shows the buyer, the claim, the hold window, and the email status.",
+    },
+    {
+      title: "Confirm the sale",
+      body: "After checking the payment, the seller confirms. The item becomes sold exactly once.",
+    },
+    {
+      title: "Cancel or extend",
+      body: "If the buyer disappears, cancel the hold or give them another 24 hours. An expired hold releases the item automatically.",
+    },
+  ]}
+/>
+
+## The three spaces
+
+Here is the model to keep for the rest of the project. Everything else is implementation detail.
+
+<ThreeSpaces client:visible />
+
+The important part is the **asymmetry**:
+
+- The shop window is a public read. It is marketing.
+- The counter is a public write, but it can only create **one pending reservation per item**. It cannot confirm a sale.
+- The back room is an authorized write. It is the only place that can turn a reservation into a sale.
+
+If you remember one sentence from this lesson, make it this one:
+
+> **The counter can hold the chair. Only the back room can sell it.**
+
+## The item lifecycle
+
+An item is not a product with a stock count. It is a single object moving through a small set of states:
+
+```text
+draft ──publish──▶ available ──buyer reserves──▶ reserved ──seller confirms──▶ sold
+                       ▲                              │
+                       │                              ├──seller cancels──┐
+                       │                              └──hold expires────┤
+                       └──────────────────────────────────────────────────┘
+```
+
+Two rules matter more than the diagram:
+
+- **A pending reservation is a hold, not a sale.** The item is reserved, the buyer has a reference, and the seller still has to confirm the money.
+- **A hold has a deadline.** After 24 hours, the reservation expires and the item returns to the shelf. A shop that forgets to release stale holds slowly stops selling.
+
+We will build both as database constraints and conditional updates, not as `if` statements scattered through the UI.
+
+## Try the whole flow
+
+This demo is the project in miniature. It has no backend, no real payments, and no real email — but every state transition is the one we will build for real.
+
+<KedaiDemo client:visible />
+
+Click through it in this order:
+
+1. Open an item and reserve it with any name and email.
+2. Read the receipt. Open the WhatsApp preview. Click **I've paid**.
+3. Switch to **Back room**. Notice that the reservation is still **pending** — the claim did not change it.
+4. Click **Confirm sale**. Watch the item become sold and the receipt update to confirmed.
+5. Go back to the shop. The item now carries a **Sold** stamp.
+6. Reset the demo, open another item, and click **Demo: let another buyer click first**. Try to reserve again. The item is already held.
+
+<Callout variant="haa" title="Haa!">
+Notice what the demo refuses to do. It never lets a buyer confirm a sale. It never allows two pending reservations for one item. It never lets the email status change the reservation status. Those three refusals are the project.
+</Callout>
+
+## What is actually hard here
+
+Uploading a photo and listing an item is the easy part. The Gallery Blog project already taught that. Kedai adds four problems that are mostly about **state**, not UI:
+
+1. **The stock is one.** Two buyers can click reserve at the same time. One must win; the other must see an honest “just reserved” state. A quantity count cannot save you here.
+2. **The hold expires.** Time is part of the state. A reservation that is pending forever is a shop that never sells the chair again.
+3. **The price must be frozen.** An item can cost RM 180 today and RM 150 next week. A reservation created today must still be RM 180 forever.
+4. **Only the seller can confirm.** A buyer's claim is useful information, not a payment. The interface must make the difference impossible to miss.
+
+That is why the database is not just a list of items. It is the source of truth for **who is holding which item, until when, and why**.
+
+## The state machine
+
+The reservation is the heart of the system. It only moves in a few directions, and every move has a guard.
+
+```text
+pending ──seller confirms──▶ confirmed
+   │
+   ├──buyer or seller cancels──▶ cancelled
+   └──24 hours pass────────────▶ expired
+```
+
+The item moves with it:
+
+```text
+available ──reserve──▶ reserved ──confirm──▶ sold
+     ▲                     │
+     └──cancel or expire───┘
+```
+
+Two rules matter more than the diagram:
+
+- **Only `pending` can become `confirmed`.** Not `cancelled`, not `expired`, not `confirmed` again.
+- **Email status is separate from reservation status.** A confirmed sale with a failed receipt is still confirmed. The buyer is entitled to the item; the email is just how they find out.
+
+We will build both as explicit database constraints and conditional updates, not as promises in a component.
+
+## The stack
+
+<Callout variant="tip" title="Why Next.js this time?">
+The Gallery Blog project used Express and EJS: one server, server-rendered pages, no front-end framework. That was the right tool for learning CRUD. Kedai is the next step: React on the server and the client, one deploy, and three clear server boundaries — Server Components for reading, Server Actions for mutations, and Route Handlers for uploads and cron.
+</Callout>
+
+<TechStackCards
+  items={[
+    {
+      name: "Next.js 16.4",
+      role: "The app",
+      monogram: "N",
+      tone: "bg-[#2b1d14] text-white",
+      desc: "App Router, React Server Components, Server Actions, and Route Handlers. One project for the shelf, the back room, and the upload ticket.",
+      why: "It is the natural next step after React and Express — and it makes the server/client boundary explicit, which is exactly what this project is about.",
+    },
+    {
+      name: "Neon",
+      role: "The source of truth",
+      monogram: "Ne",
+      tone: "bg-[#00e599] text-[#2b1d14]",
+      desc: "Postgres for items, photos, reservations, receipts, admin sessions, and the audit trail. A second branch for tests.",
+      why: "Reservations need real transactions. A partial unique index is the difference between one hold and two.",
+    },
+    {
+      name: "Cloudflare R2",
+      role: "The photo shelf",
+      monogram: "R2",
+      tone: "bg-[#f38020] text-[#2b1d14]",
+      desc: "One public bucket for item photos. The browser uploads directly with a five-minute ticket; the server makes the variants.",
+      why: "S3-compatible, cheap egress, and simple. The photos are public marketing; the back room is the private part.",
+    },
+    {
+      name: "Resend",
+      role: "The last mile",
+      monogram: "Re",
+      tone: "bg-[#c63b2f] text-white",
+      desc: "Transactional email for the buyer's receipt and the seller's alert. Idempotency keys make a retry safe; failures are recorded.",
+      why: "Email is the most fragile part of the flow. It needs its own status, its own retry, and its own audit event.",
+    },
+    {
+      name: "Vercel",
+      role: "Hosting",
+      monogram: "Ve",
+      tone: "bg-[#f6f0e2] text-[#2b1d14] border border-[#d8cbb4]",
+      desc: "A Next.js deploy with a Neon integration, environment variables, cron, and logs.",
+      why: "One origin, no CORS between the app and its API, and a cron for expiry. The R2 bucket stays the only file store.",
+    },
+  ]}
+/>
+
+## What we are not building
+
+<Callout variant="warn" title="Scope is a feature">
+No customer accounts. No cart. No multi-vendor marketplace. No subscriptions. No Stripe checkout. No reviews. No search. No shipping calculator. Each one is a real product decision, and each one would make the first version harder to finish and easier to get wrong.
+
+The manual WhatsApp workflow is not a limitation we are apologising for. It is the workflow many small shops actually use. The project is about making that workflow **safe**, not replacing it with a payment gateway.
+</Callout>
+
+This matters because the interesting engineering is not in the shop UI. It is in the moment two people want the same chair, and in the moment the first one disappears.
+
+## The five promises
+
+These are the invariants the rest of the project will protect. We will turn them into database constraints, conditional updates, and tests.
+
+1. **The price comes from the item.** The browser never sends an amount.
+2. **One item has at most one pending reservation.** The database enforces it.
+3. **Only the seller can confirm a sale.** A buyer's claim is recorded, not trusted.
+4. **An expired hold releases the item.** Time is part of the state.
+5. **An item with history is archived, never hard-deleted.** The shop keeps its memory.
+
+<MissionBox
+  body="No code yet. Write the one-sentence promise of Kedai in your own words. Then list three things that must never happen in this system. Finally, click through the demo and find the exact moment the item becomes reserved — and the exact moment it becomes sold. Who is allowed to cause each one?"
+  note="If you can explain why the WhatsApp click does not equal a sale, you are ready for the next lesson."
+/>
+
+## Recap
+
+<RecapCards
+  points={[
+    "Kedai sells physical, one-of-one items. The unit is an object, not a stock count.",
+    "Three spaces: public shop window, constrained counter, private back room.",
+    "The reservation is the heart: pending → confirmed, cancelled, or expired.",
+    "The price is snapshotted; only the seller can confirm; the hold expires.",
+    "The interesting problems are unique stock, time, and trust — not the product grid.",
+  ]}
+/>
+
+Next: before we write the real screens, we design the shop window. One HTML mockup, no framework, so the layout has to earn its place before the code does.

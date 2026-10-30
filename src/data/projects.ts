@@ -94,14 +94,14 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: "safelight",
-    title: "Safelight: Digital Photography Marketplace",
+    slug: "kedai",
+    title: "Kedai: Build a Personal Marketplace",
     tagline:
-      "A photography shop with two doors: watermarked previews in public, originals in a private vault. Next.js, Neon, R2, Resend, and a manual WhatsApp payment workflow.",
+      "A one-person shop for the things you're ready to let go. Public shelf, private back room, and a reservation that can't be double-sold. Next.js, Neon, R2, Resend, and a manual WhatsApp handover.",
     stack: ["Next.js", "TypeScript", "Neon", "Cloudflare R2", "Resend"],
     status: "available",
     level: "Intermediate",
-    build: "Safelight marketplace",
+    build: "Kedai marketplace",
     requirements: [
       "Node.js 22+ and a code editor.",
       "A Neon account for Postgres.",
@@ -114,19 +114,19 @@ export const projects: Project[] = [
         id: "plan",
         title: "The Plan",
         blurb:
-          "Understand the two doors, design the shop window, and write the blueprint before code.",
+          "The shop window, the counter, and the back room. Design the flow before the code.",
       },
       {
         id: "build",
         title: "The Build",
         blurb:
-          "Next.js, the order state machine, admin sessions, uploads, WhatsApp, email, and the download gateway.",
+          "Next.js, inventory, admin sessions, uploads, reservations, WhatsApp, email, and the back room.",
       },
       {
         id: "ship",
         title: "Prove & Ship",
         blurb:
-          "Break the failure paths on purpose, deploy, and learn the house rules that keep the vault closed.",
+          "Break the race conditions on purpose, deploy, and learn the rules that keep one item from being sold twice.",
       },
     ],
     upcoming: [
@@ -140,34 +140,34 @@ export const projects: Project[] = [
       },
       {
         order: 7,
-        slug: "the-public-door",
-        title: "The public door",
+        slug: "the-shop-window",
+        title: "The shop window",
         blurb:
-          "The gallery, the photograph detail page, responsive previews, and SEO — with no original in sight.",
+          "The public shelf, item pages, share metadata, and the sold and reserved states.",
         part: "build",
       },
       {
         order: 8,
-        slug: "the-vault-and-the-watermark",
-        title: "The vault and the watermark",
+        slug: "photos-that-load-fast",
+        title: "Photos that load fast",
         blurb:
-          "Direct-to-R2 uploads, server-side sharp watermarks, preview variants, and publish/archive.",
+          "Direct-to-R2 uploads, sharp variants, EXIF stripping, and blur placeholders.",
         part: "build",
       },
       {
         order: 9,
-        slug: "from-click-to-whatsapp",
-        title: "From click to WhatsApp",
+        slug: "reserve-dont-buy",
+        title: "Reserve, don't buy",
         blurb:
-          "A server-priced order, a price snapshot, the WhatsApp handoff, and a claim that does not equal paid.",
+          "A server-priced reservation, the race for one item, expiry, and the WhatsApp handoff.",
         part: "build",
       },
       {
         order: 10,
-        slug: "the-ledger",
-        title: "The ledger",
+        slug: "the-back-room",
+        title: "The back room",
         blurb:
-          "The admin order desk, idempotent payment confirmation, refunds, and an audit timeline.",
+          "The admin item list, the reservation desk, confirm/cancel/extend, and the audit timeline.",
         part: "build",
       },
       {
@@ -175,7 +175,7 @@ export const projects: Project[] = [
         slug: "the-last-mile",
         title: "The last mile",
         blurb:
-          "Resend, hashed download tokens, email retries, and a signed R2 URL that expires.",
+          "Resend receipts, seller alerts, idempotency, and retries that do not change state.",
         part: "build",
       },
       {
@@ -183,7 +183,7 @@ export const projects: Project[] = [
         slug: "break-it-on-purpose",
         title: "Break it on purpose",
         blurb:
-          "Tests and failure drills: double clicks, failed email, expired links, refunds, and price changes.",
+          "Tests and failure drills: double reservations, expiry, price changes, and failed email.",
         part: "ship",
       },
       {
@@ -191,7 +191,7 @@ export const projects: Project[] = [
         slug: "ship-it-then-harden",
         title: "Ship it, then harden",
         blurb:
-          "Vercel, Neon, R2 CORS, a verified sending domain, security headers, and redacted logs.",
+          "Vercel, Neon, R2 CORS, a verified sending domain, rate limits, and redacted logs.",
         part: "ship",
       },
       {
